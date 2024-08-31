@@ -75,7 +75,7 @@ Update nav style CSS to allow adding more nav links to the navigation.
 
 This section will help you migrate from AstroPaper v2 to AstroPaper v3.
 
-Before reading the rest of the section, you might also want to check [this article](https://astro-paper.pages.dev/posts/how-to-update-dependencies/) for upgrading dependencies and AstroPaper.
+Before reading the rest of the section, you might also want to check [this article](https://astro-paper.pages.dev/how-to-update-dependencies/) for upgrading dependencies and AstroPaper.
 
 ## Option 1: Fresh Restart (recommended)
 
@@ -162,7 +162,7 @@ export interface Props {
 
 This approach is not recommended for most users. You should do the "Option 1" if you can. Only do this if you know how to resolve merge conflicts and you know what you're doing.
 
-Actually, I've already written a blog post for this case and you can check out [here](https://astro-paper.pages.dev/posts/how-to-update-dependencies/#updating-astropaper-using-git).
+Actually, I've already written a blog post for this case and you can check out [here](https://astro-paper.pages.dev/how-to-update-dependencies/#updating-astropaper-using-git).
 
 ## Outro
 
