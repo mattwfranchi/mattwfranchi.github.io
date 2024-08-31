@@ -56,6 +56,12 @@ async function loadGoogleFonts(
       weight: 700,
       style: "bold",
     },
+    {
+      name: "Noto Sans",
+      font: "Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap",
+      weight: 400,
+      style: "normal",
+    }
   ];
 
   const fonts = await Promise.all(
