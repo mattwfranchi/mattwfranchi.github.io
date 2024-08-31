@@ -19,4 +19,4 @@ This is the very first song I've scored by hand, so pardon any idiosyncracies! T
 **Arbor** is a nod to my dad's career in forestry and his love for nature, which diffused onto me, especially in recent years. I'm excited to share this piece with you all! I've decided to release the sheet music first, as an exercise in 'did I make this correctly?'. Signing off, x 
 
 
-[Sheet Music](/sheet-music/arbor.pdf)
+[Sheet Music](@assets/arbor/arbor.pdf)
