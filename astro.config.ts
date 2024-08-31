@@ -9,6 +9,10 @@ import { SITE } from "./src/config";
 // https://astro.build/config
 export default defineConfig({
   site: "https://mattwfranchi.github.io",
+  redirects: {
+     '/claustrophobic-streets': '/posts/claustrophobic-streets'
+    
+  },
   integrations: [
     tailwind({
       applyBaseStyles: false,
