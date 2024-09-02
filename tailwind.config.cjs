@@ -55,7 +55,7 @@ module.exports = {
         transparent: "transparent",
       },
       fontFamily: {
-        mono: ["Noto Sans"],
+        mono: ["Nanum Myeongjo", "serif"],
       },
 
       typography: {
