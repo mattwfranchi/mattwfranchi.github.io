@@ -24,6 +24,16 @@ const socialCount = SOCIALS.filter(social => social.active).length;
   <main id="main-content">
     <section id="hero">
       <h1>Matt Franchi</h1>
+
+      {
+        // only display if at least one social link is enabled
+        socialCount > 0 && (
+          <div class="social-wrapper">
+            <div class="social-links">Social Links:</div>
+            <Socials />
+          </div>
+        )
+      }
      
       <p>
         I am a third-year Computer Science PhD Candidate at Cornell University. I study at Cornell's New York City campus, Cornell Tech. Before that, I was an undergraduate student at Clemson University, where I completed a Bachelor's Degree in Computer Science (during the pandemic, unfortunately).
@@ -35,15 +45,7 @@ const socialCount = SOCIALS.filter(social => social.active).length;
 
       </p>
       
-      {
-        // only display if at least one social link is enabled
-        socialCount > 0 && (
-          <div class="social-wrapper">
-            <div class="social-links">Social Links:</div>
-            <Socials />
-          </div>
-        )
-      }
+      
     </section>
 
     <Hr />
