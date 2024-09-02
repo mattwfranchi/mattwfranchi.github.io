@@ -57,9 +57,9 @@ async function loadGoogleFonts(
       style: "bold",
     },
     {
-      name: "Noto Sans",
-      font: "Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap",
-      weight: 400,
+      name: "Namum Myeongjo",
+      font: "Namum+Myeongjo",
+      weight: 400, 
       style: "normal",
     }
   ];
