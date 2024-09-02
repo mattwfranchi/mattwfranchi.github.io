@@ -55,7 +55,7 @@ module.exports = {
         transparent: "transparent",
       },
       fontFamily: {
-        mono: ["Nanum Myeongjo", "serif"],
+        mono: ["Merriweather", "serif"],
       },
 
       typography: {

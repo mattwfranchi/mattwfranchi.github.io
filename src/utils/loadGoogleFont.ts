@@ -57,10 +57,10 @@ async function loadGoogleFonts(
       style: "bold",
     },
     {
-      name: "Namum Myeongjo",
-      font: "Namum+Myeongjo",
-      weight: 400, 
-      style: "normal",
+      name: "Merriweather",
+      font: "Merriweather",
+      weight: 300, 
+      style: "light",
     }
   ];
 
