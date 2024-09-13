@@ -6,8 +6,10 @@ import Footer from "@components/Footer.astro";
 import LinkButton from "@components/LinkButton.astro";
 import Hr from "@components/Hr.astro";
 import Card from "@components/Card";
+import MinCard from "@components/MinCard";
 import Socials from "@components/Socials.astro";
 import getSortedPosts from "@utils/getSortedPosts";
+import generateOgImageForSite from "@utils/generateOgImageForSite";
 import { SITE, SOCIALS } from "@config";
 
 const posts = await getCollection("blog");
@@ -36,10 +38,10 @@ const socialCount = SOCIALS.filter(social => social.active).length;
       }
      
       <p>
-        I am a third-year Computer Science PhD Candidate at Cornell University. I study at Cornell's New York City campus, Cornell Tech. Before that, I was an undergraduate student at Clemson University, where I completed a Bachelor's Degree in Computer Science (during the pandemic, unfortunately).
+        I am a third-year Computer Science PhD Candidate at Cornell University. I study at Cornell's New York City campus, Cornell Tech. Before that, I was an undergraduate student at Clemson University, where I completed a Bachelor's Degree in Computer Science (during the pandemic, unfortunately). I am also a research fellow at <a href="https://hayden.ai">Hayden AI Technologies</a>.  My research is supported by the Cornell Dean's Excellence Fellowship and the <a href="https://dli.tech.cornell.edu">Digital Life Initiative</a> Doctoral Fellowship. 
         <br><br>
         
-        My research interests include urban data science; computational social science, particularly in issues pertaining to societal inequity; fashion & design; applied computer vision.
+        My research interests include urban data science; computational social science, particularly in issues pertaining to societal inequality; fashion & design; and computer vision towards urban sensing. My research has been published in the New York Times, The Economist, Gothamist, and other local NYC news outlets.
         <br><br>
         I play classical and neoclassical piano music, and write my own 'peaceful piano' compositions since 2020.
 
@@ -50,11 +52,40 @@ const socialCount = SOCIALS.filter(social => social.active).length;
 
     <Hr />
 
+    <section id='selected-work'>
+    <h2>Selected Work</h2>
+    <ul>
+    <MinCard
+      href="https://www.nytimes.com/2024/07/29/nyregion/street-wars-crowded-sidewalks-times-square.html"
+      frontmatter={{ venue: "The New York Times", title: "Think N.Y.C.’s Roads Are Crowded? Good Luck on the Sidewalks.", imgpath:"/assets/selected-work/relative_claustrophobia_by_census_tract.svg" }}
+      secHeading={true}
+    />
+    <MinCard
+      href="https://dl.acm.org/doi/10.1145/3640792.3675740"
+      frontmatter={{ venue: "ACM AutoUI '24", title: "Towards Instrumented Fingerprinting of Urban Traffic: A Novel Methodology using Distributed Mobile Point-of-View Cameras", imgpath: "/assets/selected-work/autoui.png"}}
+      
+    />
+    <MinCard 
+      href="economist.com/science-and-technology/2024/03/13/new-york-city-is-covered-in-illegal-scaffolding"
+      frontmatter={{ venue: "The Economist", title: "New York City is covered in illegal scaffolding", imgpath: "/assets/selected-work/scaffolding.png"}}
+    />
+    <MinCard
+      href="https://dl.acm.org/doi/10.1145/3593013.3594020"
+      frontmatter={{ venue: "ACM FAccT '23", title: "Detecting disparities in police deployments using dashcam data", imgpath: "/assets/selected-work/d2pd3.png"}}
+      
+      secHeading={true}
+    />
+    </ul>
+
+    </section>
+
+    <Hr />
+
     {
       featuredPosts.length > 0 && (
         <>
           <section id="featured">
-            <h2>Featured</h2>
+            <h2>Writing</h2>
             <ul>
               {featuredPosts.map(({ data, slug }) => (
                 <Card
@@ -69,7 +100,7 @@ const socialCount = SOCIALS.filter(social => social.active).length;
         </>
       )
     }
-
+    <!-- 
     {
       recentPosts.length > 0 && (
         <section id="recent-posts">
@@ -89,6 +120,7 @@ const socialCount = SOCIALS.filter(social => social.active).length;
         </section>
       )
     }
+    -->
 
     <div class="all-posts-btn-wrapper">
       <LinkButton href="/posts/">
@@ -111,7 +143,7 @@ const socialCount = SOCIALS.filter(social => social.active).length;
     @apply pb-6 pt-8;
   }
   #hero h1 {
-    @apply my-4 inline-block text-3xl font-bold sm:my-8 sm:text-5xl;
+    @apply my-4 inline-block text-xl font-bold sm:my-0 sm:text-5xl;
   }
   #hero .rss-link {
     @apply mb-6;
@@ -123,7 +155,7 @@ const socialCount = SOCIALS.filter(social => social.active).length;
     @apply my-2;
   }
   .social-wrapper {
-    @apply mt-4 flex flex-col sm:flex-row sm:items-center;
+    @apply mt-4 pb-8 flex flex-col sm:flex-row sm:items-center;
   }
   .social-links {
     @apply mb-1 mr-2 whitespace-nowrap sm:mb-0;
@@ -141,4 +173,14 @@ const socialCount = SOCIALS.filter(social => social.active).length;
   .all-posts-btn-wrapper {
     @apply my-8 text-center;
   }
+
+  /* ===== MinCard Section ===== */
+  #selected-work {
+    @apply pb-6 pt-12;
+  }
+
+  #selected-work h2 {
+    @apply text-2xl font-semibold tracking-wide;
+  }
+
 </style>
