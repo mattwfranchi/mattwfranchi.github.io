@@ -3,12 +3,12 @@ import Datetime from "./Datetime";
 import type { CollectionEntry } from "astro:content";
 export interface Props {
   href?: string;
-  frontmatter: CollectionEntry<"venue" | "title" | "imgpath" | "description">["data"];
+  frontmatter: CollectionEntry<"venue" | "title" | "tag" | "imgpath" | "description">["data"];
   secHeading?: boolean;
 }
 
 export default function MinCard({ href, frontmatter, secHeading = true }: Props) {
-  const { venue, title, description, imgpath } = frontmatter;
+  const { venue, title, tag, description, imgpath } = frontmatter;
 
   const headerProps = {
     style: { viewTransitionName: slugifyStr(title) },
@@ -17,7 +17,11 @@ export default function MinCard({ href, frontmatter, secHeading = true }: Props)
 
   return (
     <li className="my-6">
-      <p style={{ fontStyle: "italic" }}>{venue}</p>
+      <div>
+      <span style={{ fontStyle: "italic" }}>{venue}</span>{" "}
+      <span style={{ fontWeight: "bold" }}>{tag}</span>
+      <br />
+    </div>
       <a
         href={href}
         className="inline-block text-lg font-medium text-skin-accent decoration-dashed underline-offset-4 focus-visible:no-underline focus-visible:underline-offset-0"
