@@ -55,7 +55,9 @@ module.exports = {
         transparent: "transparent",
       },
       fontFamily: {
-        mono: ["serif"],
+        sans: ["GTZirkon-Light"],
+        serif: ["GTZirkon-Light"],
+        mono: ["GTZirkon-Light"],
       },
 
       typography: {

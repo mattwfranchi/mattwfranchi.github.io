@@ -5,7 +5,7 @@ import type { Site, SocialObjects } from "./types";
 export const SITE: Site = {
   website: "https://mattwfranchi.github.io", // replace this with your deployed domain
   author: "Matt Franchi",
-  profile: "https://satnaing.dev/",
+  profile: "https://mattwfranchi.github.io",
   desc: "Matt Franchi is a computer science PhD candidate at Cornell University, interested in computational social science and urban sensing. Extra-academically, he writes peaceful piano compositions, models, and plays with generative AI models.",
   title: "Matt Franchi",
   ogImage: "astropaper-og.jpg",

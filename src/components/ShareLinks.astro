@@ -38,7 +38,7 @@ const shareLinks = [
 ] as const;
 ---
 
-<div class={`social-icons`}>
+<div class={`social-icons-share`}>
   <span class="italic">Share this post on:</span>
   <div class="text-center">
     {
@@ -57,10 +57,10 @@ const shareLinks = [
 </div>
 
 <style>
-  .social-icons {
+  .social-icons-share {
     @apply flex flex-col flex-wrap items-center justify-center gap-1 sm:items-start;
   }
   .link-button {
-    @apply scale-90 p-2 hover:rotate-6 sm:p-1;
+    @apply scale-90 p-2 hover:rotate-2 sm:p-1;
   }
 </style>
