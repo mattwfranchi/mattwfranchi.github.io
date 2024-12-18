@@ -10,6 +10,54 @@
   font-display: swap;
 }
 
+@font-face { 
+  font-family: 'GTAmerica-Regular';
+  src: url('/fonts/gt-america-regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face { 
+  font-family: 'GTAmerica-Bold';
+  src: url('/fonts/gt-america-bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face { 
+  font-family: 'GTAmerica-Medium';
+  src: url('/fonts/gt-america-medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face { 
+  font-family: 'GTAmerica-Light';
+  src: url('/fonts/gt-america-light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face { 
+  font-family: 'GTAmerica-Regular-Italic';
+  src: url('/fonts/gt-america-regular-italic.woff2') format('woff2');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face { 
+  font-family: 'GTAmerica-Light-Italic';
+  src: url('/fonts/gt-america-light-italic.woff2') format('woff2');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
 
 @layer base {
   :root,

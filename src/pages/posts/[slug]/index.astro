@@ -37,5 +37,6 @@ const pagination = getPagination({
   page: slug,
 });
 ---
-
+<div class="pt-24"> 
 {post ? <PostDetails post={post} /> : <Posts {...pagination} />}
+</div>

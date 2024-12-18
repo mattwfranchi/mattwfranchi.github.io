@@ -10,7 +10,7 @@ export interface Props {
 const { activeNav } = Astro.props;
 ---
 
-<header>
+<header id="main-header">
   <a id="skip-to-content" href="#main-content">Skip to content</a>
   <div class="nav-container">
     <div class="top-nav-wrap">
@@ -24,8 +24,8 @@ const { activeNav } = Astro.props;
               height={LOGO_IMAGE.height}
             />
           ) : (
-            "MATT FRANCHI"
-          )
+            "matt franchi"
+          ) 
         }
       </a>
       <nav id="nav-menu">
@@ -68,6 +68,7 @@ const { activeNav } = Astro.props;
           <li>
             <a href={`/assets/cv.pdf`} class={activeNav == 'cv' ? 'active' : ''}>
               CV
+            </a>
           </li>
           <li>
             <LinkButton
@@ -81,7 +82,8 @@ const { activeNav } = Astro.props;
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="scale-125 sm:scale-100"
-                ><path
+              >
+                <path
                   d="M19.023 16.977a35.13 35.13 0 0 1-1.367-1.384c-.372-.378-.596-.653-.596-.653l-2.8-1.337A6.962 6.962 0 0 0 16 9c0-3.859-3.14-7-7-7S2 5.141 2 9s3.14 7 7 7c1.763 0 3.37-.66 4.603-1.739l1.337 2.8s.275.224.653.596c.387.363.896.854 1.384 1.367l1.358 1.392.604.646 2.121-2.121-.646-.604c-.379-.372-.885-.866-1.391-1.36zM9 14c-2.757 0-5-2.243-5-5s2.243-5 5-5 5 2.243 5 5-2.243 5-5 5z"
                 ></path>
               </svg>
@@ -119,14 +121,29 @@ const { activeNav } = Astro.props;
   #skip-to-content {
     @apply absolute -top-full left-16 z-50 bg-skin-accent px-3 py-2 text-skin-inverted transition-all focus:top-4;
   }
+  header {
+    @apply fixed top-0 left-0 right-0 z-50 bg-skin-fill transition-all duration-300;
+    height: 88px;
+  }
+  header.shrunk {
+    height: 64px;
+  }
   .nav-container {
     @apply mx-auto flex max-w-3xl flex-col items-center justify-between sm:flex-row;
   }
   .top-nav-wrap {
-    @apply relative flex w-full items-start justify-between p-4 sm:items-center sm:py-8;
+    @apply relative flex w-full items-start justify-between p-4 sm:items-center transition-all duration-300;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+  header.shrunk .top-nav-wrap {
+    @apply py-3;
   }
   .logo {
-    @apply absolute py-1 text-xl font-semibold sm:static sm:text-2xl;
+    @apply absolute py-1 text-xl font-semibold sm:static sm:text-2xl transition-all duration-300;
+  }
+  header.shrunk .logo {
+    @apply text-lg sm:text-xl;
   }
   .hamburger-menu {
     @apply self-end p-2 sm:hidden;
@@ -186,9 +203,15 @@ const { activeNav } = Astro.props;
   .menu-icon.is-active .close {
     @apply opacity-100;
   }
+
+  #main-content {
+    @apply pt-24; /* Add padding to account for fixed header */
+  }
 </style>
 
 <script>
+  // In the <script> section of your Header.astro file, replace the existing script with:
+
   function toggleNav() {
     // Toggle menu
     const menuBtn = document.querySelector(".hamburger-menu");
@@ -207,8 +230,37 @@ const { activeNav } = Astro.props;
     });
   }
 
+  // Handle sticky header animation
+  let ticking = false;
+  const SCROLL_THRESHOLD = 50;
+
+  function updateHeader() {
+    const header = document.getElementById('main-header');
+    if (window.scrollY > SCROLL_THRESHOLD) {
+      header?.classList.add('shrunk');
+    } else {
+      header?.classList.remove('shrunk');
+    }
+    ticking = false;
+  }
+
+  // Check scroll position immediately on load
+  document.addEventListener('DOMContentLoaded', updateHeader);
+
+  // Check scroll position after view transitions
+  document.addEventListener('astro:page-load', updateHeader);
+
+  // Handle scroll events
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(updateHeader);
+      ticking = true;
+    }
+  });
+
+  // Initialize nav
   toggleNav();
 
-  // Runs on view transitions navigation
-  document.addEventListener("astro:after-swap", toggleNav);
+  // Re-initialize nav after view transitions
+  document.addEventListener("astro:page-load", toggleNav);
 </script>
