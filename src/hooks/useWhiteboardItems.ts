@@ -193,7 +193,7 @@ export const useWhiteboardItems = () => {
           return {
             ...item,
             position: {
-              ...item.position,
+              ...item.position, 
               width: isExpanded ? STICKY_NOTE.WIDTH : STICKY_NOTE.WIDTH * 1.5,
               height: isExpanded ? STICKY_NOTE.HEIGHT : STICKY_NOTE.HEIGHT * 1.5,
               expanded: !isExpanded
