@@ -115,17 +115,34 @@ export default function WhiteboardLayout({
   const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(filteredItems, transform, updateTransform);
   const focusedCardId = filteredItems.length ? filteredItems[currentIndex].id : undefined;
 
-  // Move the mobile initialization logic to a separate effect with no dependencies
+  // Add explicit mobile setup and error handling
   useEffect(() => {
     const initializeMobileView = () => {
-      if (window.innerWidth < 768) {
-        // Initially zoom out so that the entire window is visible.
-        updateTransform({ x: 0, y: 0, scale: 0.2 }, false);
+      try {
+        const isMobile = window.innerWidth < 768;
+        console.log('Initializing mobile view:', {isMobile, width: window.innerWidth});
+        
+        if (isMobile) {
+          // Set a more conservative initial scale for mobile
+          updateTransform({ 
+            x: 0, 
+            y: 0, 
+            scale: 0.15 // Reduced from 0.2 
+          }, false);
+        }
+      } catch (err) {
+        console.error('Mobile initialization failed:', err);
       }
     };
 
-    initializeMobileView();
-  }, []); // Empty dependency array - runs once on mount
+    // Ensure DOM is ready
+    if (document.readyState === 'complete') {
+      initializeMobileView();
+    } else {
+      window.addEventListener('load', initializeMobileView);
+      return () => window.removeEventListener('load', initializeMobileView);
+    }
+  }, [updateTransform]);
 
   // Separate the delayed focus into its own effect
   useEffect(() => {
@@ -136,6 +153,20 @@ export default function WhiteboardLayout({
       return () => clearTimeout(timer);
     }
   }, [items.length]); // Only depend on items.length changing
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent default zoom behavior
+    if (e.touches.length === 1) {
+      handleGestureStart(e);
+    }
+  }, [handleGestureStart]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      handleGestureMove(e);
+    }
+  }, [handleGestureMove]);
 
   return (
     <>
@@ -148,14 +179,16 @@ export default function WhiteboardLayout({
             transition: isTransitioning
               ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
               : 'none',
+            overscrollBehavior: 'none', // Prevent pull-to-refresh
+            WebkitOverflowScrolling: 'touch' // Improve iOS scrolling
           }}
           onWheel={handleWheel}
           onMouseDown={handleGestureStart}
           onMouseMove={handleGestureMove}
           onMouseUp={handleGestureEnd}
           onMouseLeave={handleGestureEnd}
-          onTouchStart={handleGestureStart}
-          onTouchMove={handleGestureMove as React.TouchEventHandler<HTMLDivElement>}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
           onTouchEnd={handleGestureEnd}
         >
           <WhiteboardContainer

@@ -23,13 +23,13 @@ export function WhiteboardContainer({
       style={{
         width,
         height,
-        /* Set CSS variables for dynamic transform values */
-        "--translateX": `${transform.x}px`,
-        "--translateY": `${transform.y}px`,
-        "--scale": transform.scale,
-        "--transition": isTransitioning
-          ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-          : 'none',
+        // Use transform3d for hardware acceleration
+        transform: `translate(-50%, -50%) translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
+        willChange: isTransitioning ? 'transform' : 'auto',
+        // Add passive pointer events for better performance
+        touchAction: 'none',
+        // Optimize paint areas
+        backfaceVisibility: 'hidden',
       } as React.CSSProperties}
     >
       {children}
