@@ -13,6 +13,7 @@ import backgroundImage from '../assets/vista.jpg';
 import { WINDOW_DIMENSIONS, STICKY_NOTE, SCALES } from '../constants/whiteboard';
 import WindowBackground from './WindowBackground';
 import { calculateInitialLayout } from '../utils/itemLayoutUtils';
+import ErrorBoundary from './ErrorBoundary';
 
 export default function WhiteboardLayout({
   albums,
