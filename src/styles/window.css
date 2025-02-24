@@ -12,20 +12,37 @@
 
 .window-background {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
   width: var(--window-width);
   height: var(--window-height);
   contain: layout size paint style;
-  transform-origin: 0 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  perspective: 1000;
-  -webkit-perspective: 1000;
+  transform: translate(-50%, -50%); /* Add centering transform to match whiteboard */
+  transform-origin: center center; /* Match whiteboard origin */
+  /* Remove backface-visibility and perspective properties */
   overflow: hidden;
   z-index: 0;
   transition: var(--transition, none);
+  will-change: transform; /* Optimize for GPU acceleration */
 }
+
+/* Remove unnecessary 3D transforms */
+.nature-scene {
+  position: absolute;
+  inset: 0;
+  width: var(--window-width);
+  height: var(--window-height);
+  contain: layout paint style;
+  /* Replace translateZ with will-change */
+  will-change: transform;
+  /* Remove backface-visibility */
+  background-image: url('../assets/vista.jpg');
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  filter: brightness(0.9) contrast(1.1);
+}
+
 
 .window-background::before {
   content: '';
@@ -51,22 +68,6 @@
   /* ... additional styling ... */
 }
 
-/* Update nature-scene to handle the actual window dimensions */
-.nature-scene {
-  position: absolute;
-  inset: 0;
-  width: var(--window-width);
-  height: var(--window-height);
-  contain: layout paint style;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  background-image: url('../assets/vista.jpg');
-  background-size: cover;
-  background-position: center;
-  z-index: 0;
-  filter: brightness(0.9) contrast(1.1);
-}
 
 /* Update window-frame to match dimensions */
 .window-frame {

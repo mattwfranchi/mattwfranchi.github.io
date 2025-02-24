@@ -1,18 +1,19 @@
+.focused-card {
+  box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.8);
+}
+
 .whiteboard-container {
-  position: absolute;
-  left: 0%;
-  top: 0%;
+  position: fixed; /* Change from absolute to fixed */
+  left: 50%;
+  top: 50%;
   width: var(--window-width);
   height: var(--window-height);
-  transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
+  transform: translate(-50%, -50%) scale(var(--scale, 1)); /* Remove translate3d */
   transform-origin: center center;
   transition: var(--transition, none);
   z-index: 1;
   contain: layout style paint;
-}
-
-.focused-card {
-  box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.8);
+  will-change: transform; /* Optimize for GPU acceleration */
 }
 
 .transform-container {
@@ -21,10 +22,7 @@
   height: var(--window-height);
   inset: 0;
   transform-origin: center center;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  perspective: 1000;
-  -webkit-perspective: 1000;
+  /* Remove backface-visibility and perspective properties causing mobile issues */
   contain: layout style paint;
   z-index: 2;
 }
