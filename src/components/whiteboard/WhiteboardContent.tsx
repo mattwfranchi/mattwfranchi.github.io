@@ -4,7 +4,7 @@ import { AlbumCard } from '../cards/AlbumCard';
 import { SnipCard } from '../cards/SnipCard';
 import { PlaylistCard } from '../cards/PlaylistCard';
 
-export function WhiteboardContent({
+export const WhiteboardContent = React.memo(function WhiteboardContent({
   items,
   focusedCardId,
   draggingId,
@@ -13,7 +13,7 @@ export function WhiteboardContent({
   onDragEnd,
   onExpand,
   onResize,
-  photosByAlbum
+  photosByAlbum,
 }: WhiteboardContentProps) {
   // Add more detailed logging
   //console.group('WhiteboardContent Render Debug');
@@ -67,4 +67,4 @@ export function WhiteboardContent({
       })}
     </>
   );
-}
+});

@@ -11,16 +11,19 @@
 }
 
 .window-background {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: var(--window-width);
-  height: var(--window-height);
-  /* Base centering translate + dynamic transform from CSS variables */
-  transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  contain: layout size paint style;
+  transform-origin: 0 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000;
+  -webkit-perspective: 1000;
   overflow: hidden;
   z-index: 0;
-  transform-origin: center center;
   transition: var(--transition, none);
 }
 
@@ -50,12 +53,14 @@
 
 .nature-scene {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  display: block;
-  transform-origin: center center;
-  will-change: transform;
+  contain: layout paint style;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   background-image: url('../assets/vista.jpg');
   background-size: cover;
   background-position: center;
@@ -64,8 +69,10 @@
 }
 
 .window-frame {
-  position: absolute;
-  inset: var(--window-inset-y) var(--window-inset-x);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  contain: layout style;
   border: var(--window-frame-border) solid #3d2412;
   border-radius: 12px;
   overflow: hidden;
@@ -123,11 +130,13 @@
 
 .window-panes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  width: 100%;
+  height: 100%;
+  contain: layout style;
   gap: var(--window-pane-gap);
   padding: var(--window-pane-gap);
-  height: 100%;
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -238,3 +247,13 @@
 .top-right { top: 0; right: 0; }
 .bottom-left { bottom: 0; left: 0; }
 .bottom-right { bottom: 0; right: 0; }
+
+.window-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  contain: layout style;
+  pointer-events: none;
+}

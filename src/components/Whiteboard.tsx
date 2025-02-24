@@ -14,14 +14,55 @@ import { WINDOW_DIMENSIONS, STICKY_NOTE, SCALES } from '../constants/whiteboard'
 import WindowBackground from './WindowBackground';
 import { calculateInitialLayout } from '../utils/itemLayoutUtils';
 import ErrorBoundary from './ErrorBoundary';
+import { performanceLogger } from '../utils/performanceLogger';
 
 export default function WhiteboardLayout({
   albums,
-  photosByAlbum, // This should be properly typed from the parent
+  photosByAlbum,
   playlists,
   snips,
   backgroundImage,
 }: WhiteboardProps) {
+  // Consolidate performance monitoring into a single effect
+  useEffect(() => {
+    performanceLogger.start();
+    performanceLogger.mark('whiteboard_mount_start');
+
+    // Single performance observer for all monitoring
+    const observer = new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      entries.forEach(entry => {
+        // Log only significant performance issues
+        if (entry.duration > 100) {
+          console.warn(`[Performance] Long task: ${entry.duration.toFixed(2)}ms`, {
+            name: entry.name,
+            startTime: entry.startTime
+          });
+        }
+      });
+    });
+
+    observer.observe({ entryTypes: ['longtask', 'measure'] });
+
+    // Log initial mount data
+    console.log('[Mount] Data sizes:', {
+      albums: albums.length,
+      photos: Object.values(photosByAlbum).flat().length,
+      playlists: playlists.length,
+      snips: snips.length
+    });
+
+    return () => {
+      observer.disconnect();
+      performanceLogger.mark('whiteboard_mount_end');
+      performanceLogger.measure(
+        'whiteboard_mount_duration',
+        'whiteboard_mount_start',
+        'whiteboard_mount_end'
+      );
+    };
+  }, []);
+
   const {
     items,
     setItems,
@@ -53,8 +94,10 @@ export default function WhiteboardLayout({
   const { filter, toggleFilter, filterItems } = useWhiteboardFilter();
   const [showGrid, setShowGrid] = useState(true);
 
-  // Initialize items on mount with unique IDs
+  // Add performance tracking to initializeItems
   const initializeItems = useCallback(() => {
+    performanceLogger.mark('initialize_items_start');
+    
     const initialItems: WhiteboardItem[] = [
       ...albums.map(album => ({
         id: `album-${album.slug}`,
@@ -97,7 +140,14 @@ export default function WhiteboardLayout({
       })),
     ];
 
-    setItems(calculateInitialLayout(initialItems));
+    performanceLogger.mark('calculate_layout_start');
+    const layoutedItems = calculateInitialLayout(initialItems);
+    performanceLogger.mark('calculate_layout_end');
+    performanceLogger.measure('layout_calculation', 'calculate_layout_start', 'calculate_layout_end');
+
+    setItems(layoutedItems);
+    performanceLogger.mark('initialize_items_end');
+    performanceLogger.measure('items_initialization', 'initialize_items_start', 'initialize_items_end');
   }, [albums, snips, playlists, setItems]);
 
   useEffect(() => {
@@ -116,17 +166,18 @@ export default function WhiteboardLayout({
   const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(filteredItems, transform, updateTransform);
   const focusedCardId = filteredItems.length ? filteredItems[currentIndex].id : undefined;
 
-  // Move the mobile initialization logic to a separate effect with no dependencies
-  useEffect(() => {
-    const initializeMobileView = () => {
-      if (window.innerWidth < 768) {
-        // Initially zoom out so that the entire window is visible.
+  // Optimize mobile initialization
+  const initializeMobileView = useCallback(() => {
+    if (window.innerWidth < 768) {
+      requestAnimationFrame(() => {
         updateTransform({ x: 0, y: 0, scale: 0.2 }, false);
-      }
-    };
+      });
+    }
+  }, [updateTransform]);
 
+  useEffect(() => {
     initializeMobileView();
-  }, []); // Empty dependency array - runs once on mount
+  }, [initializeMobileView]);
 
   // Separate the delayed focus into its own effect
   useEffect(() => {
@@ -138,35 +189,30 @@ export default function WhiteboardLayout({
     }
   }, [items.length]); // Only depend on items.length changing
 
+  // Add memory monitoring with warning thresholds
   useEffect(() => {
-    const checkMemory = () => {
+    const memoryCheck = () => {
       if ('memory' in performance) {
         // @ts-ignore - performance.memory is Chrome-specific
         const { usedJSHeapSize, jsHeapSizeLimit } = performance.memory;
         const usedMemoryMB = Math.round(usedJSHeapSize / 1024 / 1024);
         const totalMemoryMB = Math.round(jsHeapSizeLimit / 1024 / 1024);
-        
-        console.log(`Memory Usage: ${usedMemoryMB}MB / ${totalMemoryMB}MB`);
+        const memoryUsagePercent = (usedMemoryMB / totalMemoryMB) * 100;
+
+        console.log(`[Memory] Usage: ${usedMemoryMB}MB / ${totalMemoryMB}MB (${memoryUsagePercent.toFixed(1)}%)`);
+
+        // Warning thresholds
+        if (memoryUsagePercent > 80) {
+          console.warn('[Memory] Warning: High memory usage detected');
+        }
+        if (memoryUsagePercent > 90) {
+          console.error('[Memory] Critical: Memory usage extremely high');
+        }
       }
     };
 
-    const interval = setInterval(checkMemory, 5000);
+    const interval = setInterval(memoryCheck, 5000);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    // Performance monitoring
-    const observer = new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
-        if (entry.duration > 100) { // Log slow operations
-          console.warn('Slow operation detected:', entry.name, entry.duration);
-        }
-      });
-    });
-
-    observer.observe({ entryTypes: ['longtask', 'measure'] });
-
-    return () => observer.disconnect();
   }, []);
 
   return (
@@ -174,9 +220,12 @@ export default function WhiteboardLayout({
       <div className="fixed inset-0">
         <WindowBackground transform={transform} isTransitioning={isTransitioning} />
         <div
+          className="transform-container"
           style={{
             position: 'absolute',
             inset: 0,
+            willChange: isTransitioning ? 'transform' : 'auto',
+            transform: `scale(${transform.scale}) translate(${transform.x}px, ${transform.y}px)`,
             transition: isTransitioning
               ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
               : 'none',
@@ -187,7 +236,7 @@ export default function WhiteboardLayout({
           onMouseUp={handleGestureEnd}
           onMouseLeave={handleGestureEnd}
           onTouchStart={handleGestureStart}
-          onTouchMove={handleGestureMove as React.TouchEventHandler<HTMLDivElement>}
+          onTouchMove={handleGestureMove}
           onTouchEnd={handleGestureEnd}
         >
           <WhiteboardContainer
@@ -196,7 +245,6 @@ export default function WhiteboardLayout({
             width={WINDOW_DIMENSIONS.WIDTH}
             height={WINDOW_DIMENSIONS.HEIGHT}
           >
-
             <WhiteboardContent
               items={filteredItems}
               focusedCardId={focusedCardId}
@@ -205,16 +253,16 @@ export default function WhiteboardLayout({
               onDragStart={onDragStart}
               onDragEnd={handleDragEnd}
               onExpand={handleExpand}
-              onResize={handleResizeStart} // realtime resize handler
-              photosByAlbum={photosByAlbum as Record<string, PhotoData[]>} // Ensure type matches
+              onResize={handleResizeStart}
+              photosByAlbum={photosByAlbum}
             />
           </WhiteboardContainer>
         </div>
-
+        
         <WhiteboardToolbar
           onFilter={toggleFilter}
-          onZoomIn={(animate) => handleZoomIn(animate)}
-          onZoomOut={(animate) => handleZoomOut(animate)}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
           onCenter={centerView}
           scale={transform.scale}
           minScale={SCALES.MIN}

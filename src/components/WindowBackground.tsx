@@ -1,8 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import type { Transform } from '../types/whiteboard';
 import '../styles/window.css';
 import backgroundImage from '../assets/vista.jpg';
 import { WINDOW_DIMENSIONS } from '../constants/whiteboard';
+import { performanceLogger } from '../utils/performanceLogger';
 
 interface WindowBackgroundProps {
   transform: Transform;
@@ -12,49 +13,76 @@ interface WindowBackgroundProps {
 export default function WindowBackground({ transform, isTransitioning }: WindowBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Memoize styles to prevent recalculation on every render
+  const transformStyle = useMemo(() => ({
+    transform: `scale(${transform.scale}) translate(${transform.x}px, ${transform.y}px)`,
+    transition: isTransitioning ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+    willChange: isTransitioning ? 'transform' : 'auto',
+  }), [transform.scale, transform.x, transform.y, isTransitioning]);
+
+  const frameStyle = useMemo(() => ({
+    borderWidth: `${WINDOW_DIMENSIONS.FRAME_BORDER}rem`,
+  }), []);
+
+  const backgroundStyle = useMemo(() => ({
+    backgroundImage: `url(${backgroundImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    willChange: isTransitioning ? 'transform' : 'auto',
+    transform: 'translate3d(0,0,0)', // Force GPU acceleration
+  }), [isTransitioning]);
+
+  // Throttle performance logging to reduce overhead
+  useEffect(() => {
+    let rafId: number;
+    let lastCheck = 0;
+    const THROTTLE_MS = 1000; // Only log once per second
+
+    const checkPerformance = () => {
+      const now = performance.now();
+      if (now - lastCheck >= THROTTLE_MS) {
+        performanceLogger.mark('background_render_start');
+        lastCheck = now;
+      }
+    };
+
+    const cleanup = () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+
+    rafId = requestAnimationFrame(checkPerformance);
+    return cleanup;
+  }, [transform]);
+
+  // Memoize the window panes to prevent unnecessary rerenders
+  const windowPanes = useMemo(() => (
+    <div className="window-panes">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="pane">
+          <div className="pane-glass" />
+        </div>
+      ))}
+    </div>
+  ), []);
+
   return (
     <div
       className="window-background"
-      style={{
-        /* Set CSS variables for dynamic transform values */
-        "--translateX": `${transform.x}px`,
-        "--translateY": `${transform.y}px`,
-        "--scale": transform.scale,
-        "--transition": isTransitioning
-          ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-          : 'none',
-      } as React.CSSProperties}
+      style={transformStyle}
     >
       <div 
         className="window-frame"
-        style={{
-          borderWidth: `${WINDOW_DIMENSIONS.FRAME_BORDER}rem`,
-        }}
+        style={frameStyle}
       >
-        <canvas
+        <div
           ref={canvasRef}
           className="nature-scene"
-          style={{
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
+          style={backgroundStyle}
         />
         <div className="window-overlay">
-          <div className="window-panes">
-            <div className="pane">
-              <div className="pane-glass" />
-            </div>
-            <div className="pane">
-              <div className="pane-glass" />
-            </div>
-            <div className="pane">
-              <div className="pane-glass" />
-            </div>
-            <div className="pane">
-              <div className="pane-glass" />
-            </div>
-          </div>
+          {windowPanes}
           <div className="crosspane-vertical" />
           <div className="crosspane-horizontal" />
         </div>
