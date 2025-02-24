@@ -12,7 +12,29 @@ import { useCardFocus } from '../hooks/useCardFocus';
 import backgroundImage from '../assets/vista.jpg';
 import { WINDOW_DIMENSIONS, STICKY_NOTE, SCALES } from '../constants/whiteboard';
 import WindowBackground from './WindowBackground';
-import { calculateInitialLayout } from '../utils/itemLayoutUtils';
+
+// Utility function for initial layout calculation
+const calculateInitialLayout = (items: WhiteboardItem[]) => {
+  const maxX = WINDOW_DIMENSIONS.WIDTH - STICKY_NOTE.WIDTH;
+  const maxY = WINDOW_DIMENSIONS.HEIGHT - STICKY_NOTE.HEIGHT;
+
+  return items.map((item, index) => {
+    const randomX = Math.random() * maxX;
+    const randomY = Math.random() * maxY;
+
+    return {
+      ...item,
+      position: {
+        x: randomX,
+        y: randomY,
+        width: STICKY_NOTE.WIDTH,
+        height: STICKY_NOTE.HEIGHT,
+        z: index,
+        expanded: false,
+      },
+    };
+  });
+};
 
 export default function WhiteboardLayout({
   albums,
@@ -57,42 +79,21 @@ export default function WhiteboardLayout({
     const initialItems: WhiteboardItem[] = [
       ...albums.map(album => ({
         id: `album-${album.slug}`,
-        type: 'album' as const,
+        type: 'album',
         data: album,
-        position: { 
-          x: 0, 
-          y: 0, 
-          z: 0, 
-          width: STICKY_NOTE.WIDTH, 
-          height: STICKY_NOTE.HEIGHT, 
-          expanded: false 
-        },
+        position: { x: 0, y: 0, z: 0, width: 300, height: 300, expanded: false },
       })),
       ...snips.map(snip => ({
         id: `snip-${snip.slug}`,
-        type: 'snip' as const,
+        type: 'snip',
         data: snip,
-        position: { 
-          x: 0, 
-          y: 0, 
-          z: 0, 
-          width: STICKY_NOTE.WIDTH, 
-          height: STICKY_NOTE.HEIGHT, 
-          expanded: false 
-        },
+        position: { x: 0, y: 0, z: 0, width: 300, height: 300, expanded: false },
       })),
       ...playlists.map(playlist => ({
         id: `playlist-${playlist.slug}`,
-        type: 'playlist' as const,
+        type: 'playlist',
         data: playlist,
-        position: { 
-          x: 0, 
-          y: 0, 
-          z: 0, 
-          width: STICKY_NOTE.WIDTH, 
-          height: STICKY_NOTE.HEIGHT, 
-          expanded: false 
-        },
+        position: { x: 0, y: 0, z: 0, width: 300, height: 300, expanded: false },
       })),
     ];
 
@@ -115,34 +116,17 @@ export default function WhiteboardLayout({
   const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(filteredItems, transform, updateTransform);
   const focusedCardId = filteredItems.length ? filteredItems[currentIndex].id : undefined;
 
-  // Add explicit mobile setup and error handling
+  // Move the mobile initialization logic to a separate effect with no dependencies
   useEffect(() => {
     const initializeMobileView = () => {
-      try {
-        const isMobile = window.innerWidth < 768;
-        console.log('Initializing mobile view:', {isMobile, width: window.innerWidth});
-        
-        if (isMobile) {
-          // Set a more conservative initial scale for mobile
-          updateTransform({ 
-            x: 0, 
-            y: 0, 
-            scale: 0.15 // Reduced from 0.2 
-          }, false);
-        }
-      } catch (err) {
-        console.error('Mobile initialization failed:', err);
+      if (window.innerWidth < 768) {
+        // Initially zoom out so that the entire window is visible.
+        updateTransform({ x: 0, y: 0, scale: 0.2 }, false);
       }
     };
 
-    // Ensure DOM is ready
-    if (document.readyState === 'complete') {
-      initializeMobileView();
-    } else {
-      window.addEventListener('load', initializeMobileView);
-      return () => window.removeEventListener('load', initializeMobileView);
-    }
-  }, [updateTransform]);
+    initializeMobileView();
+  }, []); // Empty dependency array - runs once on mount
 
   // Separate the delayed focus into its own effect
   useEffect(() => {
@@ -153,20 +137,6 @@ export default function WhiteboardLayout({
       return () => clearTimeout(timer);
     }
   }, [items.length]); // Only depend on items.length changing
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault(); // Prevent default zoom behavior
-    if (e.touches.length === 1) {
-      handleGestureStart(e);
-    }
-  }, [handleGestureStart]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-      handleGestureMove(e);
-    }
-  }, [handleGestureMove]);
 
   return (
     <>
@@ -179,16 +149,14 @@ export default function WhiteboardLayout({
             transition: isTransitioning
               ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
               : 'none',
-            overscrollBehavior: 'none', // Prevent pull-to-refresh
-            WebkitOverflowScrolling: 'touch' // Improve iOS scrolling
           }}
           onWheel={handleWheel}
           onMouseDown={handleGestureStart}
           onMouseMove={handleGestureMove}
           onMouseUp={handleGestureEnd}
           onMouseLeave={handleGestureEnd}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
+          onTouchStart={handleGestureStart}
+          onTouchMove={handleGestureMove as React.TouchEventHandler<HTMLDivElement>}
           onTouchEnd={handleGestureEnd}
         >
           <WhiteboardContainer

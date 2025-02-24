@@ -21,15 +21,3 @@
     /* Optimize GPU layers */
     will-change: transform;
 }
-
-.focused-card {
-  box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.8);
-}
-
-/* Optimize mobile performance */
-@media (max-width: 768px) {
-  .whiteboard-container {
-    --scale: 0.15; /* Lower initial scale */
-    transform-origin: center center;
-  }
-}
