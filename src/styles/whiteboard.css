@@ -1,14 +1,15 @@
 .whiteboard-container {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: var(--window-width);
-  height: var(--window-height);
-  transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
-  transform-origin: center center;
-  transition: var(--transition, none);
-  z-index: 1;
-  contain: layout style paint;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--window-width);
+    height: var(--window-height);
+    /* Base centering + dynamic transform via CSS variables */
+    transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
+    overflow: hidden;
+    z-index: 0; /* adjust as needed */
+    transform-origin: center center;
+    transition: var(--transition, none);
 }
 
 .focused-card {
@@ -16,22 +17,15 @@
 }
 
 .transform-container {
-  position: absolute;
-  inset: 0;
-  transform-origin: center center;
+  transform-origin: 0 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   perspective: 1000;
   -webkit-perspective: 1000;
   contain: layout style paint;
-  z-index: 2;
 }
 
 .whiteboard-content {
-  position: relative;
-  width: 100%;
-  height: 100%;
   contain: layout style;
   will-change: transform;
-  z-index: 3;
 }
