@@ -1,29 +1,31 @@
-.focused-card {
-  box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.8);
-}
-
+/* Mobile-friendly whiteboard.css */
 .whiteboard-container {
-  position: fixed; /* Change from absolute to fixed */
+  position: absolute;
   left: 50%;
   top: 50%;
   width: var(--window-width);
   height: var(--window-height);
-  transform: translate(-50%, -50%) scale(var(--scale, 1)); /* Remove translate3d */
-  transform-origin: center center;
+  /* Use simpler transform without 3D */
+  transform: translate(-50%, -50%) scale(var(--scale, 1));
+  transform-origin: center;
   transition: var(--transition, none);
   z-index: 1;
-  contain: layout style paint;
-  will-change: transform; /* Optimize for GPU acceleration */
+  /* Reduce containment properties */
+  contain: size;
+}
+
+.focused-card {
+  box-shadow: 0 0 10px 5px rgba(0, 0, 0, 0.5);
 }
 
 .transform-container {
   position: absolute;
-  width: var(--window-width);
-  height: var(--window-height);
+  width: 100%;
+  height: 100%;
   inset: 0;
-  transform-origin: center center;
-  /* Remove backface-visibility and perspective properties causing mobile issues */
-  contain: layout style paint;
+  transform-origin: center;
+  /* Remove perspective and backface properties */
+  /* Remove containment properties that could cause issues */
   z-index: 2;
 }
 
@@ -31,7 +33,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  contain: layout style;
-  will-change: transform;
+  /* Removed contain property */
+  /* Removed will-change property that could be causing memory issues */
   z-index: 3;
 }

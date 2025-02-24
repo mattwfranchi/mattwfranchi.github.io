@@ -1,3 +1,4 @@
+/* Mobile-friendly window.css */
 :root {
   --window-width: 3000px;
   --window-height: 2400px;
@@ -11,38 +12,20 @@
 }
 
 .window-background {
-  position: fixed;
+  position: absolute;
   top: 50%;
   left: 50%;
   width: var(--window-width);
   height: var(--window-height);
-  contain: layout size paint style;
-  transform: translate(-50%, -50%); /* Add centering transform to match whiteboard */
-  transform-origin: center center; /* Match whiteboard origin */
-  /* Remove backface-visibility and perspective properties */
+  /* Removed containment properties */
+  /* Changed to simpler transform */
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+  /* Removed backface-visibility and perspective */
   overflow: hidden;
   z-index: 0;
   transition: var(--transition, none);
-  will-change: transform; /* Optimize for GPU acceleration */
 }
-
-/* Remove unnecessary 3D transforms */
-.nature-scene {
-  position: absolute;
-  inset: 0;
-  width: var(--window-width);
-  height: var(--window-height);
-  contain: layout paint style;
-  /* Replace translateZ with will-change */
-  will-change: transform;
-  /* Remove backface-visibility */
-  background-image: url('../assets/vista.jpg');
-  background-size: cover;
-  background-position: center;
-  z-index: 0;
-  filter: brightness(0.9) contrast(1.1);
-}
-
 
 .window-background::before {
   content: '';
@@ -58,29 +41,35 @@
       transparent 2px
     );
   z-index: 1;
-  box-shadow:
-    inset 0 0 150px rgba(0,0,0,0.6),
-    inset 0 0 100px rgba(0,0,0,0.3);
+  /* Simplified box-shadow */
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
 }
 
-/* Optionally include your ::after element styling for window decoration */
-.window-background::after {
-  /* ... additional styling ... */
+.nature-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Removed containment properties */
+  /* Removed translateZ and backface-visibility */
+  background-image: url('../assets/vista.jpg');
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  filter: brightness(0.9) contrast(1.1);
 }
 
-
-/* Update window-frame to match dimensions */
 .window-frame {
   position: relative;
-  width: var(--window-width);
-  height: var(--window-height);
-  contain: layout style;
+  width: 100%;
+  height: 100%;
+  /* Removed containment property */
   border: var(--window-frame-border) solid #3d2412;
   border-radius: 12px;
   overflow: hidden;
   background: transparent;
   z-index: 2;
-  transform-origin: center center;
+  transform-origin: center;
   
   background-image: 
     repeating-linear-gradient(
@@ -90,10 +79,8 @@
       rgba(61, 36, 18, 0.8) 4px
     );
   
-  box-shadow: 
-    inset 0 0 50px rgba(0,0,0,0.8),
-    0 0 80px rgba(0,0,0,0.6),
-    -10px 10px 100px rgba(0,0,0,0.4);
+  /* Simplified box-shadow */
+  box-shadow: 0 0 40px rgba(0,0,0,0.4);
 }
 
 .window-frame::before {
@@ -102,9 +89,8 @@
   inset: 0;
   border: var(--window-frame-inner-border) solid #8B4513;
   border-radius: 8px;
-  box-shadow: 
-    inset 0 0 20px rgba(0,0,0,0.3),
-    0 0 40px rgba(0,0,0,0.4);
+  /* Simplified box-shadow */
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
   z-index: 2;
 }
 
@@ -136,7 +122,7 @@
   grid-template-rows: repeat(2, 1fr);
   width: 100%;
   height: 100%;
-  contain: layout style;
+  /* Removed containment property */
   gap: var(--window-pane-gap);
   padding: var(--window-pane-gap);
   position: absolute;
@@ -149,9 +135,8 @@
 .crosspane-horizontal {
   position: absolute;
   background: #3d2412;
-  box-shadow: 
-    inset 0 0 15px rgba(0,0,0,0.6),
-    0 0 20px rgba(0,0,0,0.4);
+  /* Simplified box-shadow */
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
   z-index: 3;
   
   background-image: 
@@ -184,7 +169,7 @@
   background: rgba(255,255,255,0.05);
   border-radius: 4px;
   overflow: hidden;
-  backdrop-filter: blur(2px);
+  /* Removed backdrop-filter which can be heavy on mobile */
   z-index: 2;
 }
 
@@ -200,32 +185,30 @@
       rgba(255,255,255,0.12) 100%
     );
   border: 1px solid rgba(255,255,255,0.15);
-  box-shadow: 
-    inset 0 0 30px rgba(255,255,255,0.08),
-    0 0 20px rgba(0,0,0,0.1);
+  /* Simplified box-shadow */
+  box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
 }
 
 .pane-glass {
   position: absolute;
   inset: 0;
-  backdrop-filter: blur(1.5px);
+  /* Removed backdrop-filter */
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255, 255, 255, 0.05);
-  box-shadow: 
-    inset 0 0 30px rgba(255, 255, 255, 0.05),
-    0 0 15px rgba(0, 0, 0, 0.2);
-  
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(255,255,255,0.1) 0%,
-      transparent 100%
-    );
-    z-index: 2;
-  }
+  /* Simplified box-shadow */
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+.pane-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.1) 0%,
+    transparent 100%
+  );
+  z-index: 2;
 }
 
 .pane::after {
@@ -253,7 +236,7 @@
 .window-overlay {
   position: absolute;
   inset: 0;
-  contain: layout style;
+  /* Removed containment property */
   pointer-events: none;
   z-index: 2;
 }
