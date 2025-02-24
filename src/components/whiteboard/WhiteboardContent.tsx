@@ -16,14 +16,14 @@ export function WhiteboardContent({
   photosByAlbum
 }: WhiteboardContentProps) {
   // Add more detailed logging
-  console.group('WhiteboardContent Render Debug');
-  console.log('Photos by Album:', {
-    hasPhotos: !!photosByAlbum,
-    albumIds: Object.keys(photosByAlbum || {}),
-    totalPhotos: Object.values(photosByAlbum || {}).flat().length,
-    photosByAlbumContent: photosByAlbum // Log the actual content
-  });
-  console.groupEnd();
+  //console.group('WhiteboardContent Render Debug');
+  //console.log('Photos by Album:', {
+  //  hasPhotos: !!photosByAlbum,
+  //  albumIds: Object.keys(photosByAlbum || {}),
+  //  totalPhotos: Object.values(photosByAlbum || {}).flat().length,
+  //  photosByAlbumContent: photosByAlbum // Log the actual content
+  //});
+  //console.groupEnd();
 
   return (
     <>

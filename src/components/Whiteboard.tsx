@@ -137,8 +137,39 @@ export default function WhiteboardLayout({
     }
   }, [items.length]); // Only depend on items.length changing
 
+  useEffect(() => {
+    const checkMemory = () => {
+      if ('memory' in performance) {
+        // @ts-ignore - performance.memory is Chrome-specific
+        const { usedJSHeapSize, jsHeapSizeLimit } = performance.memory;
+        const usedMemoryMB = Math.round(usedJSHeapSize / 1024 / 1024);
+        const totalMemoryMB = Math.round(jsHeapSizeLimit / 1024 / 1024);
+        
+        console.log(`Memory Usage: ${usedMemoryMB}MB / ${totalMemoryMB}MB`);
+      }
+    };
+
+    const interval = setInterval(checkMemory, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Performance monitoring
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        if (entry.duration > 100) { // Log slow operations
+          console.warn('Slow operation detected:', entry.name, entry.duration);
+        }
+      });
+    });
+
+    observer.observe({ entryTypes: ['longtask', 'measure'] });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <>
+    <ErrorBoundary>
       <div className="fixed inset-0">
         <WindowBackground transform={transform} isTransitioning={isTransitioning} />
         <div
@@ -190,6 +221,6 @@ export default function WhiteboardLayout({
           onFocusNext={onFocusNext}
         />
       </div>
-    </>
+    </ErrorBoundary>
   );
 }
