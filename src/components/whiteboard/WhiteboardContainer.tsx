@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Transform } from '../../types/whiteboard';
-// import whiteboard.css 
 import '../../styles/whiteboard.css';
 
 interface WhiteboardContainerProps {
@@ -24,10 +23,14 @@ export function WhiteboardContainer({
       style={{
         width,
         height,
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
-        transformOrigin: 'center center',
-        transition: isTransitioning ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-      }}
+        /* Set CSS variables for dynamic transform values */
+        "--translateX": `${transform.x}px`,
+        "--translateY": `${transform.y}px`,
+        "--scale": transform.scale,
+        "--transition": isTransitioning
+          ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+          : 'none',
+      } as React.CSSProperties}
     >
       {children}
     </div>

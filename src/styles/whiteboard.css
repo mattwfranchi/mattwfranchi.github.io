@@ -5,19 +5,13 @@
     width: var(--window-width);
     height: var(--window-height);
     /* Base centering + dynamic transform via CSS variables */
-    -webkit-transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
     transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
     overflow: hidden;
     z-index: 0; /* adjust as needed */
     transform-origin: center center;
     transition: var(--transition, none);
-    -webkit-transform-style: preserve-3d;
-    transform-style: preserve-3d;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    /* Prevent iOS overscroll */
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: touch;
-    /* Optimize GPU layers */
-    will-change: transform;
+}
+
+.focused-card {
+  box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.8);
 }

@@ -12,29 +12,7 @@ import { useCardFocus } from '../hooks/useCardFocus';
 import backgroundImage from '../assets/vista.jpg';
 import { WINDOW_DIMENSIONS, STICKY_NOTE, SCALES } from '../constants/whiteboard';
 import WindowBackground from './WindowBackground';
-
-// Utility function for initial layout calculation
-const calculateInitialLayout = (items: WhiteboardItem[]) => {
-  const maxX = WINDOW_DIMENSIONS.WIDTH - STICKY_NOTE.WIDTH;
-  const maxY = WINDOW_DIMENSIONS.HEIGHT - STICKY_NOTE.HEIGHT;
-
-  return items.map((item, index) => {
-    const randomX = Math.random() * maxX;
-    const randomY = Math.random() * maxY;
-
-    return {
-      ...item,
-      position: {
-        x: randomX,
-        y: randomY,
-        width: STICKY_NOTE.WIDTH,
-        height: STICKY_NOTE.HEIGHT,
-        z: index,
-        expanded: false,
-      },
-    };
-  });
-};
+import { calculateInitialLayout } from '../utils/itemLayoutUtils';
 
 export default function WhiteboardLayout({
   albums,
@@ -79,21 +57,42 @@ export default function WhiteboardLayout({
     const initialItems: WhiteboardItem[] = [
       ...albums.map(album => ({
         id: `album-${album.slug}`,
-        type: 'album',
+        type: 'album' as const,
         data: album,
-        position: { x: 0, y: 0, z: 0, width: 300, height: 300, expanded: false },
+        position: { 
+          x: 0, 
+          y: 0, 
+          z: 0, 
+          width: STICKY_NOTE.WIDTH, 
+          height: STICKY_NOTE.HEIGHT, 
+          expanded: false 
+        },
       })),
       ...snips.map(snip => ({
         id: `snip-${snip.slug}`,
-        type: 'snip',
+        type: 'snip' as const,
         data: snip,
-        position: { x: 0, y: 0, z: 0, width: 300, height: 300, expanded: false },
+        position: { 
+          x: 0, 
+          y: 0, 
+          z: 0, 
+          width: STICKY_NOTE.WIDTH, 
+          height: STICKY_NOTE.HEIGHT, 
+          expanded: false 
+        },
       })),
       ...playlists.map(playlist => ({
         id: `playlist-${playlist.slug}`,
-        type: 'playlist',
+        type: 'playlist' as const,
         data: playlist,
-        position: { x: 0, y: 0, z: 0, width: 300, height: 300, expanded: false },
+        position: { 
+          x: 0, 
+          y: 0, 
+          z: 0, 
+          width: STICKY_NOTE.WIDTH, 
+          height: STICKY_NOTE.HEIGHT, 
+          expanded: false 
+        },
       })),
     ];
 
