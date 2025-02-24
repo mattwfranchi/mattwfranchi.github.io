@@ -13,9 +13,9 @@ interface WindowBackgroundProps {
 export default function WindowBackground({ transform, isTransitioning }: WindowBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Update transform calculation to match whiteboard
+  // Memoize styles to prevent recalculation on every render
   const transformStyle = useMemo(() => ({
-    transform: `translate(-50%, -50%) translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
+    transform: `scale(${transform.scale}) translate(${transform.x}px, ${transform.y}px)`,
     transition: isTransitioning ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
     willChange: isTransitioning ? 'transform' : 'auto',
   }), [transform.scale, transform.x, transform.y, isTransitioning]);

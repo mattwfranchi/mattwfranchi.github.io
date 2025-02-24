@@ -222,13 +222,22 @@ export default function WhiteboardLayout({
         <div
           className="transform-container"
           style={{
-            // Simplify transform and ensure it matches WindowBackground
-            transform: `translate(-50%, -50%) translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
+            position: 'absolute',
+            inset: 0,
+            willChange: isTransitioning ? 'transform' : 'auto',
+            transform: `scale(${transform.scale}) translate(${transform.x}px, ${transform.y}px)`,
             transition: isTransitioning
               ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
               : 'none',
-            willChange: isTransitioning ? 'transform' : 'auto',
           }}
+          onWheel={handleWheel}
+          onMouseDown={handleGestureStart}
+          onMouseMove={handleGestureMove}
+          onMouseUp={handleGestureEnd}
+          onMouseLeave={handleGestureEnd}
+          onTouchStart={handleGestureStart}
+          onTouchMove={handleGestureMove}
+          onTouchEnd={handleGestureEnd}
         >
           <WhiteboardContainer
             transform={transform}
