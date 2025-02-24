@@ -1,7 +1,7 @@
 .whiteboard-container {
   position: absolute;
-  left: 50%;
-  top: 50%;
+  left: 0%;
+  top: 0%;
   width: var(--window-width);
   height: var(--window-height);
   transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
@@ -17,6 +17,8 @@
 
 .transform-container {
   position: absolute;
+  width: var(--window-width);
+  height: var(--window-height);
   inset: 0;
   transform-origin: center center;
   backface-visibility: hidden;
