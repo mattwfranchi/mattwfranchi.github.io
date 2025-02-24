@@ -1,6 +1,5 @@
 ---
 import { type CollectionEntry, getCollection } from "astro:content";
-import Albums from "@layouts/Albums.astro";
 import AlbumDetails from "@layouts/AlbumDetails.astro";
 import getSortedAlbums from "@utils/getSortedAlbums";
 import getPageNumbers from "@utils/getPageNumbers";
@@ -40,5 +39,5 @@ const pagination = getPagination({
 });
 ---
 <div class="pt-24 bg-gradient-to-b from-gray-900 to-gray-800 min-h-screen"> 
-  {album ? <AlbumDetails album={album} photos={photos} /> : <Albums {...pagination} />}
+  {album ? <AlbumDetails album={album} photos={photos} /> : null}
 </div>
