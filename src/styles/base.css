@@ -1,6 +1,10 @@
+@import "./photog.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+
 
 @font-face {
   font-family: 'GTZirkon-Light';
@@ -171,6 +175,16 @@
     font-style: var(--shiki-dark-font-style) !important;
     font-weight: var(--shiki-dark-font-weight) !important;
     text-decoration: var(--shiki-dark-text-decoration) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    /* On mobile, start with a lower scale so the entire window is visible */
+    --scale: 0.5;
+    /* Adjust translation variables if needed */
+    --translateX: 0;
+    --translateY: 0;
   }
 }
 

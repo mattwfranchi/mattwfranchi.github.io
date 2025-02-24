@@ -1,0 +1,140 @@
+---
+import { LOCALE, SITE } from "@config";
+import "@styles/base.css";
+import { ViewTransitions } from "astro:transitions";
+import SidebarMenu from "@components/SidebarMenu.astro";
+import { initializeWindowDimensions } from '../utils/initializeWindowDimensions';
+
+export interface Props {
+  title?: string;
+  author?: string;
+  description?: string;
+  ogImage?: string;
+  canonicalURL?: string;
+}
+
+const {
+  title = SITE.title,
+  author = SITE.author,
+  description = SITE.desc,
+  ogImage = SITE.ogImage,
+  canonicalURL = new URL(Astro.url.pathname, Astro.site).href,
+} = Astro.props;
+
+const socialImageURL = new URL(
+  ogImage ?? SITE.ogImage ?? "og.png",
+  Astro.url.origin
+).href;
+---
+
+<!DOCTYPE html>
+<html lang={LOCALE.lang ?? "en"}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalURL} />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- General Meta Tags -->
+    <title>{title}</title>
+    <meta name="title" content={title} />
+    <meta name="description" content={description} />
+    <meta name="author" content={author} />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={socialImageURL} />
+
+    <ViewTransitions />
+    <script is:inline src="/toggle-theme.js"></script>
+  </head>
+  <body class="bg-black">
+    <div class="">
+      <slot />
+    </div>
+    
+    <div class="sidebar-button" id="sidebarButton">
+      <button class="p-2 rounded-full bg-zinc-900/90 backdrop-blur-sm">
+        <span class="sr-only">Toggle menu</span>
+        <!-- Add menu icon -->
+      </button>
+    </div>
+    <SidebarMenu />
+  </body>
+</html>
+
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #2c2c2c;
+    /* Add subtle wall texture */
+    background-image: 
+      linear-gradient(
+        to right,
+        rgba(255,255,255,0.05) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.05) 1px,
+        transparent 1px
+      );
+    background-size: 20px 20px;
+  }
+
+  .sidebar-button {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 50;
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .sidebar-button button {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .sidebar-button button:hover {
+    transform: scale(1.1);
+  }
+
+  .sidebar-button.sidebar-open {
+    transform: translateX(240px);
+  }
+
+  :global(.nav-menu) {
+    position: fixed;
+    top: 0;
+    left: -240px;
+    width: 240px;
+    height: 100vh;
+    background: var(--color-bg);
+    padding: 2rem;
+    transform: translateX(0);
+    transition: transform 0.3s ease-in-out;
+    z-index: 40;
+  }
+
+  :global(.nav-menu.open) {
+    transform: translateX(240px);
+  }
+</style>
+
+<script>
+  import { initializeWindowDimensions } from '../utils/initializeWindowDimensions';
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebarButton = document.getElementById('sidebarButton');
+    const navMenu = document.querySelector('.nav-menu');
+
+    sidebarButton?.addEventListener('click', () => {
+      sidebarButton.classList.toggle('sidebar-open');
+      navMenu?.classList.toggle('open');
+    });
+
+    initializeWindowDimensions();
+  });
+</script>

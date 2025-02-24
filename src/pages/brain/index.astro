@@ -1,0 +1,70 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
+import BrainLayout from '@layouts/BrainLayout.astro';
+import WhiteboardLayout from '@components/Whiteboard';
+import { SITE } from '@config';
+import type { PhotoData } from '../../types/whiteboard';
+
+// Organize data fetching
+const [albums, photos, snips, playlists, backgroundPhoto] = await Promise.all([
+  getCollection("albums"),
+  getCollection("photos"),
+  getCollection("snips"),
+  getCollection("playlists"),
+  getEntry("photos", "paintings/matisse-open-window")
+]);
+
+// Filter out draft items
+const publishedAlbums = albums.filter(album => !album.data.draft);
+const publishedSnips = snips.filter(snip => !snip.data.draft);
+const publishedPlaylists = playlists.filter(playlist => !playlist.data.draft);
+const publishedPhotos = photos.filter(photo => !photo.data.draft);
+
+// Improved photo grouping function that matches PhotoData interface
+function groupPhotosByAlbum(photos: CollectionEntry<"photos">[]) {
+  return photos.reduce((acc, photo) => {
+    const albumId = photo.data.albumId;
+    if (!acc[albumId]) {
+      acc[albumId] = [];
+    }
+    
+    // Transform each photo to match PhotoData interface
+    acc[albumId].push({
+      id: photo.id,
+      slug: photo.slug,
+      data: {
+        albumId: photo.data.albumId,
+        caption: photo.data.caption,
+        photo: photo.data.photo
+      },
+      optimizedPhoto: photo.data.photo // Using the optimized photo from the data
+    });
+    
+    return acc;
+  }, {} as Record<string, PhotoData[]>);
+}
+
+const photosByAlbum = groupPhotosByAlbum(publishedPhotos);
+---
+
+<BrainLayout title={`Scraps | ${SITE.title}`}>
+  <WhiteboardLayout
+    albums={publishedAlbums}
+    photosByAlbum={photosByAlbum}
+    snips={publishedSnips}
+    playlists={publishedPlaylists}
+    backgroundImage={backgroundPhoto.data.photo}
+    client:only="react"
+  />
+</BrainLayout>
+
+<style>
+  .overflow-auto {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .overflow-auto::-webkit-scrollbar {
+    display: none;
+  }
+</style>

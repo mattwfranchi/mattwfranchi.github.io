@@ -51,4 +51,11 @@ export default defineConfig({
   experimental: {
     contentLayer: true,
   },
+  image: {
+    service: {
+      sharp: {
+        // Use sharp as the image service
+      },
+    },
+  },
 });

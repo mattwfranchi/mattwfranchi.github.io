@@ -1,0 +1,42 @@
+---
+---
+
+<nav class="nav-menu">
+  <div class="flex flex-col gap-4 pt-16">
+    <a href="/" class="nav-link">Home</a>
+    <a href="/posts" class="nav-link">Posts</a>
+    <a href="/photos" class="nav-link">Photos</a>
+    <a href="/about" class="nav-link">About</a>
+  </div>
+</nav>
+
+<style>
+  .nav-menu {
+    position: fixed;
+    top: 0;
+    left: -240px;
+    width: 240px;
+    height: 100vh;
+    background: var(--theme-bg);
+    padding: 2rem;
+    transform: translateX(0);
+    transition: transform 0.3s ease-in-out;
+    z-index: 40;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .nav-link {
+    color: var(--theme-text);
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+  }
+
+  .nav-link:hover {
+    color: var(--theme-accent);
+  }
+
+  :global(.nav-menu.open) {
+    transform: translateX(240px);
+  }
+</style>

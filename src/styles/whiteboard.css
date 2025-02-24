@@ -1,0 +1,17 @@
+.whiteboard-container {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--window-width);
+    height: var(--window-height);
+    /* Base centering + dynamic transform via CSS variables */
+    transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
+    overflow: hidden;
+    z-index: 0; /* adjust as needed */
+    transform-origin: center center;
+    transition: var(--transition, none);
+}
+
+.focused-card {
+  box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.8);
+}

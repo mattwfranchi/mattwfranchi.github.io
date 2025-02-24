@@ -1,6 +1,21 @@
 import type { Site, SocialObjects } from "./types";
 
-
+export const PROFILE = {
+  name: "Matt Franchi",
+  title: "PhD Candidate @ Cornell",
+  profilePic: "/assets/profile_photo.png", // Add your profile pic to public/assets
+  bio: "Urban data scientist exploring inequality through the lens of computation and photography",
+  location: "Ithaca, NY",
+  links: {
+    github: "https://github.com/mattwfranchi",
+    // add other links you want to display
+  },
+  stats: {
+    photos: 42, // we can make this dynamic later
+    albums: 3,  // we can make this dynamic later
+    views: 1337 // for the retro feel ;)
+  }
+};
 
 export const SITE: Site = {
   website: "https://mattwfranchi.github.io", // replace this with your deployed domain
