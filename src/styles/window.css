@@ -12,12 +12,12 @@
 
 .window-background {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
   width: var(--window-width);
   height: var(--window-height);
   contain: layout size paint style;
-  transform-origin: 0 0;
+  transform-origin: center center;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   perspective: 1000;
