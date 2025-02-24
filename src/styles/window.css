@@ -51,11 +51,12 @@
   /* ... additional styling ... */
 }
 
+/* Update nature-scene to handle the actual window dimensions */
 .nature-scene {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  width: var(--window-width);
+  height: var(--window-height);
   contain: layout paint style;
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -67,10 +68,11 @@
   filter: brightness(0.9) contrast(1.1);
 }
 
+/* Update window-frame to match dimensions */
 .window-frame {
   position: relative;
-  width: 100%;
-  height: 100%;
+  width: var(--window-width);
+  height: var(--window-height);
   contain: layout style;
   border: var(--window-frame-border) solid #3d2412;
   border-radius: 12px;
