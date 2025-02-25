@@ -1,7 +1,36 @@
+export const performanceConfig = {
+  verboseLogging: false,  // Disable by default in production
+  performanceMonitoring: true
+};
+
+// Add a wrapper function for console logging
+export function perfLog(level: 'log' | 'warn' | 'error', message: string, data?: any) {
+  if (performanceConfig.verboseLogging) {
+    if (data) {
+      console[level](message, data);
+    } else {
+      console[level](message);
+    }
+  }
+}
+
+// Export the debug toggle function so it can be used elsewhere
+export function toggleDebugMode() {
+  performanceConfig.verboseLogging = !performanceConfig.verboseLogging;
+  // This will only show if debugging was just enabled
+  console.log(`Debug mode: ${performanceConfig.verboseLogging ? 'enabled' : 'disabled'}`);
+  return performanceConfig.verboseLogging;
+}
+
 export function detectDeviceCapabilities() {
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const isLowPowerDevice = isMobile || window.navigator.hardwareConcurrency <= 4;
   
+  // Set logging based on device capability
+  performanceConfig.verboseLogging = 
+    !isLowPowerDevice && 
+    process.env.NODE_ENV !== 'production';
+    
   // Apply optimization classes based on detected capabilities
   if (isLowPowerDevice) {
     document.documentElement.classList.add('mobile-optimized');

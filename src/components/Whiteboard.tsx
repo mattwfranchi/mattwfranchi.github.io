@@ -16,6 +16,9 @@ import { calculateInitialLayout } from '../utils/itemLayoutUtils';
 import ErrorBoundary from './ErrorBoundary';
 import { performanceLogger } from '../utils/performanceLogger';
 
+// Debug flag to control logging
+const DEBUG = false;
+
 export default function WhiteboardLayout({
   albums,
   photosByAlbum,
@@ -25,42 +28,44 @@ export default function WhiteboardLayout({
 }: WhiteboardProps) {
   // Consolidate performance monitoring into a single effect
   useEffect(() => {
-    performanceLogger.start();
-    performanceLogger.mark('whiteboard_mount_start');
+    if (DEBUG) {
+      performanceLogger.start();
+      performanceLogger.mark('whiteboard_mount_start');
 
-    // Single performance observer for all monitoring
-    const observer = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      entries.forEach(entry => {
-        // Log only significant performance issues
-        if (entry.duration > 100) {
-          console.warn(`[Performance] Long task: ${entry.duration.toFixed(2)}ms`, {
-            name: entry.name,
-            startTime: entry.startTime
-          });
-        }
+      // Single performance observer for all monitoring
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach(entry => {
+          // Log only significant performance issues
+          if (entry.duration > 100) {
+            console.warn(`[Performance] Long task: ${entry.duration.toFixed(2)}ms`, {
+              name: entry.name,
+              startTime: entry.startTime
+            });
+          }
+        });
       });
-    });
 
-    observer.observe({ entryTypes: ['longtask', 'measure'] });
+      observer.observe({ entryTypes: ['longtask', 'measure'] });
 
-    // Log initial mount data
-    console.log('[Mount] Data sizes:', {
-      albums: albums.length,
-      photos: Object.values(photosByAlbum).flat().length,
-      playlists: playlists.length,
-      snips: snips.length
-    });
+      // Log initial mount data
+      console.log('[Mount] Data sizes:', {
+        albums: albums.length,
+        photos: Object.values(photosByAlbum).flat().length,
+        playlists: playlists.length,
+        snips: snips.length
+      });
 
-    return () => {
-      observer.disconnect();
-      performanceLogger.mark('whiteboard_mount_end');
-      performanceLogger.measure(
-        'whiteboard_mount_duration',
-        'whiteboard_mount_start',
-        'whiteboard_mount_end'
-      );
-    };
+      return () => {
+        observer.disconnect();
+        performanceLogger.mark('whiteboard_mount_end');
+        performanceLogger.measure(
+          'whiteboard_mount_duration',
+          'whiteboard_mount_start',
+          'whiteboard_mount_end'
+        );
+      };
+    }
   }, []);
 
   const {
@@ -96,7 +101,9 @@ export default function WhiteboardLayout({
 
   // Add performance tracking to initializeItems
   const initializeItems = useCallback(() => {
-    performanceLogger.mark('initialize_items_start');
+    if (DEBUG) {
+      performanceLogger.mark('initialize_items_start');
+    }
     
     const initialItems: WhiteboardItem[] = [
       ...albums.map(album => ({
@@ -140,14 +147,23 @@ export default function WhiteboardLayout({
       })),
     ];
 
-    performanceLogger.mark('calculate_layout_start');
+    if (DEBUG) {
+      performanceLogger.mark('calculate_layout_start');
+    }
+    
     const layoutedItems = calculateInitialLayout(initialItems);
-    performanceLogger.mark('calculate_layout_end');
-    performanceLogger.measure('layout_calculation', 'calculate_layout_start', 'calculate_layout_end');
+    
+    if (DEBUG) {
+      performanceLogger.mark('calculate_layout_end');
+      performanceLogger.measure('layout_calculation', 'calculate_layout_start', 'calculate_layout_end');
+    }
 
     setItems(layoutedItems);
-    performanceLogger.mark('initialize_items_end');
-    performanceLogger.measure('items_initialization', 'initialize_items_start', 'initialize_items_end');
+    
+    if (DEBUG) {
+      performanceLogger.mark('initialize_items_end');
+      performanceLogger.measure('items_initialization', 'initialize_items_start', 'initialize_items_end');
+    }
   }, [albums, snips, playlists, setItems]);
 
   useEffect(() => {
@@ -187,10 +203,12 @@ export default function WhiteboardLayout({
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [items.length]); // Only depend on items.length changing
+  }, [items.length, focusOnCard]); // Only depend on items.length changing
 
-  // Add memory monitoring with warning thresholds
+  // Add memory monitoring with warning thresholds - DISABLED by default now
   useEffect(() => {
+    if (!DEBUG) return;
+    
     const memoryCheck = () => {
       if ('memory' in performance) {
         // @ts-ignore - performance.memory is Chrome-specific

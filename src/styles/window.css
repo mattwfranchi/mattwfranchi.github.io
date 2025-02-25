@@ -116,7 +116,29 @@
 }
 
 .mobile-optimized .nature-scene {
-  transform: none;
+  /* Remove transform but keep hardware acceleration */
+  transform: translateZ(0);
+  /* Reduce memory usage with these optimizations */
+  will-change: auto;
+  content-visibility: auto;
+  /* Use a simplified filter for better performance */
+  filter: brightness(0.9);
+  /* Prevent costly repaints */
+  backface-visibility: hidden;
+  /* Use a more efficient background rendering */
+  background-attachment: scroll;
+  /* Ensure image quality doesn't exceed what's needed */
+  image-rendering: optimizeSpeed;
+}
+
+/* Remove this rule that completely hides the nature scene */
+@media (max-width: 480px) {
+  .mobile-optimized .nature-scene {
+    /* Remove this: display: none !important; */
+    /* Instead use these optimizations: */
+    filter: none; /* Remove all filters on very small screens */
+    background-size: auto; /* Less precise but faster rendering */
+  }
 }
 
 /* Rest of CSS remains the same */

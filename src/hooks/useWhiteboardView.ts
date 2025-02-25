@@ -69,13 +69,13 @@ export function useWhiteboardView() {
   const effectiveUpdateTransform = isMobile ? throttledUpdateTransform : updateTransform;
 
   const handleZoom = useCallback((newScale: number, focalX: number, focalY: number, animate = false) => {
-    // Get the container center
-    const containerWidth = window.innerWidth;
-    const containerHeight = window.innerHeight;
-    const centerX = containerWidth / 2;
-    const centerY = containerHeight / 2;
+    // Get the viewport center
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const centerX = viewportWidth / 2;
+    const centerY = viewportHeight / 2;
     
-    // Calculate focal point offset from center
+    // Calculate focal point offset from viewport center
     const offsetX = focalX - centerX;
     const offsetY = focalY - centerY;
     
@@ -83,8 +83,9 @@ export function useWhiteboardView() {
     const scaleFactor = newScale / transform.scale;
     
     // Adjust position to keep focal point steady during zoom
-    const newX = transform.x - offsetX * (1 - 1/scaleFactor) / transform.scale;
-    const newY = transform.y - offsetY * (1 - 1/scaleFactor) / transform.scale;
+    // The formula needs to account for the center-based coordinate system
+    const newX = transform.x - (offsetX / transform.scale) * (1 - 1/scaleFactor);
+    const newY = transform.y - (offsetY / transform.scale) * (1 - 1/scaleFactor);
     
     effectiveUpdateTransform({ x: newX, y: newY, scale: newScale }, animate);
   }, [transform, effectiveUpdateTransform]);
@@ -106,6 +107,8 @@ export function useWhiteboardView() {
     } else {
       // Pan with mouse wheel (without Ctrl key)
       const panSpeed = 2.5 / transform.scale; // Adjust pan speed based on zoom level
+      
+      // Apply pan in the correct direction, accounting for centered coordinates
       const newX = transform.x - e.deltaX * panSpeed;
       const newY = transform.y - e.deltaY * panSpeed;
       

@@ -36,13 +36,13 @@ export function AlbumCard({
   const albumPhotos = photos.filter(photo => photo.data.albumId === albumIdWithoutExt);
 
   // Enhanced debug logging
-  console.group('AlbumCard Render Debug');
-  console.log('Album ID (with ext):', album.id);
-  console.log('Album ID (without ext):', albumIdWithoutExt);
-  console.log('Album Data:', album.data);
-  console.log('Photo Album IDs:', photos.map(p => p.data.albumId));
-  console.log('Filtered Album Photos:', albumPhotos);
-  console.groupEnd();
+  //console.group('AlbumCard Render Debug');
+  //console.log('Album ID (with ext):', album.id);
+  //console.log('Album ID (without ext):', albumIdWithoutExt);
+  //console.log('Album Data:', album.data);
+  //console.log('Photo Album IDs:', photos.map(p => p.data.albumId));
+  //console.log('Filtered Album Photos:', albumPhotos);
+  //console.groupEnd();
 
   return (
     <CardWrapper

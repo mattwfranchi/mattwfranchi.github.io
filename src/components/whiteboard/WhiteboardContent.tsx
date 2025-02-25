@@ -48,14 +48,14 @@ export const WhiteboardContent = React.memo(function WhiteboardContent({
             (photosByAlbum[albumId] || []) : []
         };
 
-        console.log(`Card Props for ${item.id}:`, {
-          type: item.type,
-          albumId,
-          hasPhotos: item.type === 'album' ? 
-            !!photosByAlbum[albumId] : false,
-          photoCount: item.type === 'album' && photosByAlbum[albumId] ? 
-            photosByAlbum[albumId].length : 0
-        });
+        //console.log(`Card Props for ${item.id}:`, {
+        //  type: item.type,
+        //  albumId,
+        //  hasPhotos: item.type === 'album' ? 
+        //    !!photosByAlbum[albumId] : false,
+        //  photoCount: item.type === 'album' && photosByAlbum[albumId] ? 
+        //    photosByAlbum[albumId].length : 0
+        //});
 
         return (
           <React.Fragment key={item.id}>

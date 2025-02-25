@@ -35,16 +35,21 @@ export function useWhiteboardGestures(
         ? { x: e.touches[0].clientX, y: e.touches[0].clientY }
         : { x: e.clientX, y: e.clientY };
 
-      // Calculate delta
+      // Calculate delta in screen coordinates
       const deltaX = currentPos.x - lastMousePos.x;
       const deltaY = currentPos.y - lastMousePos.y;
+      
+      // Get the actual applied scale from the DOM element
+      const container = document.querySelector('.transform-container');
+      const scale = container ? 
+        parseFloat(getComputedStyle(container).getPropertyValue('--scale') || '1') : 
+        1;
 
-      // Since the whiteboard container is scaled (via CSS: scale(var(--scale))),
-      // divide by the current scale to update the transform in "world" coordinates.
+      // Apply the gesture movement with proper scaling
       onTransformUpdate(prevTransform => ({
         ...prevTransform,
-        x: prevTransform.x + deltaX / prevTransform.scale,
-        y: prevTransform.y + deltaY / prevTransform.scale
+        x: prevTransform.x + deltaX / scale,
+        y: prevTransform.y + deltaY / scale
       }));
 
       setLastMousePos(currentPos);

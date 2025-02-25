@@ -35,25 +35,40 @@ export const useWhiteboardItems = () => {
 
   // Helper: Get current scale from container CSS variable
   const getContainerScale = () => {
-    const container = document.querySelector('.whiteboard-container');
+    // Change from '.whiteboard-container' to '.transform-container'
+    const container = document.querySelector('.transform-container');
     if (!container) return 1;
     const computed = getComputedStyle(container);
     const scale = parseFloat(computed.getPropertyValue('--scale'));
     return isNaN(scale) ? 1 : scale;
   };
 
+  // Update the handleDragMove function to use transform-centered coordinates
   const handleDragMove = useCallback((event: MouseEvent) => {
-    const container = document.querySelector('.whiteboard-container');
-    const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
-    const scale = getContainerScale();
-    const relativeX = (event.clientX - rect.left) / scale;
-    const relativeY = (event.clientY - rect.top) / scale;
     const { itemId, offset } = dragState.current;
     if (!itemId || !offset) return;
+
+    // Get transform container and its dimensions
+    const container = document.querySelector('.transform-container');
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
+    const scale = getContainerScale();
+    
+    // Calculate position relative to center of container
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // Convert mouse position to coordinates relative to center
+    const relativeX = (event.clientX - centerX) / scale;
+    const relativeY = (event.clientY - centerY) / scale;
+    
+    // Apply the offset from initial click
     const newPosition = {
       x: relativeX - offset.x,
       y: relativeY - offset.y
     };
+    
     setItems(prevItems =>
       prevItems.map(item =>
         item.id === itemId
@@ -75,19 +90,33 @@ export const useWhiteboardItems = () => {
     };
   }, [handleDragMove]);
 
+  // Update handleDragStart to also use center-relative coordinates
   const handleDragStart = useCallback((id: string, event: React.MouseEvent<Element>) => {
     event.preventDefault();
     const item = items.find(i => i.id === id);
     if (!item) return;
-    const container = document.querySelector('.whiteboard-container');
-    const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
+    
+    // Get transform container and its dimensions
+    const container = document.querySelector('.transform-container');
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
     const scale = getContainerScale();
-    const relativeMouseX = (event.clientX - rect.left) / scale;
-    const relativeMouseY = (event.clientY - rect.top) / scale;
+    
+    // Calculate center of container
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // Convert mouse position to coordinates relative to center
+    const relativeMouseX = (event.clientX - centerX) / scale;
+    const relativeMouseY = (event.clientY - centerY) / scale;
+    
+    // Calculate offset from item's position
     const offset = {
       x: relativeMouseX - item.position.x,
       y: relativeMouseY - item.position.y
     };
+    
     setDragging(id);
     dragState.current = {
       itemId: id,
@@ -95,21 +124,34 @@ export const useWhiteboardItems = () => {
       initialItemPos: { x: item.position.x, y: item.position.y },
       offset
     };
+    
     window.addEventListener('mousemove', handleDragMove);
     window.addEventListener('mouseup', handleDragEnd);
   }, [items, handleDragMove, handleDragEnd]);
 
-  // Realtime drag-to-resize with click-to-stop behavior.
+  // Update handleResizeMove to use transform-container
   const handleResizeMove = useCallback((event: MouseEvent) => {
     const { itemId, initialMousePos, initialWidth, initialHeight } = resizeState.current;
     if (!itemId || !initialMousePos) return;
-    const container = document.querySelector('.whiteboard-container');
-    const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
+    
+    // Change from '.whiteboard-container' to '.transform-container'
+    const container = document.querySelector('.transform-container');
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
     const scale = getContainerScale();
-    const relativeX = (event.clientX - rect.left) / scale;
-    const relativeY = (event.clientY - rect.top) / scale;
+    
+    // Calculate position relative to center of container
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // Convert to center-relative coordinates
+    const relativeX = (event.clientX - centerX) / scale;
+    const relativeY = (event.clientY - centerY) / scale;
+    
     const deltaX = relativeX - initialMousePos.x;
     const deltaY = relativeY - initialMousePos.y;
+    
     setItems(prevItems =>
       prevItems.map(item => {
         if (item.id === itemId) {
@@ -117,8 +159,8 @@ export const useWhiteboardItems = () => {
             ...item,
             position: {
               ...item.position,
-              width: Math.max(50, initialWidth + deltaX),
-              height: Math.max(50, initialHeight + deltaY)
+              width: Math.max(50, initialWidth + deltaX * 2),
+              height: Math.max(50, initialHeight + deltaY * 2)
             }
           };
         }
@@ -127,6 +169,7 @@ export const useWhiteboardItems = () => {
     );
   }, []);
 
+  // Also fix handleResizeStart similarly
   const handleResizeStart = useCallback((id: string, event: React.MouseEvent<Element>) => {
     event.preventDefault();
 
@@ -145,11 +188,19 @@ export const useWhiteboardItems = () => {
 
     const item = items.find(i => i.id === id);
     if (!item) return;
-    const container = document.querySelector('.whiteboard-container');
-    const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0 };
+    
+    const container = document.querySelector('.transform-container');
+    const rect = container ? container.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
     const scale = getContainerScale();
-    const relativeMouseX = (event.clientX - rect.left) / scale;
-    const relativeMouseY = (event.clientY - rect.top) / scale;
+    
+    // Calculate position relative to center
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // Convert mouse position to coordinates relative to center
+    const relativeMouseX = (event.clientX - centerX) / scale;
+    const relativeMouseY = (event.clientY - centerY) / scale;
+    
     resizeState.current = {
       itemId: id,
       initialMousePos: { x: relativeMouseX, y: relativeMouseY },
