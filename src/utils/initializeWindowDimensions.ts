@@ -16,12 +16,6 @@ export function initializeWindowDimensions() {
     
     // Add a class to enable mobile-specific CSS
     root.classList.add('mobile-optimized');
-    
-    // Use smaller dimensions on mobile to reduce rendering burden
-    const mobileFactor = 0.75; // 75% of original size
-    root.style.setProperty('--mobile-factor', mobileFactor.toString());
-  } else {
-    root.style.setProperty('--mobile-factor', '1');
   }
   
   // Set room dimensions
@@ -30,11 +24,9 @@ export function initializeWindowDimensions() {
   root.style.setProperty('--corner-wall-width', `${ROOM_DIMENSIONS.CORNER_WALL_WIDTH}rem`);
   root.style.setProperty('--wall-color', ROOM_DIMENSIONS.WALL_COLOR);
   
-  // Set window dimensions - automatically scaled by mobile factor
-  const scaleFactor = isMobile ? 0.75 : 1;
-  
-  root.style.setProperty('--window-width', `${WINDOW_DIMENSIONS.WIDTH * scaleFactor}px`);
-  root.style.setProperty('--window-height', `${WINDOW_DIMENSIONS.HEIGHT * scaleFactor}px`);
+  // Set window dimensions - keep original sizes
+  root.style.setProperty('--window-width', `${WINDOW_DIMENSIONS.WIDTH}px`);
+  root.style.setProperty('--window-height', `${WINDOW_DIMENSIONS.HEIGHT}px`);
   root.style.setProperty('--window-inset-x', `${WINDOW_DIMENSIONS.INSET_X}rem`);
   root.style.setProperty('--window-inset-y', `${WINDOW_DIMENSIONS.INSET_Y}rem`);
   root.style.setProperty('--window-frame-border', `${WINDOW_DIMENSIONS.FRAME_BORDER}rem`);

@@ -1,7 +1,6 @@
 /* Mobile-friendly whiteboard.css */
 .whiteboard-container {
-  position: absolute;
-  /* Match the window's coordinate system */
+  position: fixed;  /* Match window-background position */
   left: 50%;
   top: 50%;
   width: var(--window-width);
@@ -9,9 +8,13 @@
   /* Use the same transform as window background */
   transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
   transform-origin: center center;
-  transition: var(--transition, none);
   z-index: 1;
   contain: size;
+}
+
+/* Apply transition only when needed */
+.whiteboard-container.is-transitioning {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .focused-card {
@@ -59,14 +62,10 @@
   animation-play-state: paused !important;
 }
 
-
-
 /* Mobile optimization styles */
 .mobile-optimized .whiteboard-container {
   /* Split the translate3d into separate transforms for better mobile performance */
   transform: translate(-50%, -50%) translateX(var(--translateX, 0)) translateY(var(--translateY, 0)) scale(var(--scale, 1));
-  
-  /* Use lighter containment */
   contain: size;
 }
 
@@ -76,23 +75,18 @@
   -webkit-backface-visibility: visible;
   perspective: none;
   -webkit-perspective: none;
-  
-  /* Use lighter containment */
   contain: size;
 }
 
 .mobile-optimized .whiteboard-content {
   /* Remove will-change which can be memory-intensive on mobile */
   will-change: auto;
-  
-  /* Use lighter containment */
   contain: size;
 }
 
 .mobile-optimized .window-background {
   /* Lighter containment */
   contain: size;
-  
   /* Remove 3D properties */
   backface-visibility: visible;
   -webkit-backface-visibility: visible;
@@ -103,8 +97,6 @@
 .mobile-optimized .nature-scene {
   /* Replace translateZ with standard transform */
   transform: none;
-  
-  /* Lighter containment */
   contain: size;
 }
 

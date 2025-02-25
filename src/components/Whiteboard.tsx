@@ -222,7 +222,9 @@ export default function WhiteboardLayout({
         <div
           className="transform-container"
           style={{
-            transform: `translate(-50%, -50%) translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
+            // Simply use the same transform as the container for alignment
+            // Remove the manual translate(-50%, -50%) that was causing misalignment
+            transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
             transition: isTransitioning
               ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
               : 'none',

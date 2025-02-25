@@ -9,14 +9,15 @@ export function calculateInitialLayout(
   const spacing = 450; // Base distance between items in pixels
   const jitterRange = 50; // Maximum random offset in pixels
   
-  // Key change: Position the grid relative to the window center (0,0)
-  // instead of top-left corner. This aligns with our transform system.
+  // Calculate grid dimensions
   const gridWidth = columns * spacing;
   const gridHeight = Math.ceil(items.length / columns) * spacing;
   
-  // Start positioning from a point that will center the grid on the window
-  const startX = -gridWidth / 2;
-  const startY = -gridHeight / 2;
+  // Start the grid at the center of the window
+  // Since our coordinate system has (0,0) at the center,
+  // we need to offset by half the grid width/height
+  const startX = -gridWidth / 2 + spacing / 2;
+  const startY = -gridHeight / 2 + spacing / 2;
 
   return items.map((item, index) => {
     const row = Math.floor(index / columns);

@@ -19,17 +19,12 @@ export function WhiteboardContainer({
 }: WhiteboardContainerProps) {
   return (
     <div
-      className="whiteboard-container"
+      className={`whiteboard-container ${isTransitioning ? 'is-transitioning' : ''}`}
       style={{
-        width,
-        height,
         /* Set CSS variables for dynamic transform values */
         "--translateX": `${transform.x}px`,
         "--translateY": `${transform.y}px`,
         "--scale": transform.scale,
-        "--transition": isTransitioning
-          ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-          : 'none',
       } as React.CSSProperties}
     >
       {children}
