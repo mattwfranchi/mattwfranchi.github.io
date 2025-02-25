@@ -1,35 +1,18 @@
-/* Mobile-friendly whiteboard.css */
-.whiteboard-container {
-  position: fixed;  /* Match window-background position */
-  left: 50%;
+/* Fully fixed whiteboard.css */
+.transform-container {
+  position: fixed; /* Match window-background position */
   top: 50%;
+  left: 50%;
   width: var(--window-width);
   height: var(--window-height);
-  /* Use the same transform as window background */
   transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
   transform-origin: center center;
   z-index: 1;
   contain: size;
 }
 
-/* Apply transition only when needed */
-.whiteboard-container.is-transitioning {
+.transform-container.is-transitioning {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.focused-card {
-  box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.8);
-}
-
-.transform-container {
-  position: absolute;
-  width: var(--window-width);
-  height: var(--window-height);
-  inset: 0;
-  transform-origin: center center;
-  /* Remove problematic 3D properties */
-  contain: size;
-  z-index: 2;
 }
 
 .whiteboard-content {
@@ -38,6 +21,10 @@
   height: 100%;
   contain: size;
   z-index: 3;
+}
+
+.focused-card {
+  box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.8);
 }
 
 /* Mobile optimizations */
@@ -58,23 +45,14 @@
 }
 
 /* Pause animations during transitions to improve performance */
-.isTransitioning .sticky-note {
+.is-transitioning .sticky-note {
   animation-play-state: paused !important;
 }
 
 /* Mobile optimization styles */
-.mobile-optimized .whiteboard-container {
+.mobile-optimized .transform-container {
   /* Split the translate3d into separate transforms for better mobile performance */
   transform: translate(-50%, -50%) translateX(var(--translateX, 0)) translateY(var(--translateY, 0)) scale(var(--scale, 1));
-  contain: size;
-}
-
-.mobile-optimized .transform-container {
-  /* Remove potentially problematic 3D properties on mobile */
-  backface-visibility: visible;
-  -webkit-backface-visibility: visible;
-  perspective: none;
-  -webkit-perspective: none;
   contain: size;
 }
 
@@ -87,6 +65,7 @@
 .mobile-optimized .window-background {
   /* Lighter containment */
   contain: size;
+  
   /* Remove 3D properties */
   backface-visibility: visible;
   -webkit-backface-visibility: visible;

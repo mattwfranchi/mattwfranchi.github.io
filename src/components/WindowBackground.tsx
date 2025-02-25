@@ -13,12 +13,12 @@ interface WindowBackgroundProps {
 export default function WindowBackground({ transform, isTransitioning }: WindowBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Update transform calculation to match whiteboard
-  const transformStyle = useMemo(() => ({
-    transform: `translate(-50%, -50%) translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
-    transition: isTransitioning ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-    willChange: isTransitioning ? 'transform' : 'auto',
-  }), [transform.scale, transform.x, transform.y, isTransitioning]);
+  // CSS variables for transform - this allows for consistent transforms with whiteboard
+  const cssVariables = useMemo(() => ({
+    "--translateX": `${transform.x}px`,
+    "--translateY": `${transform.y}px`,
+    "--scale": transform.scale,
+  } as React.CSSProperties), [transform.x, transform.y, transform.scale]);
 
   const frameStyle = useMemo(() => ({
     borderWidth: `${WINDOW_DIMENSIONS.FRAME_BORDER}rem`,
@@ -30,7 +30,7 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
     backgroundPosition: 'center',
     willChange: isTransitioning ? 'transform' : 'auto',
     transform: 'translate3d(0,0,0)', // Force GPU acceleration
-  }), [isTransitioning]);
+  }), [isTransitioning, backgroundImage]);
 
   // Throttle performance logging to reduce overhead
   useEffect(() => {
@@ -59,18 +59,27 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
   // Memoize the window panes to prevent unnecessary rerenders
   const windowPanes = useMemo(() => (
     <div className="window-panes">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="pane">
-          <div className="pane-glass" />
-        </div>
-      ))}
+      {Array.from({ length: 4 }).map((_, i) => {
+        // Assign correct class names for positioning
+        let positionClass = "";
+        if (i === 0) positionClass = "top-left";
+        if (i === 1) positionClass = "top-right";
+        if (i === 2) positionClass = "bottom-left";
+        if (i === 3) positionClass = "bottom-right";
+        
+        return (
+          <div key={i} className={`pane ${positionClass}`}>
+            <div className="pane-glass" />
+          </div>
+        );
+      })}
     </div>
   ), []);
 
   return (
     <div
-      className="window-background"
-      style={transformStyle}
+      className={`window-background ${isTransitioning ? 'is-transitioning' : ''}`}
+      style={cssVariables}
     >
       <div 
         className="window-frame"
@@ -81,12 +90,14 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
           className="nature-scene"
           style={backgroundStyle}
         />
-        <div className="window-overlay">
+        <div className="pane-container">
           {windowPanes}
           <div className="crosspane-vertical" />
           <div className="crosspane-horizontal" />
         </div>
+        <div className="window-frame-overlay" />
       </div>
+      <div className="window-overlay" />
     </div>
   );
 }

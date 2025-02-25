@@ -220,16 +220,12 @@ export default function WhiteboardLayout({
       <div className="fixed inset-0">
         <WindowBackground transform={transform} isTransitioning={isTransitioning} />
         <div
-          className="transform-container"
+          className={`transform-container ${isTransitioning ? 'is-transitioning' : ''}`}
           style={{
-            // Simply use the same transform as the container for alignment
-            // Remove the manual translate(-50%, -50%) that was causing misalignment
-            transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})`,
-            transition: isTransitioning
-              ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              : 'none',
-            willChange: isTransitioning ? 'transform' : 'auto',
-          }}
+            "--translateX": `${transform.x}px`,
+            "--translateY": `${transform.y}px`,
+            "--scale": transform.scale,
+          } as React.CSSProperties}
           onWheel={handleWheel}
           onMouseDown={handleGestureStart}
           onMouseMove={handleGestureMove}
@@ -239,24 +235,17 @@ export default function WhiteboardLayout({
           onTouchMove={handleGestureMove}
           onTouchEnd={handleGestureEnd}
         >
-          <WhiteboardContainer
-            transform={transform}
-            isTransitioning={isTransitioning}
-            width={WINDOW_DIMENSIONS.WIDTH}
-            height={WINDOW_DIMENSIONS.HEIGHT}
-          >
-            <WhiteboardContent
-              items={filteredItems}
-              focusedCardId={focusedCardId}
-              draggingId={dragging}
-              resizingId={resizing}
-              onDragStart={onDragStart}
-              onDragEnd={handleDragEnd}
-              onExpand={handleExpand}
-              onResize={handleResizeStart}
-              photosByAlbum={photosByAlbum}
-            />
-          </WhiteboardContainer>
+          <WhiteboardContent
+            items={filteredItems}
+            focusedCardId={focusedCardId}
+            draggingId={dragging}
+            resizingId={resizing}
+            onDragStart={onDragStart}
+            onDragEnd={handleDragEnd}
+            onExpand={handleExpand}
+            onResize={handleResizeStart}
+            photosByAlbum={photosByAlbum}
+          />
         </div>
         
         <WhiteboardToolbar

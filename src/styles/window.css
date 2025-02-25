@@ -1,4 +1,4 @@
-/* Mobile-friendly window.css */
+/* Fixed window.css with consistent transforms */
 :root {
   --window-width: 3000px;
   --window-height: 2400px;
@@ -18,13 +18,15 @@
   width: var(--window-width);
   height: var(--window-height);
   contain: size;
-  /* Change transform-origin to center center to match whiteboard */
   transform-origin: center center;
-  /* Add a transform to align coordinate systems */
-  transform: translate(-50%, -50%);
+  /* Use the same transform pattern as transform-container */
+  transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
   overflow: hidden;
   z-index: 0;
-  transition: var(--transition, none);
+}
+
+.window-background.is-transitioning {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .window-background::before {
@@ -49,10 +51,9 @@
 .nature-scene {
   position: absolute;
   inset: 0;
-  width: var(--window-width);
-  height: var(--window-height);
+  width: 100%;
+  height: 100%;
   contain: size;
-  /* Keep translateZ(0) but minimize other 3D props */
   transform: translateZ(0);
   background-image: url('../assets/vista.jpg');
   background-size: cover;
@@ -63,23 +64,23 @@
 
 /* Mobile optimizations */
 .mobile-optimized .window-background {
-  /* Simplify transforms on mobile */
   backface-visibility: visible;
   -webkit-backface-visibility: visible;
   perspective: none;
   -webkit-perspective: none;
+  /* Split the translate3d for better mobile performance */
+  transform: translate(-50%, -50%) translateX(var(--translateX, 0)) translateY(var(--translateY, 0)) scale(var(--scale, 1));
 }
 
 .mobile-optimized .nature-scene {
-  /* Simplify transforms on mobile */
   transform: none;
 }
 
+/* Rest of CSS remains the same */
 .window-frame {
   position: relative;
   width: 100%;
   height: 100%;
-  /* Removed containment property */
   border: var(--window-frame-border) solid #3d2412;
   border-radius: 12px;
   overflow: hidden;
@@ -95,7 +96,6 @@
       rgba(61, 36, 18, 0.8) 4px
     );
   
-  /* Simplified box-shadow */
   box-shadow: 0 0 40px rgba(0,0,0,0.4);
 }
 
@@ -105,7 +105,6 @@
   inset: 0;
   border: var(--window-frame-inner-border) solid #8B4513;
   border-radius: 8px;
-  /* Simplified box-shadow */
   box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
   z-index: 2;
 }
@@ -138,7 +137,6 @@
   grid-template-rows: repeat(2, 1fr);
   width: 100%;
   height: 100%;
-  /* Removed containment property */
   gap: var(--window-pane-gap);
   padding: var(--window-pane-gap);
   position: absolute;
@@ -151,7 +149,6 @@
 .crosspane-horizontal {
   position: absolute;
   background: #3d2412;
-  /* Simplified box-shadow */
   box-shadow: 0 0 10px rgba(0,0,0,0.3);
   z-index: 3;
   
@@ -185,7 +182,6 @@
   background: rgba(255,255,255,0.05);
   border-radius: 4px;
   overflow: hidden;
-  /* Removed backdrop-filter which can be heavy on mobile */
   z-index: 2;
 }
 
@@ -201,17 +197,14 @@
       rgba(255,255,255,0.12) 100%
     );
   border: 1px solid rgba(255,255,255,0.15);
-  /* Simplified box-shadow */
   box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
 }
 
 .pane-glass {
   position: absolute;
   inset: 0;
-  /* Removed backdrop-filter */
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255, 255, 255, 0.05);
-  /* Simplified box-shadow */
   box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
 }
 
@@ -252,7 +245,6 @@
 .window-overlay {
   position: absolute;
   inset: 0;
-  /* Removed containment property */
   pointer-events: none;
   z-index: 2;
 }
