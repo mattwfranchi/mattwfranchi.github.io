@@ -37,3 +37,65 @@
   /* Removed will-change property that could be causing memory issues */
   z-index: 3;
 }
+
+/* Mobile optimization styles */
+.mobile-optimized .whiteboard-container {
+  /* Split the translate3d into separate transforms for better mobile performance */
+  transform: translate(-50%, -50%) translateX(var(--translateX, 0)) translateY(var(--translateY, 0)) scale(var(--scale, 1));
+  
+  /* Use lighter containment */
+  contain: size;
+}
+
+.mobile-optimized .transform-container {
+  /* Remove potentially problematic 3D properties on mobile */
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+  perspective: none;
+  -webkit-perspective: none;
+  
+  /* Use lighter containment */
+  contain: size;
+}
+
+.mobile-optimized .whiteboard-content {
+  /* Remove will-change which can be memory-intensive on mobile */
+  will-change: auto;
+  
+  /* Use lighter containment */
+  contain: size;
+}
+
+.mobile-optimized .window-background {
+  /* Lighter containment */
+  contain: size;
+  
+  /* Remove 3D properties */
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+  perspective: none;
+  -webkit-perspective: none;
+}
+
+.mobile-optimized .nature-scene {
+  /* Replace translateZ with standard transform */
+  transform: none;
+  
+  /* Lighter containment */
+  contain: size;
+}
+
+/* Reduce complexity of elements on mobile */
+.mobile-optimized .window-frame {
+  /* Simpler box shadow */
+  box-shadow: 0 0 40px rgba(0,0,0,0.5);
+}
+
+/* Disable backdrop filters on mobile which can be performance heavy */
+.mobile-optimized .pane {
+  backdrop-filter: none;
+}
+
+.mobile-optimized .pane-glass {
+  backdrop-filter: none;
+}
