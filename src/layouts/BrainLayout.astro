@@ -4,6 +4,8 @@ import "@styles/base.css";
 import { ViewTransitions } from "astro:transitions";
 import SidebarMenu from "@components/SidebarMenu.astro";
 import { initializeWindowDimensions } from '../utils/initializeWindowDimensions';
+// Import the performance utilities
+import { detectDeviceCapabilities } from '../utils/performanceUtils';
 
 export interface Props {
   title?: string;
@@ -128,7 +130,13 @@ const socialImageURL = new URL(
 
 <script>
   import { initializeWindowDimensions } from '../utils/initializeWindowDimensions';
+  import { detectDeviceCapabilities } from '../utils/performanceUtils';
+  
   document.addEventListener('DOMContentLoaded', () => {
+    // Apply performance optimizations early
+    detectDeviceCapabilities();
+    
+    // Rest of your initialization code
     const sidebarButton = document.getElementById('sidebarButton');
     const navMenu = document.querySelector('.nav-menu');
 

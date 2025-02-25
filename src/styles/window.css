@@ -72,6 +72,49 @@
   transform: translate(-50%, -50%) translateX(var(--translateX, 0)) translateY(var(--translateY, 0)) scale(var(--scale, 1));
 }
 
+/* Enhanced Mobile Optimizations */
+.mobile-optimized .window-background {
+  /* Eliminate 3D transforms */
+  transform: translate(-50%, -50%) translate(var(--translateX, 0), var(--translateY, 0)) scale(var(--scale, 1));
+  contain: strict;
+  content-visibility: auto;
+  will-change: none;
+}
+
+/* Use extremely simplified background for mobile */
+.mobile-optimized .window-background::before {
+  box-shadow: none;
+}
+
+.mobile-optimized .window-frame {
+  box-shadow: none;
+  /* Remove complex borders */
+  border: 2px solid #444;
+}
+
+/* Completely remove visual decorations that strain mobile GPUs */
+.mobile-optimized .window-frame::before,
+.mobile-optimized .window-frame::after,
+.mobile-optimized .window-frame-overlay,
+.mobile-optimized .pane::before,
+.mobile-optimized .pane::after,
+.mobile-optimized .pane-glass::before {
+  display: none;
+}
+
+/* Apply adaptive complexity based on device memory */
+@media (max-width: 480px), (prefers-reduced-motion: reduce) {
+  .mobile-optimized .window-background, 
+  .mobile-optimized .transform-container {
+    /* Smoother rendering for low-memory devices */
+    background-attachment: scroll;
+    background-size: cover;
+    
+    /* Better memory management */
+    contain: layout style paint;
+  }
+}
+
 .mobile-optimized .nature-scene {
   transform: none;
 }
