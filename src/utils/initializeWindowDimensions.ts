@@ -1,14 +1,14 @@
 import { ROOM_DIMENSIONS, WINDOW_DIMENSIONS } from '../constants/whiteboard';
 
 /**
- * Initializes window dimensions and applies mobile optimizations when needed
+ * Initializes window dimensions and detects mobile devices to apply optimizations
  */
 export function initializeWindowDimensions() {
   const root = document.documentElement;
   
   // Detect if we're on a mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                   (window.innerWidth <= 768); // Additional check for smaller screens
+                   (window.innerWidth <= 768);
   
   // Apply mobile optimizations if needed
   if (isMobile) {
@@ -16,6 +16,12 @@ export function initializeWindowDimensions() {
     
     // Add a class to enable mobile-specific CSS
     root.classList.add('mobile-optimized');
+    
+    // Use smaller dimensions on mobile to reduce rendering burden
+    const mobileFactor = 0.75; // 75% of original size
+    root.style.setProperty('--mobile-factor', mobileFactor.toString());
+  } else {
+    root.style.setProperty('--mobile-factor', '1');
   }
   
   // Set room dimensions
@@ -24,8 +30,8 @@ export function initializeWindowDimensions() {
   root.style.setProperty('--corner-wall-width', `${ROOM_DIMENSIONS.CORNER_WALL_WIDTH}rem`);
   root.style.setProperty('--wall-color', ROOM_DIMENSIONS.WALL_COLOR);
   
-  // Set window dimensions - possibly scaled down for mobile
-  const scaleFactor = isMobile ? 0.75 : 1; // Reduce size on mobile to 75%
+  // Set window dimensions - automatically scaled by mobile factor
+  const scaleFactor = isMobile ? 0.75 : 1;
   
   root.style.setProperty('--window-width', `${WINDOW_DIMENSIONS.WIDTH * scaleFactor}px`);
   root.style.setProperty('--window-height', `${WINDOW_DIMENSIONS.HEIGHT * scaleFactor}px`);
@@ -39,8 +45,6 @@ export function initializeWindowDimensions() {
 
 /**
  * Utility function to throttle frequent events like pan/zoom on mobile
- * @param func Function to throttle
- * @param delay Minimum time between function calls in ms
  */
 export function throttle(func: Function, delay: number) {
   let lastCall = 0;

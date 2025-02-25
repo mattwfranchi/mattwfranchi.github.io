@@ -1,31 +1,31 @@
 /* Mobile-friendly whiteboard.css */
 .whiteboard-container {
   position: absolute;
+  /* Match the window's coordinate system */
   left: 50%;
   top: 50%;
   width: var(--window-width);
   height: var(--window-height);
-  /* Use simpler transform without 3D */
-  transform: translate(-50%, -50%) scale(var(--scale, 1));
-  transform-origin: center;
+  /* Use the same transform as window background */
+  transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
+  transform-origin: center center;
   transition: var(--transition, none);
   z-index: 1;
-  /* Reduce containment properties */
   contain: size;
 }
 
 .focused-card {
-  box-shadow: 0 0 10px 5px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.8);
 }
 
 .transform-container {
   position: absolute;
-  width: 100%;
-  height: 100%;
+  width: var(--window-width);
+  height: var(--window-height);
   inset: 0;
-  transform-origin: center;
-  /* Remove perspective and backface properties */
-  /* Remove containment properties that could cause issues */
+  transform-origin: center center;
+  /* Remove problematic 3D properties */
+  contain: size;
   z-index: 2;
 }
 
@@ -33,10 +33,33 @@
   position: relative;
   width: 100%;
   height: 100%;
-  /* Removed contain property */
-  /* Removed will-change property that could be causing memory issues */
+  contain: size;
   z-index: 3;
 }
+
+/* Mobile optimizations */
+.mobile-optimized .sticky-note {
+  /* Disable 3D transforms on mobile for better performance */
+  transform-style: flat;
+  backface-visibility: visible;
+  perspective: none;
+  will-change: auto;
+  /* Disable animations on mobile */
+  animation: none !important;
+}
+
+.mobile-optimized .sticky-note::before,
+.mobile-optimized .sticky-note::after {
+  transform-style: flat;
+  backface-visibility: visible;
+}
+
+/* Pause animations during transitions to improve performance */
+.isTransitioning .sticky-note {
+  animation-play-state: paused !important;
+}
+
+
 
 /* Mobile optimization styles */
 .mobile-optimized .whiteboard-container {

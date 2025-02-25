@@ -3,9 +3,9 @@ import type { Transform } from '../types/whiteboard';
 import { WINDOW_DIMENSIONS, SCALES, ROOM_DIMENSIONS } from '../constants/whiteboard';
 import { clampScale, clampOffset } from '../utils/whiteboardUtils';
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
+import { throttle } from '../utils/initializeWindowDimensions';
 
-// In our coordinate system, the origin (0,0) is the center of the container,
-// which matches the extra translation applied in whiteboard.css.
+// In our coordinate system, (0,0) is the center of the container
 function computeInitialTransform(): Transform {
   return { x: 0, y: 0, scale: SCALES.INITIAL };
 }
@@ -14,6 +14,12 @@ export function useWhiteboardView() {
   const [transform, setTransform] = useState<Transform>(computeInitialTransform());
   const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // Check if we're on mobile for throttling
+  const isMobile = 
+    typeof window !== 'undefined' && 
+    (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+    window.innerWidth <= 768);
 
   const updateTransform = useCallback(
     (transformUpdate: Transform | ((prev: Transform) => Transform), animate = false) => {
@@ -26,95 +32,129 @@ export function useWhiteboardView() {
           setIsTransitioning(false);
         }, 300);
       }
-      setTransform(prevTransform =>
-        typeof transformUpdate === 'function'
+      
+      setTransform(prevTransform => {
+        const newTransform = typeof transformUpdate === 'function'
           ? (transformUpdate as (prev: Transform) => Transform)(prevTransform)
-          : transformUpdate
-      );
+          : transformUpdate;
+          
+        // Add bounds checking for pan limits
+        const scaleFactor = newTransform.scale;
+        const windowWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--window-width'));
+        const windowHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--window-height'));
+        
+        // Allow panning within a certain boundary around the window
+        const maxPanX = windowWidth * 0.75;
+        const maxPanY = windowHeight * 0.75;
+        
+        return {
+          x: Math.max(-maxPanX, Math.min(maxPanX, newTransform.x)),
+          y: Math.max(-maxPanY, Math.min(maxPanY, newTransform.y)),
+          scale: clampScale(newTransform.scale, SCALES.MIN, SCALES.MAX)
+        };
+      });
     },
     []
   );
 
-  // When zooming/panning in our coordinate space, we use the container's center.
-  // The container itself is centered via CSS, so its bounding rect center represents the center of our view.
-  const getContainerCenter = () => {
-    const container = document.querySelector('.whiteboard-container') as HTMLElement;
-    if (!container) {
-      return { centerX: window.innerWidth / 2, centerY: window.innerHeight / 2 };
-    }
-    const rect = container.getBoundingClientRect();
-    return { centerX: rect.width / 2, centerY: rect.height / 2 };
-  };
+  // Mobile-optimized version
+  const throttledUpdateTransform = useCallback(
+    throttle((update: Transform | ((prev: Transform) => Transform), animate = false) => {
+      updateTransform(update, animate);
+    }, 16), // ~60fps
+    [updateTransform]
+  );
+
+  // Use the appropriate update function based on device
+  const effectiveUpdateTransform = isMobile ? throttledUpdateTransform : updateTransform;
 
   const handleZoom = useCallback((newScale: number, focalX: number, focalY: number, animate = false) => {
-    // In our coordinate system, transform.x and transform.y represent the extra translation
-    // (with 0,0 as the centered origin). When zooming, we want the focal point (given in container coordinates)
-    // to remain in the same world location. We compute the new extra translation accordingly.
-    const { centerX, centerY } = getContainerCenter();
-    // Compute focal offset relative to container center.
+    // Get the container center
+    const containerWidth = window.innerWidth;
+    const containerHeight = window.innerHeight;
+    const centerX = containerWidth / 2;
+    const centerY = containerHeight / 2;
+    
+    // Calculate focal point offset from center
     const offsetX = focalX - centerX;
     const offsetY = focalY - centerY;
-    // Compute scale factor and update translation so that:
-    // newOffset = offset * (newScale / currentScale)
+    
+    // Scale factor determines how much to adjust pan
     const scaleFactor = newScale / transform.scale;
-    const newX = transform.x - offsetX * (scaleFactor - 1);
-    const newY = transform.y - offsetY * (scaleFactor - 1);
-    updateTransform({ x: newX, y: newY, scale: newScale }, animate);
-  }, [transform, updateTransform]);
+    
+    // Adjust position to keep focal point steady during zoom
+    const newX = transform.x - offsetX * (1 - 1/scaleFactor) / transform.scale;
+    const newY = transform.y - offsetY * (1 - 1/scaleFactor) / transform.scale;
+    
+    effectiveUpdateTransform({ x: newX, y: newY, scale: newScale }, animate);
+  }, [transform, effectiveUpdateTransform]);
 
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    if (e.ctrlKey) {
+    if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const delta = -e.deltaY;
       const zoomFactor = 0.005;
+      const direction = delta > 0 ? 1 : -1;
       const newScale = clampScale(
-        transform.scale * (1 + (delta > 0 ? zoomFactor : -zoomFactor)),
+        transform.scale * (1 + direction * zoomFactor * Math.abs(delta) / 10),
         SCALES.MIN,
         SCALES.MAX
       );
-      // Use the event's client coordinates as the focal point;
-      // They are in the container's coordinate space given our centered container.
+      
+      // Zoom toward the mouse position
       handleZoom(newScale, e.clientX, e.clientY, false);
     } else {
-      // For panning: adjust transform.x/y relative to the scale.
-      const newOffset = clampOffset({
-        x: transform.x - e.deltaX / transform.scale,
-        y: transform.y - e.deltaY / transform.scale
-      }, transform.scale, window.innerWidth, window.innerHeight);
-      updateTransform({ ...transform, ...newOffset });
+      // Pan with mouse wheel (without Ctrl key)
+      const panSpeed = 2.5 / transform.scale; // Adjust pan speed based on zoom level
+      const newX = transform.x - e.deltaX * panSpeed;
+      const newY = transform.y - e.deltaY * panSpeed;
+      
+      effectiveUpdateTransform(prev => ({
+        ...prev,
+        x: newX,
+        y: newY
+      }));
     }
-  }, [transform, handleZoom, updateTransform]);
+  }, [transform, handleZoom, effectiveUpdateTransform]);
 
   const handleZoomIn = useCallback((animate = false) => {
     const newScale = clampScale(transform.scale * 1.2, SCALES.MIN, SCALES.MAX);
-    // Zoom into the container center.
-    const { centerX, centerY } = getContainerCenter();
-    handleZoom(newScale, centerX, centerY, animate);
+    // Zoom toward the center of the viewport
+    handleZoom(newScale, window.innerWidth / 2, window.innerHeight / 2, animate);
   }, [transform.scale, handleZoom]);
 
   const handleZoomOut = useCallback((animate = false) => {
     const newScale = clampScale(transform.scale / 1.2, SCALES.MIN, SCALES.MAX);
-    const { centerX, centerY } = getContainerCenter();
-    handleZoom(newScale, centerX, centerY, animate);
+    // Zoom out from the center of the viewport
+    handleZoom(newScale, window.innerWidth / 2, window.innerHeight / 2, animate);
   }, [transform.scale, handleZoom]);
 
-  const centerView = useCallback((animate = false) => {
-    // Reset extra translation to center (0,0) with the initial scale.
-    updateTransform({ x: 0, y: 0, scale: SCALES.INITIAL }, animate);
-  }, [updateTransform]);
+  const centerView = useCallback((animate = true) => {
+    // Reset to the initial transform
+    effectiveUpdateTransform(computeInitialTransform(), animate);
+  }, [effectiveUpdateTransform]);
 
   useIsomorphicLayoutEffect(() => {
+    // Center the view on initial load
     centerView(false);
-    // Optionally update on window resize
-    const handleResize = () => centerView(false);
+    
+    // Handle window resize to maintain centered view
+    const handleResize = () => {
+      effectiveUpdateTransform(prev => ({
+        ...prev,
+        x: 0,
+        y: 0
+      }), false);
+    };
+    
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [centerView]);
+  }, [centerView, effectiveUpdateTransform]);
 
   return {
     transform,
     isTransitioning,
-    updateTransform,
+    updateTransform: effectiveUpdateTransform,
     handleWheel,
     handleZoomIn,
     handleZoomOut,
