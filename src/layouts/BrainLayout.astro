@@ -4,7 +4,6 @@ import "@styles/base.css";
 import { ViewTransitions } from "astro:transitions";
 import SidebarMenu from "@components/SidebarMenu.astro";
 import { initializeWindowDimensions } from '../utils/initializeWindowDimensions';
-// Import the performance utilities
 import { detectDeviceCapabilities } from '../utils/performanceUtils';
 
 export interface Props {
@@ -75,7 +74,6 @@ const socialImageURL = new URL(
     margin: 0;
     padding: 0;
     background: #2c2c2c;
-    /* Add subtle wall texture */
     background-image: 
       linear-gradient(
         to right,
@@ -133,10 +131,8 @@ const socialImageURL = new URL(
   import { detectDeviceCapabilities } from '../utils/performanceUtils';
   
   document.addEventListener('DOMContentLoaded', () => {
-    // Apply performance optimizations early
     detectDeviceCapabilities();
     
-    // Rest of your initialization code
     const sidebarButton = document.getElementById('sidebarButton');
     const navMenu = document.querySelector('.nav-menu');
 

@@ -12,6 +12,7 @@ interface SnipCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onRe
   onExpand: (id: string) => void;
   onDragEnd: () => void;
   onResize: (id: string, event: React.MouseEvent) => void;
+  onLongPress: (id: string) => void
   isFocused: boolean;
 }
 
@@ -24,6 +25,7 @@ export function SnipCard({
   onExpand,
   onDragEnd,
   onResize,
+  onLongPress,
   isFocused,
   ...rest
 }: SnipCardProps) {
@@ -36,6 +38,7 @@ export function SnipCard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onResize={(id, e) => onResize(id, e)}
+      onLongPress={(id) => onLongPress(id)}
       onExpand={(id) => onExpand(id)}
     >
       <div

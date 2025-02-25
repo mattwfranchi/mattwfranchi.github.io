@@ -77,6 +77,7 @@ export default function WhiteboardLayout({
     handleDragEnd,
     handleResizeStart, // realtime drag-to-resize handler
     handleExpand,      // click-to-toggle expand handler
+    handleLongPress,   // long press handler
   } = useWhiteboardItems();
 
   const {
@@ -262,6 +263,7 @@ export default function WhiteboardLayout({
             onDragEnd={handleDragEnd}
             onExpand={handleExpand}
             onResize={handleResizeStart}
+            onLongPress={handleLongPress} // Pass the new prop
             photosByAlbum={photosByAlbum}
           />
         </div>

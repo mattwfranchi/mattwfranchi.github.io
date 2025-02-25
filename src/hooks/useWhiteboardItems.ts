@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { WhiteboardItem } from '../types/whiteboard';
 import { STICKY_NOTE } from '../constants/whiteboard';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate from react-router-dom
 
 interface DragState {
   itemId: string | null;
@@ -32,6 +33,8 @@ export const useWhiteboardItems = () => {
     initialWidth: 0,
     initialHeight: 0
   });
+
+  const navigate = useNavigate(); // Initialize useNavigate
 
   // Helper: Get current scale from container CSS variable
   const getContainerScale = () => {
@@ -256,6 +259,31 @@ export const useWhiteboardItems = () => {
     );
   }, []);
 
+  // New function to handle long press
+  const handleLongPress = useCallback((id: string) => {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    let path = '';
+    switch (item.type) {
+      case 'album':
+        path = `/brain/album/${item.data.slug}`;
+        break;
+      case 'snip':
+        path = `/brain/snip/${item.data.slug}`;
+        break;
+      case 'playlist':
+        path = `/brain/playlist/${item.data.slug}`;
+        break;
+      default:
+        break;
+    }
+
+    if (path) {
+      navigate(path);
+    }
+  }, [items, navigate]);
+
   return {
     items,
     setItems,
@@ -266,5 +294,6 @@ export const useWhiteboardItems = () => {
     handleResizeStart,
     handleResizeClick,
     handleExpand,
+    handleLongPress, // Export the new function
   };
 };

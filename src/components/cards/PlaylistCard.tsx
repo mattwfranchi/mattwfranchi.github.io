@@ -12,6 +12,7 @@ interface PlaylistCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
   onExpand: (id: string) => void;
   onDragEnd: () => void;
   onResize: (id: string, event: React.MouseEvent) => void;
+  onLongPress: (id: string) => void;
   isFocused: boolean;
 }
 
@@ -24,6 +25,7 @@ export function PlaylistCard({
   onExpand,
   onDragEnd,
   onResize,
+  onLongPress,
   isFocused,
   ...rest
 }: PlaylistCardProps) {
@@ -72,6 +74,7 @@ export function PlaylistCard({
       onDragEnd={onDragEnd}
       onResize={(id, e) => onResize(id, e)}
       onExpand={(id) => onExpand(id)}
+      onLongPress={(id) => onLongPress(id)}
     >
       <div
         ref={contentRef}

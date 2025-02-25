@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Move, Maximize2, CornerRightDown } from 'lucide-react';
 import '../../styles/photog.css';
@@ -7,10 +7,9 @@ interface CardWrapperProps {
   id: string;
   onDragStart: (id: string, event: React.MouseEvent) => void;
   onDragEnd: () => void;
-  // onResize is now the realtime drag-to-resize handler.
   onResize: (id: string, event: React.MouseEvent) => void;
-  // onExpand is the click-to-toggle handler.
   onExpand: (id: string) => void;
+  onLongPress: (id: string) => void; // New prop for long press
   children: React.ReactNode;
   item: { position: { x: number; y: number; width: number; height: number; z: number } };
 }
@@ -21,43 +20,59 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
   onDragEnd,
   onResize,
   onExpand,
+  onLongPress, // New prop for long press
   children,
   item
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [longPressTimeout, setLongPressTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 0) {
       e.preventDefault();
-      // Let the child buttons/handles stop propagation
       e.stopPropagation();
       onDragStart(id, e);
+
+      // Set a timeout for long press
+      const timeout = setTimeout(() => {
+        onLongPress(id);
+      }, 1000); // 1 second for long press
+      setLongPressTimeout(timeout);
     }
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     onDragEnd();
+
+    // Clear the long press timeout
+    if (longPressTimeout) {
+      clearTimeout(longPressTimeout);
+      setLongPressTimeout(null);
+    }
   };
 
-  // Click-to-toggle expansion (instant resize)
+  const handleMouseLeave = () => {
+    // Clear the long press timeout if the mouse leaves the card
+    if (longPressTimeout) {
+      clearTimeout(longPressTimeout);
+      setLongPressTimeout(null);
+    }
+  };
+
   const handleExpandButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log(`Expand button clicked for card ${id}`);
     onExpand(id);
   };
 
-  // Realtime drag-to-resize gesture
   const handleResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log(`Resize handle drag started for card ${id}`);
     onResize(id, e);
   };
 
   const cardStyle: CSSProperties = {
-    // Use CSS variables for positioning instead of direct top/left
     '--item-x': `${item.position.x}px`,
     '--item-y': `${item.position.y}px`,
     '--item-z': item.position.z,
@@ -73,13 +88,13 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
       ref={cardRef}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
       style={cardStyle}
       className="draggable-area"
     >
       <div className="sticky-note">
         {children}
         
-        {/* Expand Button */}
         <div className="absolute top-2 right-2 flex items-center space-x-2 z-10">
           <button
             onClick={handleExpandButtonClick}
@@ -96,7 +111,6 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
           </button>
         </div>
 
-        {/* Resize Handle */}
         <div
           className="absolute bottom-2 right-2 w-6 h-6 cursor-se-resize z-10 
                      flex items-center justify-center group"

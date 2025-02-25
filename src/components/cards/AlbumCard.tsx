@@ -13,6 +13,7 @@ interface AlbumCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onR
   onExpand: (id: string) => void;
   onDragEnd: () => void;
   onResize: (id: string, event: React.MouseEvent) => void;
+  onLongPress: (id: string) => void; // Add the onLongPress prop
   photos: PhotoData[];
   isFocused: boolean;
 }
@@ -26,6 +27,7 @@ export function AlbumCard({
   onExpand,
   onDragEnd,
   onResize,
+  onLongPress, // Add the onLongPress prop
   photos = [],
   isFocused,
   ...rest
@@ -52,6 +54,7 @@ export function AlbumCard({
       onDragEnd={onDragEnd}
       onResize={(id, e) => onResize(id, e)}
       onExpand={(id) => onExpand(id)}
+      onLongPress={(id) => onLongPress(id)} // Pass the onLongPress prop
     >
       <div
         {...rest}
