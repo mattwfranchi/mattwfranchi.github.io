@@ -93,3 +93,26 @@
 .mobile-optimized .pane-glass {
   backdrop-filter: none;
 }
+
+/* Add below the existing styles in whiteboard.css */
+
+/* Sticky note positioning */
+.draggable-area {
+  position: absolute;
+  transform-origin: center center;
+  /* This uses the x,y coordinates calculated in itemLayoutUtils.ts */
+  transform: translate(-50%, -50%) translate3d(var(--item-x, 0px), var(--item-y, 0px), 0) rotate(var(--item-rotation, 0deg));
+  z-index: var(--item-z, 1);
+  width: var(--item-width, 280px);
+  height: var(--item-height, 320px);
+  /* Ensure position relative to transform-container's center */
+  top: 50%;
+  left: 50%;
+}
+
+/* Preserve 3D animations while maintaining absolute positioning */
+.draggable-area .sticky-note {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}

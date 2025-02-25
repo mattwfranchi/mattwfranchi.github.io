@@ -23,18 +23,10 @@ export function useCardFocus(
     setCurrentIndex(clampedIndex);
     const card = items[clampedIndex];
 
-    // Get card center in whiteboard space, adjusted for current scale
-    const cardCenterX = card.position.x + (card.position.width / 2);
-    const cardCenterY = card.position.y + (card.position.height / 2);
-
-    // Get the whiteboard container center
-    const containerCenterX = WINDOW_DIMENSIONS.WIDTH / 2;
-    const containerCenterY = WINDOW_DIMENSIONS.HEIGHT / 2;
-
-    // Calculate the offset needed to center the card
-    // We need to account for the current scale when calculating the offset
-    const offsetX = cardCenterX - containerCenterX;
-    const offsetY = cardCenterY - containerCenterY;
+    // In the transform-based coordinate system, the position already represents 
+    // the center point of the card relative to the container's center (0,0)
+    const cardCenterX = card.position.x;
+    const cardCenterY = card.position.y;
 
     console.group('Card Focus Calculation');
     console.log('Card Position:', {
@@ -43,14 +35,14 @@ export function useCardFocus(
       width: card.position.width,
       height: card.position.height
     });
-    console.log('Card Center:', { x: cardCenterX, y: cardCenterY });
-    console.log('Container Center:', { x: containerCenterX, y: containerCenterY });
-    console.log('Offset from center:', { x: offsetX, y: offsetY });
     console.log('Current Transform:', currentTransform);
 
+    // In the transform-based system, to center the card,
+    // we simply need to move the container's center to the card's position
+    // by applying the negative of the card's position
     const newTransform: Transform = {
-      x: -offsetX * FIXED_ZOOM, // Scale the offset
-      y: -offsetY * FIXED_ZOOM,
+      x: -cardCenterX * FIXED_ZOOM,
+      y: -cardCenterY * FIXED_ZOOM,
       scale: FIXED_ZOOM
     };
 

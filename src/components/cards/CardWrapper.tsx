@@ -57,15 +57,16 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
   };
 
   const cardStyle: CSSProperties = {
-    position: 'absolute',
-    width: item.position.width,
-    height: item.position.height,
-    left: item.position.x,
-    top: item.position.y,
-    zIndex: item.position.z,
+    // Use CSS variables for positioning instead of direct top/left
+    '--item-x': `${item.position.x}px`,
+    '--item-y': `${item.position.y}px`,
+    '--item-z': item.position.z,
+    '--item-width': `${item.position.width}px`,
+    '--item-height': `${item.position.height}px`,
+    '--item-rotation': `${item.position.rotation || 0}deg`,
     touchAction: 'none',
     cursor: 'grab',
-  };
+  } as CSSProperties;
 
   return (
     <div
@@ -73,41 +74,43 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       style={cardStyle}
-      className="draggable-area sticky-note"
+      className="draggable-area"
     >
-      {children}
-      
-      {/* Expand Button */}
-      <div className="absolute top-2 right-2 flex items-center space-x-2 z-10">
-        <button
-          onClick={handleExpandButtonClick}
-          className="w-6 h-6 rounded-sm bg-gray-900/80 border border-cyan-500/30 
-                     hover:bg-cyan-900/30 transition-all duration-200 flex items-center 
-                     justify-center group"
-          title="Toggle Expand"
-        >
-          <Maximize2 
-            size={14} 
-            className="text-cyan-500/70 group-hover:text-cyan-400 
-                       transform group-hover:scale-110 transition-all duration-200" 
-          />
-        </button>
-      </div>
+      <div className="sticky-note">
+        {children}
+        
+        {/* Expand Button */}
+        <div className="absolute top-2 right-2 flex items-center space-x-2 z-10">
+          <button
+            onClick={handleExpandButtonClick}
+            className="w-6 h-6 rounded-sm bg-gray-900/80 border border-cyan-500/30 
+                       hover:bg-cyan-900/30 transition-all duration-200 flex items-center 
+                       justify-center group"
+            title="Toggle Expand"
+          >
+            <Maximize2 
+              size={14} 
+              className="text-cyan-500/70 group-hover:text-cyan-400 
+                         transform group-hover:scale-110 transition-all duration-200" 
+            />
+          </button>
+        </div>
 
-      {/* Resize Handle */}
-      <div
-        className="absolute bottom-2 right-2 w-6 h-6 cursor-se-resize z-10 
-                   flex items-center justify-center group"
-        onMouseDown={handleResizeMouseDown}
-      >
-        <div className="w-4 h-4 rounded-sm bg-gray-900/80 border border-cyan-500/30 
-                       group-hover:bg-cyan-900/30 transition-all duration-200 
-                       flex items-center justify-center">
-          <CornerRightDown 
-            size={12} 
-            className="text-cyan-500/70 group-hover:text-cyan-400 
-                       transform group-hover:scale-110 transition-all duration-200" 
-          />
+        {/* Resize Handle */}
+        <div
+          className="absolute bottom-2 right-2 w-6 h-6 cursor-se-resize z-10 
+                     flex items-center justify-center group"
+          onMouseDown={handleResizeMouseDown}
+        >
+          <div className="w-4 h-4 rounded-sm bg-gray-900/80 border border-cyan-500/30 
+                         group-hover:bg-cyan-900/30 transition-all duration-200 
+                         flex items-center justify-center">
+            <CornerRightDown 
+              size={12} 
+              className="text-cyan-500/70 group-hover:text-cyan-400 
+                         transform group-hover:scale-110 transition-all duration-200" 
+            />
+          </div>
         </div>
       </div>
     </div>

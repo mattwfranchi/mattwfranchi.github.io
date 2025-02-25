@@ -13,17 +13,16 @@ export function calculateInitialLayout(
   const gridWidth = columns * spacing;
   const gridHeight = Math.ceil(items.length / columns) * spacing;
   
-  // Position the items in the center of the window but with coordinates 
-  // that match our CSS transform system
-  // Since both window-background and transform-container use translate(-50%, -50%)
-  // and then translate3d(x, y, 0), the coordinates are relative to the center
-  // With this transform setup, (0,0) places the items at the center
-  const centerX = 0;
-  const centerY = 0;
+  // Position the items relative to the center of the transform-container
+  // The transform-container uses translate(-50%, -50%) and then translate3d(x, y, 0)
+  // So (0,0) is the center of the container
+  const containerWidth = WINDOW_DIMENSIONS.WIDTH;
+  const containerHeight = WINDOW_DIMENSIONS.HEIGHT;
   
-  // Calculate start positions to center the grid
-  const startX = centerX - (gridWidth / 2) + (spacing / 2);
-  const startY = centerY - (gridHeight / 2) + (spacing / 2);
+  // Use half of the container dimensions to ensure positions are relative to center
+  // For a centered grid, we start at negative half grid width/height
+  const startX = -gridWidth / 2 + (spacing / 2);
+  const startY = -gridHeight / 2 + (spacing / 2);
 
   return items.map((item, index) => {
     const row = Math.floor(index / columns);
