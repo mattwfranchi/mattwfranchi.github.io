@@ -26,6 +26,9 @@ const socialImageURL = new URL(
   ogImage ?? SITE.ogImage ?? "og.png",
   Astro.url.origin
 ).href;
+
+// Performance optimization: Mark layout render start time
+const layoutRenderStart = Date.now();
 ---
 
 <!DOCTYPE html>
@@ -50,6 +53,36 @@ const socialImageURL = new URL(
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:image" content={socialImageURL} />
+
+    <!-- Preload critical resources for better performance -->
+    <link rel="preload" href="/assets/vista.jpg" as="image">
+
+    <!-- Performance monitoring script -->
+    <script>
+      // Measure time to first paint 
+      performance.mark('brain-layout-start');
+      
+      // Add class to body when React has hydrated
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          document.documentElement.classList.add('react-loaded');
+          performance.mark('react-hydrated');
+          performance.measure('hydration-time', 'brain-layout-start', 'react-hydrated');
+        }, 500); // Give a little buffer time for React to fully initialize
+      });
+      
+      // Check for slow connections and apply optimizations
+      if (navigator.connection) {
+        const connection = navigator.connection as any;
+        if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+          document.documentElement.classList.add('slow-connection');
+        }
+        
+        if (connection.saveData) {
+          document.documentElement.classList.add('save-data');
+        }
+      }
+    </script>
 
     <ViewTransitions />
     <script is:inline src="/toggle-theme.js"></script>
@@ -124,6 +157,18 @@ const socialImageURL = new URL(
   :global(.nav-menu.open) {
     transform: translateX(240px);
   }
+  
+  /* Performance optimization styles */
+  :global(.react-loaded) #brain-loading {
+    opacity: 0;
+    pointer-events: none;
+  }
+  
+  :global(.slow-connection) .nature-scene,
+  :global(.save-data) .nature-scene {
+    filter: none !important;
+    image-rendering: optimizeSpeed !important;
+  }
 </style>
 
 <script>
@@ -131,7 +176,10 @@ const socialImageURL = new URL(
   import { detectDeviceCapabilities } from '../utils/performanceUtils';
   
   document.addEventListener('DOMContentLoaded', () => {
-    detectDeviceCapabilities();
+    // Initialize performance monitoring if available
+    if (typeof detectDeviceCapabilities === 'function') {
+      detectDeviceCapabilities();
+    }
     
     const sidebarButton = document.getElementById('sidebarButton');
     const navMenu = document.querySelector('.nav-menu');
@@ -142,5 +190,9 @@ const socialImageURL = new URL(
     });
 
     initializeWindowDimensions();
+    
+    // Log layout render time
+    const layoutRenderTime = Date.now() - layoutRenderStart;
+    console.log(`Layout render time: ${layoutRenderTime}ms`);
   });
 </script>

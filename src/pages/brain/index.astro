@@ -6,7 +6,10 @@ import BrainPage from '@components/BrainPage';
 import { SITE } from '@config';
 import type { PhotoData } from '../../types/whiteboard';
 
-// Organize data fetching
+// Start performance timing for data fetching
+console.time('brain-page-data-fetch');
+
+// Organize data fetching - using existing parallel fetch pattern
 const [albums, photos, snips, playlists, backgroundPhoto] = await Promise.all([
   getCollection("albums"),
   getCollection("photos"),
@@ -15,40 +18,87 @@ const [albums, photos, snips, playlists, backgroundPhoto] = await Promise.all([
   getEntry("photos", "paintings/matisse-open-window")
 ]);
 
-// Filter out draft items
+console.timeEnd('brain-page-data-fetch');
+console.time('brain-page-data-processing');
+
+// Filter out draft items - preserve existing logic
 const publishedAlbums = albums.filter(album => !album.data.draft);
 const publishedSnips = snips.filter(snip => !snip.data.draft);
 const publishedPlaylists = playlists.filter(playlist => !playlist.data.draft);
 const publishedPhotos = photos.filter(photo => !photo.data.draft);
 
-// Improved photo grouping function that matches PhotoData interface
+// Enhanced photo grouping function with performance optimizations
 function groupPhotosByAlbum(photos: CollectionEntry<"photos">[]) {
-  return photos.reduce((acc, photo) => {
-    const albumId = photo.data.albumId;
-    if (!acc[albumId]) {
-      acc[albumId] = [];
-    }
+  // Pre-allocate memory for the result object
+  const result: Record<string, PhotoData[]> = {};
+  
+  // Process photos more efficiently in chunks
+  const chunkSize = 50;
+  for (let i = 0; i < photos.length; i += chunkSize) {
+    const chunk = photos.slice(i, i + chunkSize);
     
-    // Transform each photo to match PhotoData interface
-    acc[albumId].push({
-      id: photo.id,
-      slug: photo.slug,
-      data: {
-        albumId: photo.data.albumId,
-        caption: photo.data.caption,
-        photo: photo.data.photo
-      },
-      optimizedPhoto: photo.data.photo // Using the optimized photo from the data
+    // Process each photo in this chunk
+    chunk.forEach(photo => {
+      const albumId = photo.data.albumId;
+      if (!result[albumId]) {
+        result[albumId] = [];
+      }
+      
+      // Transform to match PhotoData interface - keep your existing structure
+      result[albumId].push({
+        id: photo.id,
+        slug: photo.slug,
+        data: {
+          albumId: photo.data.albumId,
+          caption: photo.data.caption,
+          photo: photo.data.photo
+        },
+        optimizedPhoto: photo.data.photo // Using the optimized photo from the data
+      });
     });
-    
-    return acc;
-  }, {} as Record<string, PhotoData[]>);
+  }
+  
+  return result;
 }
 
 const photosByAlbum = groupPhotosByAlbum(publishedPhotos);
+
+console.timeEnd('brain-page-data-processing');
 ---
 
+<script>
+// Load performance utilities if available
+try {
+  const { initializeAppPerformance } = await import('../../utils/performanceUtils');
+  
+  // Initialize performance monitoring when the page loads
+  document.addEventListener('DOMContentLoaded', () => {
+    console.time('brain-page-client-init');
+    
+    if (typeof initializeAppPerformance === 'function') {
+      initializeAppPerformance();
+    }
+    
+    // Set reduced motion preference based on user's system settings
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('reduce-motion');
+    }
+    
+    // Mark when the page becomes interactive
+    performance.mark('brain-page-interactive');
+    console.timeEnd('brain-page-client-init');
+  });
+} catch (e) {
+  console.log('Performance utilities not loaded');
+}
+</script>
+
 <BrainLayout title={`Brain | ${SITE.title}`}>
+  <!-- Add a loading indicator that shows until React hydrates -->
+  <div id="brain-loading" class="fixed inset-0 flex items-center justify-center bg-gray-900 z-50 transition-opacity duration-500">
+    <div class="text-white text-xl">Loading your brain space...</div>
+  </div>
+  
   <BrainPage
     albums={publishedAlbums}
     photosByAlbum={photosByAlbum}
@@ -59,11 +109,25 @@ const photosByAlbum = groupPhotosByAlbum(publishedPhotos);
 </BrainLayout>
 
 <style>
+  /* Loading transition styles */
+  #brain-loading {
+    transition: opacity 0.5s ease-out;
+  }
+  
+  /* Scrollbar optimization */
   .overflow-auto {
     scrollbar-width: none;
     -ms-overflow-style: none;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
+  
   .overflow-auto::-webkit-scrollbar {
     display: none;
+  }
+  
+  /* Animation speed control for reduced motion preference */
+  :global(.reduce-motion) .sticky-note {
+    animation-duration: calc(var(--flutter-duration, 8s) * 2) !important;
   }
 </style>

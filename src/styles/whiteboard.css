@@ -384,16 +384,24 @@
       0 8px 12px rgba(0, 0, 0, 0.1),
       0 -1px 2px rgba(255, 255, 255, 0.1);
     transform-style: preserve-3d;
-    transform-origin: center center;
+    transform-origin: top center;
     animation: flutter-in-wind var(--flutter-duration, 8s) ease-in-out infinite;
     will-change: transform;
     backface-visibility: hidden;
     perspective: 1000px;
+    
+    /* Add smooth transition for resize */
+    transition: 
+      width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   
   .sticky-note.is-resized {
     width: 150%;
     height: 150%;
+    animation-play-state: paused;
+    z-index: 100; /* Ensure expanded card is on top */
   }
   
   /* Tape effect with enhanced shadows */
@@ -427,58 +435,118 @@
     --tape-angle: 30deg;
   }
   
-  /* Z-axis flutter animation with bottom-up airflow */
+  /* Fix the Z-axis flutter animation with bottom-up airflow */
   @keyframes flutter-in-wind {
     0%, 100% {
-      transform: rotateX(0deg) rotateY(0deg) translateZ(0) translateY(0);
+      transform: rotateX(0deg) rotateY(0deg) translateZ(0);
       box-shadow: 
         0 4px 6px rgba(0, 0, 0, 0.1),
         0 8px 12px rgba(0, 0, 0, 0.1);
     }
     25% {
-      transform: rotateX(15deg) rotateY(-3deg) translateZ(50px) translateY(5px); /* Increased Z and X rotation */
+      transform: rotateX(15deg) rotateY(-3deg) translateZ(5px);
       box-shadow: 
         0 14px 16px rgba(0, 0, 0, 0.15),
         0 18px 22px rgba(0, 0, 0, 0.1);
     }
     50% {
-      transform: rotateX(25deg) rotateY(3deg) translateZ(75px) translateY(8px); /* Further increased Z and X rotation */
+      transform: rotateX(25deg) rotateY(3deg) translateZ(10px);
       box-shadow: 
         0 18px 20px rgba(0, 0, 0, 0.18),
         0 22px 26px rgba(0, 0, 0, 0.12);
     }
     75% {
-      transform: rotateX(10deg) rotateY(-2deg) translateZ(40px) translateY(3px); /* Reduced Z and X rotation */
+      transform: rotateX(10deg) rotateY(-2deg) translateZ(7px);
       box-shadow: 
         0 12px 14px rgba(0, 0, 0, 0.12),
         0 16px 20px rgba(0, 0, 0, 0.1);
     }
   }
   
+  /* Update other flutter animations to properly rotate around top edge */
   @keyframes flutter-intense {
     0%, 100% {
-      transform: rotateX(0deg);
+      transform: rotateX(0deg) translateZ(0);
     }
     50% {
-      transform: rotateX(25deg);
+      transform: rotateX(30deg) translateZ(15px);
     }
   }
   
   @keyframes flutter-gentle {
     0%, 100% {
-      transform: rotateX(0deg);
+      transform: rotateX(0deg) translateZ(0);
     }
     50% {
-      transform: rotateX(12deg);
+      transform: rotateX(15deg) translateZ(8px);
     }
   }
   
   @keyframes flutter-subtle {
     0%, 100% {
-      transform: rotateX(0deg);
+      transform: rotateX(0deg) translateZ(0);
     }
     50% {
-      transform: rotateX(5deg);
+      transform: rotateX(8deg) translateZ(4px);
     }
   }
-  
+
+/* Pause animations during interaction (dragging/resizing) */
+.sticky-note.is-interacting {
+  animation-play-state: paused !important;
+  /* Keep transitions for resize */
+  transition: 
+    width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
+  /* Keep the shadow consistent during interaction */
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 8px 12px rgba(0, 0, 0, 0.1),
+    0 -1px 2px rgba(255, 255, 255, 0.1);
+}
+
+/* Also pause tape animations if any */
+.sticky-note.is-interacting::before,
+.sticky-note.is-interacting::after {
+  animation-play-state: paused !important;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Create a special class for transitions during expand/collapse */
+.sticky-note.is-transitioning-size {
+  animation-play-state: paused !important;
+}
+
+/* Performance optimization classes */
+.paused-animation {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+
+.simplified-animation {
+  animation: none !important;
+  transform: none !important;
+  transform-style: flat !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Reduce the quality of animations for non-prioritized notes */
+@media (max-width: 1200px) {
+  .sticky-note:not(.is-interacting):not(:hover) {
+    animation-duration: calc(var(--flutter-duration, 8s) * 1.5) !important;
+  }
+}
+
+/* For devices with potential performance issues, further optimize */
+@media (prefers-reduced-motion), (max-width: 768px) {
+  .sticky-note:not(.is-interacting):not(:hover) {
+    animation-duration: calc(var(--flutter-duration, 8s) * 2) !important;
+    transform-style: flat !important;
+  }
+
+  .sticky-note::before,
+  .sticky-note::after {
+    transform-style: flat !important;
+  }
+}
+
