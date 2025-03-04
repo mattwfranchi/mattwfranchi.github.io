@@ -239,39 +239,97 @@ export async function getContentList(
       const errorBody = await response.text();
       console.error("Response body:", errorBody);
       
-      // Special handling for 401 errors
-      if (response.status === 401) {
-        console.error("Token authentication failed (401). Token may be invalid or expired.");
-        return { 
-          success: false, 
-          error: "Authentication failed. Your GitHub token may be invalid or expired."
-        };
-      }
-      
       throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
     }
     
     const files = await response.json();
     console.log(`Found ${files.length} files in ${type} directory`);
     
-    // Only process JSON files
-    const jsonFiles = files.filter((file: any) => 
-      file.name.endsWith('.json') && file.type === 'file'
-    );
+    // Only process JSON files or files without extensions (likely directories with content)
+    const jsonFiles = files.filter((file: any) => {
+      return (file.name.endsWith('.json') && file.type === 'file') || 
+             (file.name.indexOf('.') === -1); // Include files without extensions
+    });
+    
     console.log(`Processing ${jsonFiles.length} JSON files`);
     
-    // Fetch and parse each file
+    // If no JSON files found but files exist, we may need to check individual files
+    if (jsonFiles.length === 0 && files.length > 0) {
+      console.log("No JSON files found directly, checking for content structure variations");
+      
+      // Some repositories might have a different structure
+      // Try to process all files and see which ones contain valid JSON
+      const allItems = await Promise.all(
+        files.map(async (file: any) => {
+          if (file.type === 'file') {
+            try {
+              const contentResponse = await fetch(file.download_url);
+              if (contentResponse.ok) {
+                const content = await contentResponse.json();
+                // Add source file info for debugging
+                content._sourceFile = file.name;
+                return content;
+              }
+            } catch (e) {
+              console.log(`File ${file.name} is not valid JSON, skipping`);
+            }
+          }
+          return null;
+        })
+      );
+      
+      // Filter out nulls
+      const validItems = allItems.filter(item => item !== null);
+      console.log(`Found ${validItems.length} valid content items`);
+      
+      return { success: true, items: validItems };
+    }
+    
+    // Fetch and parse each JSON file
     const items = await Promise.all(
       jsonFiles.map(async (file: any) => {
-        const contentResponse = await fetch(file.download_url);
-        if (!contentResponse.ok) {
-          throw new Error(`Failed to fetch content: ${contentResponse.status}`);
+        try {
+          if (file.type === 'file') {
+            const contentResponse = await fetch(file.download_url);
+            if (!contentResponse.ok) {
+              throw new Error(`Failed to fetch content: ${contentResponse.status}`);
+            }
+            const content = await contentResponse.json();
+            // Add source file info for debugging
+            content._sourceFile = file.name;
+            return content;
+          } else if (file.type === 'dir') {
+            // Handle directories if needed
+            // For example, fetch index.json or info.json from the directory
+            const indexResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/src/content/${type}/${file.name}/index.json`, {
+              headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+              }
+            });
+            
+            if (indexResponse.ok) {
+              const indexFile = await indexResponse.json();
+              const contentResponse = await fetch(indexFile.download_url);
+              if (contentResponse.ok) {
+                const content = await contentResponse.json();
+                content._sourceFile = `${file.name}/index.json`;
+                return content;
+              }
+            }
+          }
+        } catch (e) {
+          console.error(`Error processing file ${file.name}:`, e);
         }
-        return await contentResponse.json();
+        return null;
       })
     );
     
-    return { success: true, items };
+    // Filter out any nulls from errors
+    const validItems = items.filter(item => item !== null);
+    console.log(`Successfully processed ${validItems.length} content items`);
+    
+    return { success: true, items: validItems };
   } catch (error) {
     console.error(`Failed to get ${type} list:`, error);
     return { 

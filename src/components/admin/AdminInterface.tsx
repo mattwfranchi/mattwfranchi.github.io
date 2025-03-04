@@ -95,6 +95,14 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
     }
   }, [gitHubToken]);
 
+  // Debug the format of the incoming data
+  useEffect(() => {
+    console.log("Albums data structure:", albums);
+    console.log("Photos data structure:", photos);
+    console.log("Snips data structure:", snips);
+    console.log("Playlists data structure:", playlists);
+  }, [albums, photos, snips, playlists]);
+
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({
       message,
@@ -120,6 +128,60 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
   const handleError = (message: string) => {
     showNotification(message, 'error');
     console.error('Error:', message);
+  };
+
+  const renderContentItem = (item: any) => {
+    // Try to extract title from different possible locations in the data structure
+    const title = item.title || (item.data && item.data.title) || 
+                  (item.frontmatter && item.frontmatter.title) || 
+                  item.id || 'Untitled';
+                  
+    const draft = item.draft || (item.data && item.data.draft) || 
+                  (item.frontmatter && item.frontmatter.draft);
+                  
+    return (
+      <div key={item.id} 
+           className={`p-4 border rounded-md mb-3 ${draft ? 'bg-gray-50' : 'bg-white'}`}>
+        <div className="flex justify-between items-start">
+          <h3 className="font-medium text-lg">{title}</h3>
+          {draft && (
+            <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
+              Draft
+            </span>
+          )}
+        </div>
+        
+        <div className="mt-2 text-sm text-gray-700">
+          {/* Try to find description from different possible locations */}
+          {(item.description || 
+            (item.data && item.data.description) || 
+            (item.frontmatter && item.frontmatter.description) || 
+            '').substring(0, 100)}
+          
+          {/* Display source file for debugging */}
+          {item._sourceFile && (
+            <div className="mt-2 text-xs text-gray-500">
+              Source: {item._sourceFile}
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => handleEdit(item)}
+            className="px-3 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDelete(item.id, activeTab)}
+            className="px-3 py-1 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const renderContent = () => {
@@ -159,6 +221,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
         items={items} 
         isLoading={isLoading} 
         onRefresh={() => refreshContent(activeTab)} 
+        renderItem={renderContentItem}
       />
     );
   };

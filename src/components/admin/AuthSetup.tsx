@@ -220,20 +220,29 @@ const AuthSetup: React.FC<AuthSetupProps> = ({
         const result = await validateToken(token.trim());
         
         if (result.valid) {
-          // Save token to localStorage
+          // Save token to localStorage using new unified method
           encryptAndStoreData('github_token', token.trim(), password);
           
-          // For compatibility, also store it the old way
-          const encryptedToken = encryptToken(token.trim(), password);
-          localStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, encryptedToken);
-          localStorage.setItem(STORAGE_KEYS.TOKEN_ENCRYPTED, 'true');
-
           // If user opted to store in repo, save to repo settings
           if (useRepoSettings) {
             try {
+              // To avoid making a second commit, we need to get the existing settings
+              // and update the token in a single commit
+              const repoSettings = await loadRepoSettings();
+              
               // Use consistent encryption method
               const encryptedTokenForRepo = getEncryptedGitHubToken(token.trim(), password);
-              await saveRepoSettings({ github_token: encryptedTokenForRepo }, token.trim());
+              
+              // Create a merged settings object
+              const updatedSettings = {
+                master_password_hash: repoSettings.master_password_hash || hashPassword(password),
+                password_hint: repoSettings.password_hint || settings.hint || '',
+                github_token: encryptedTokenForRepo
+              };
+              
+              // Save everything in one commit
+              await saveRepoSettings(updatedSettings, token.trim());
+              console.log("All settings updated in repository in a single commit");
             } catch (repoError) {
               console.error("Failed to save token to repository:", repoError);
               // Continue anyway - local storage is still updated
