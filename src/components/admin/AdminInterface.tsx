@@ -4,7 +4,7 @@ import AlbumForm from './AlbumForm.tsx';
 import SnipForm from './SnipForm.tsx';
 import PlaylistForm from './PlaylistForm.tsx';
 import ContentList from './ContentList.tsx';
-import { getContentList } from '../../utils/githubDirectService';
+import { getContentList, validateToken } from '../../utils/githubDirectService';
 
 type ContentType = 'albums' | 'photos' | 'snips' | 'playlists';
 
@@ -45,7 +45,23 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
   // Function to refresh content when needed
   const refreshContent = async (type: ContentType = activeTab) => {
     setIsLoading(true);
+    
+    // Validate token before trying to use it
+    if (!gitHubToken || gitHubToken.trim() === '') {
+      showNotification('No GitHub token available. Please set up a token first.', 'error');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
+      // Validate the token first
+      const validationResult = await validateToken(gitHubToken);
+      if (!validationResult.valid) {
+        showNotification(`Token validation failed: ${validationResult.message}`, 'error');
+        setIsLoading(false);
+        return;
+      }
+      
       const result = await getContentList(gitHubToken, type);
       if (result.success && result.items) {
         switch (type) {

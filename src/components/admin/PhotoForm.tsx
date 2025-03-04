@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createContent } from '../../utils/githubDirectService';
+import { createContent, validateToken } from '../../utils/githubDirectService';
 import PhotoUpload from './PhotoUpload';
 
 interface PhotoFormProps {
@@ -7,9 +7,10 @@ interface PhotoFormProps {
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
   gitHubToken: string;
+  onRefresh?: () => void; // Optional callback to refresh content
 }
 
-const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHubToken }) => {
+const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHubToken, onRefresh }) => {
   const [formData, setFormData] = useState({
     albumId: '',
     title: '',
@@ -31,6 +32,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTokenValidating, setIsTokenValidating] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -104,6 +106,20 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
     setIsSubmitting(true);
     
     try {
+      // Make sure we have a token
+      if (!gitHubToken) {
+        throw new Error("GitHub token is required");
+      }
+      
+      // Validate the token first
+      setIsTokenValidating(true);
+      const validationResult = await validateToken(gitHubToken);
+      setIsTokenValidating(false);
+      
+      if (!validationResult.valid) {
+        throw new Error(`Token validation failed: ${validationResult.message || 'Unknown error'}`);
+      }
+      
       // Generate a unique ID for the photo
       const photoId = `photo_${Date.now()}`;
       
@@ -153,15 +169,25 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
           pubDatetime: new Date().toISOString()
         });
         setImageUrl(null);
+        
+        // Call refresh callback if provided
+        if (onRefresh) {
+          onRefresh();
+        }
       } else {
         onError(result.error || 'Failed to create photo content');
       }
     } catch (error) {
+      console.error("Error creating photo:", error);
       onError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Determine the button text based on current state
+  const buttonText = isTokenValidating ? 'Validating Token...' : 
+                    isSubmitting ? 'Adding Photo...' : 'Save Photo';
 
   return (
     <div>
@@ -182,7 +208,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
               <option value="">Select an album</option>
               {albums.map(album => (
                 <option key={album.id} value={album.id}>
-                  {album.data.title}
+                  {album.data?.title || album.title || album.id}
                 </option>
               ))}
             </select>
@@ -370,10 +396,10 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
         <div className="pt-4">
           <button
             type="submit"
-            disabled={!imageUrl || isSubmitting}
-            className={`px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${(!imageUrl || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!imageUrl || isSubmitting || isTokenValidating}
+            className={`px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${(!imageUrl || isSubmitting || isTokenValidating) ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isSubmitting ? 'Adding Photo...' : 'Save Photo'}
+            {buttonText}
           </button>
         </div>
       </form>

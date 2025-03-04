@@ -1,13 +1,20 @@
-import React, { useState, FormEvent } from 'react';
-import { createContent } from '../../utils/githubDirectService';
+import React, { useState } from 'react';
+import type { FormEvent } from 'react';
+import { createContent, validateToken } from '../../utils/githubDirectService';
 
 interface AlbumFormProps {
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
   gitHubToken: string;
+  onRefresh?: () => void; // Optional callback to refresh the list after creation
 }
 
-const AlbumForm: React.FC<AlbumFormProps> = ({ onSuccess, onError, gitHubToken }) => {
+const AlbumForm: React.FC<AlbumFormProps> = ({ 
+  onSuccess, 
+  onError, 
+  gitHubToken,
+  onRefresh 
+}) => {
   const [formData, setFormData] = useState({
     id: '',
     title: '',
@@ -15,10 +22,11 @@ const AlbumForm: React.FC<AlbumFormProps> = ({ onSuccess, onError, gitHubToken }
     date: '',
     tags: '',
     draft: false,
-    featured: false, // Adding featured flag for consistency
+    featured: false,
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTokenValidating, setIsTokenValidating] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -38,6 +46,15 @@ const AlbumForm: React.FC<AlbumFormProps> = ({ onSuccess, onError, gitHubToken }
       // Make sure we have a token
       if (!gitHubToken) {
         throw new Error("GitHub token is required");
+      }
+      
+      // Validate the token first
+      setIsTokenValidating(true);
+      const validationResult = await validateToken(gitHubToken);
+      setIsTokenValidating(false);
+      
+      if (!validationResult.valid) {
+        throw new Error(`Token validation failed: ${validationResult.message || 'Unknown error'}`);
       }
       
       // Generate ID if not provided
@@ -73,22 +90,31 @@ const AlbumForm: React.FC<AlbumFormProps> = ({ onSuccess, onError, gitHubToken }
           draft: false,
           featured: false
         });
+        
+        // Call refresh callback if provided
+        if (onRefresh) {
+          onRefresh();
+        }
       } else {
         onError(result.error || 'Failed to create album');
       }
     } catch (error) {
       console.error("Error creating album:", error);
-      onError((error as Error).message || "Unknown error occurred");
+      onError(error instanceof Error ? error.message : "Unknown error occurred");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const buttonText = isTokenValidating ? 'Validating Token...' : 
+                    isSubmitting ? 'Creating...' : 'Create Album';
 
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-6">Create New Album</h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form fields - these remain unchanged */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="id" className="block text-sm font-medium text-gray-700 mb-1">
@@ -193,10 +219,10 @@ const AlbumForm: React.FC<AlbumFormProps> = ({ onSuccess, onError, gitHubToken }
         <div className="pt-4">
           <button
             type="submit"
-            disabled={isSubmitting}
-            className={`px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+            disabled={isSubmitting || isTokenValidating}
+            className={`px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${(isSubmitting || isTokenValidating) ? 'opacity-75 cursor-not-allowed' : ''}`}
           >
-            {isSubmitting ? 'Creating...' : 'Create Album'}
+            {buttonText}
           </button>
         </div>
       </form>

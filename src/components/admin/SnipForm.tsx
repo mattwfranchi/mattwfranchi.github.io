@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
-import { createContent } from '../../utils/githubDirectService';
+import { createContent, validateToken } from '../../utils/githubDirectService';
 
 interface SnipFormProps {
   albums: any[];
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
   gitHubToken: string;
+  onRefresh?: () => void; // Optional callback to refresh content after creation
 }
 
-const SnipForm: React.FC<SnipFormProps> = ({ albums, onSuccess, onError, gitHubToken }) => {
+const SnipForm: React.FC<SnipFormProps> = ({ 
+  albums, 
+  onSuccess, 
+  onError, 
+  gitHubToken,
+  onRefresh 
+}) => {
   const [formData, setFormData] = useState({
     albumId: '',
     title: '',
@@ -24,6 +31,7 @@ const SnipForm: React.FC<SnipFormProps> = ({ albums, onSuccess, onError, gitHubT
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTokenValidating, setIsTokenValidating] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -45,6 +53,15 @@ const SnipForm: React.FC<SnipFormProps> = ({ albums, onSuccess, onError, gitHubT
       
       if (!token) {
         throw new Error("GitHub token is missing");
+      }
+      
+      // Validate the token first
+      setIsTokenValidating(true);
+      const validationResult = await validateToken(token);
+      setIsTokenValidating(false);
+      
+      if (!validationResult.valid) {
+        throw new Error(`Token validation failed: ${validationResult.message || 'Unknown error'}`);
       }
       
       console.log("Using token:", token.substring(0, 4) + '...' + token.substring(token.length - 4)); // Log token prefix/suffix for debugging
@@ -93,16 +110,25 @@ const SnipForm: React.FC<SnipFormProps> = ({ albums, onSuccess, onError, gitHubT
           order: '',
           content: ''
         });
+        
+        // Call refresh callback if provided
+        if (onRefresh) {
+          onRefresh();
+        }
       } else {
         onError(result.error || 'Failed to create snip');
       }
     } catch (error) {
       console.error('Error creating snip:', error);
-      onError((error as Error).message || 'Failed to create snip');
+      onError(error instanceof Error ? error.message : 'Failed to create snip');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Determine button text based on current state
+  const buttonText = isTokenValidating ? 'Validating Token...' : 
+                    isSubmitting ? 'Creating...' : 'Create Snip';
 
   return (
     <div>
@@ -136,7 +162,7 @@ const SnipForm: React.FC<SnipFormProps> = ({ albums, onSuccess, onError, gitHubT
               <option value="">None</option>
               {albums.map(album => (
                 <option key={album.id} value={album.id}>
-                  {album.data.title}
+                  {album.data?.title || album.title || album.id}
                 </option>
               ))}
             </select>
@@ -267,10 +293,10 @@ const SnipForm: React.FC<SnipFormProps> = ({ albums, onSuccess, onError, gitHubT
         <div className="pt-4">
           <button
             type="submit"
-            disabled={isSubmitting}
-            className={`px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+            disabled={isSubmitting || isTokenValidating}
+            className={`px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${(isSubmitting || isTokenValidating) ? 'opacity-75 cursor-not-allowed' : ''}`}
           >
-            {isSubmitting ? 'Creating...' : 'Create Snip'}
+            {buttonText}
           </button>
         </div>
       </form>

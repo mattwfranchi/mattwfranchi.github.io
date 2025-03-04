@@ -1,4 +1,4 @@
-import { defineConfig } from "astro/config";
+import { defineConfig, sharpImageService } from "astro/config";
 import tailwind from "@astrojs/tailwind";
 import react from "@astrojs/react";
 import remarkToc from "remark-toc";
@@ -12,7 +12,6 @@ export default defineConfig({
   site: "https://mattwfranchi.github.io",
   redirects: {
      '/claustrophobic-streets': '/posts/claustrophobic-streets'
-    
   },
   integrations: [
     tailwind({
@@ -60,10 +59,6 @@ export default defineConfig({
     contentLayer: true,
   },
   image: {
-    service: {
-      sharp: {
-        // Use sharp as the image service
-      },
-    },
+    service: sharpImageService()
   },
 });

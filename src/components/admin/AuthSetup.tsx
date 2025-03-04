@@ -171,17 +171,22 @@ const AuthSetup: React.FC<AuthSetupProps> = ({
             encryptAndStoreData('github_token', token, password);
             
             // If user wants to use repo settings, save to repo
+            // With this combined approach:
             if (useRepoSettings) {
-              // Save master password hash and hint
-              const passwordHash = hashPassword(password);
-              await saveRepoSettings({
+                // Create a single settings object with all properties
+                const passwordHash = hashPassword(password);
+                const encryptedToken = getEncryptedGitHubToken(token, password);
+                
+                // Save all settings in one commit
+                const settingsToSave = {
                 master_password_hash: passwordHash,
-                password_hint: passwordHint || ''
-              }, token);
-              
-              // Save encrypted token
-              const encryptedToken = getEncryptedGitHubToken(token, password);
-              await saveRepoSettings({ github_token: encryptedToken }, token);
+                password_hint: passwordHint || '',
+                github_token: encryptedToken
+                };
+                
+                // Make a single call to save repository settings
+                await saveRepoSettings(settingsToSave, token);
+                console.log("All settings saved to repository in a single commit");
             }
           } catch (error) {
             console.error('Error processing token:', error);

@@ -214,6 +214,13 @@ export async function getContentList(
   type: string
 ): Promise<{ success: boolean; items?: any[]; error?: string }> {
   try {
+    if (!token || token.trim() === '') {
+      console.error("No GitHub token provided to getContentList");
+      return { success: false, error: "No GitHub token provided" };
+    }
+    
+    console.log(`Fetching ${type} list with token: ${token.substring(0, 4)}...${token.substring(token.length - 4)}`);
+    
     // Get the list of files in the content directory
     const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/src/content/${type}`, {
       headers: {
@@ -224,17 +231,34 @@ export async function getContentList(
     
     if (!response.ok) {
       if (response.status === 404) {
+        console.log(`Directory src/content/${type} doesn't exist yet, returning empty array`);
         return { success: true, items: [] }; // Directory doesn't exist yet
       }
-      throw new Error(`GitHub API error: ${response.status}`);
+      
+      console.error(`GitHub API error when fetching content list: ${response.status} ${response.statusText}`);
+      const errorBody = await response.text();
+      console.error("Response body:", errorBody);
+      
+      // Special handling for 401 errors
+      if (response.status === 401) {
+        console.error("Token authentication failed (401). Token may be invalid or expired.");
+        return { 
+          success: false, 
+          error: "Authentication failed. Your GitHub token may be invalid or expired."
+        };
+      }
+      
+      throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
     }
     
     const files = await response.json();
+    console.log(`Found ${files.length} files in ${type} directory`);
     
     // Only process JSON files
     const jsonFiles = files.filter((file: any) => 
       file.name.endsWith('.json') && file.type === 'file'
     );
+    console.log(`Processing ${jsonFiles.length} JSON files`);
     
     // Fetch and parse each file
     const items = await Promise.all(
@@ -260,42 +284,40 @@ export async function getContentList(
 // Validate GitHub token without server
 export async function validateToken(token: string): Promise<{valid: boolean; message?: string}> {
   try {
-    const response = await fetch('https://api.github.com/user', {
+    // First, do a simple request to verify basic authentication
+    const userResponse = await fetch('https://api.github.com/user', {
       headers: {
         'Authorization': `token ${token}`,
         'Accept': 'application/vnd.github.v3+json'
       }
     });
 
-    if (response.status === 401) {
-      return { valid: false, message: 'Invalid token' };
-    }
-    
-    if (!response.ok) {
-      return { valid: false, message: `GitHub API error: ${response.status}` };
+    if (!userResponse.ok) {
+      console.log("Token validation failed on user endpoint:", userResponse.status);
+      return { valid: false, message: `Authentication failed: ${userResponse.statusText}` };
     }
 
-    const userData = await response.json();
+    const userData = await userResponse.json();
     
-    // Check if the token has the necessary permissions
-    const scopesResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`, {
+    // Now verify repository access with a less intrusive call (just checking repo existence)
+    const repoResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`, {
       headers: {
         'Authorization': `token ${token}`,
         'Accept': 'application/vnd.github.v3+json'
       }
     });
     
-    if (!scopesResponse.ok) {
+    if (!repoResponse.ok) {
+      console.log("Token validation failed on repo endpoint:", repoResponse.status);
       return { 
         valid: false, 
-        message: 'Token doesn\'t have access to the required repository' 
+        message: `Token doesn't have access to the repository: ${repoResponse.statusText}` 
       };
     }
     
-    return { 
-      valid: true, 
-      message: `Authenticated as ${userData.login}` 
-    };
+    // Additional debug logging for successful validation
+    console.log(`Token validated successfully as ${userData.login}`);
+    return { valid: true, message: `Authenticated as ${userData.login}` };
   } catch (error) {
     console.error('Error validating token:', error);
     return { 
