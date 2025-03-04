@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { validateToken } from '../../utils/githubService';
+import { validateToken } from '../../utils/githubDirectService'; // Changed from githubService
 import { 
   encryptToken, 
   encryptAndStoreData, 
   getMasterPasswordSettings, 
   verifyPassword,
-  STORAGE_KEYS 
+  STORAGE_KEYS,
+  saveRepoSettings // Add this import
 } from '../../utils/cryptoUtil';
 
 interface GitHubSetupProps {
@@ -19,6 +20,7 @@ const GitHubSetup: React.FC<GitHubSetupProps> = ({ onTokenSave }) => {
   const [masterPassword, setMasterPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordHint, setPasswordHint] = useState<string | null>(null);
+  const [storeInRepo, setStoreInRepo] = useState(true); // Add this state
   
   // Load existing master password hint if available
   useEffect(() => {
@@ -62,6 +64,26 @@ const GitHubSetup: React.FC<GitHubSetupProps> = ({ onTokenSave }) => {
         const encryptedToken = encryptToken(token.trim(), masterPassword);
         localStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, encryptedToken);
         localStorage.setItem(STORAGE_KEYS.TOKEN_ENCRYPTED, 'true');
+
+        // If user opted to store in repo, save to repo settings
+        if (storeInRepo) {
+          try {
+            // Encrypt token for the repo
+            const encryptedTokenForRepo = encryptToken(token.trim(), masterPassword);
+            
+            // Create partial settings object with just the encrypted token
+            const partialSettings = {
+              github_token: encryptedTokenForRepo
+            };
+            
+            // This will merge with existing settings
+            await saveRepoSettings(partialSettings, token.trim());
+            console.log("Token saved to repository settings");
+          } catch (repoError) {
+            console.error("Failed to save token to repository:", repoError);
+            // Continue anyway - local storage is still updated
+          }
+        }
         
         // Notify parent
         onTokenSave(encryptedToken, true);
@@ -149,6 +171,20 @@ const GitHubSetup: React.FC<GitHubSetupProps> = ({ onTokenSave }) => {
                 <p className="mt-1 text-sm text-red-600">{passwordError}</p>
               )}
             </div>
+          </div>
+          
+          {/* Add repo storage option */}
+          <div className="flex items-center">
+            <input
+              id="storeInRepo"
+              type="checkbox"
+              checked={storeInRepo}
+              onChange={(e) => setStoreInRepo(e.target.checked)}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            />
+            <label htmlFor="storeInRepo" className="ml-2 text-sm text-gray-700">
+              Store encrypted token in repository (for multi-device access)
+            </label>
           </div>
           
           <div className="pt-4">

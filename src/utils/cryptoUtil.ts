@@ -3,12 +3,10 @@
  */
 
 import CryptoJS from 'crypto-js';
-import { commitFile } from './githubService';
 
-// Add this interface at the top of the file, with your other imports
+// Add this interface at the top of the file
 interface EncryptedSettings {
   github_token?: string;
-  admin_password?: string;
   master_password_hash?: string;
   password_hint?: string;
   [key: string]: string | undefined;
@@ -182,8 +180,9 @@ export const getEncryptionSettings = getMasterPasswordSettings;
 export const saveEncryptionSettings = saveMasterPassword;
 export const clearEncryptionSettings = clearAllSettings;
 
-// Add functions to read settings from the repository file
-// Update this function to fetch from the deployed site
+// SIMPLIFIED REPOSITORY FUNCTIONS
+
+// Function to load settings from the repository
 export async function loadRepoSettings(): Promise<EncryptedSettings> {
   try {
     // Fetch the settings file from your deployed site
@@ -197,7 +196,6 @@ export async function loadRepoSettings(): Promise<EncryptedSettings> {
     // Return default empty settings
     return {
       github_token: "",
-      admin_password: "",
       master_password_hash: "",
       password_hint: ""
     };
@@ -220,7 +218,6 @@ export async function saveRepoSettings(
     let sha: string | undefined;
     let existingSettings: EncryptedSettings = {
       github_token: "",
-      admin_password: "",
       master_password_hash: "",
       password_hint: ""
     };
@@ -289,8 +286,7 @@ export async function saveRepoSettings(
       throw new Error(`GitHub API error: ${commitResponse.status} - ${errorData.message || 'Unknown error'}`);
     }
     
-    const responseData = await commitResponse.json();
-    console.log("Settings saved to repository successfully:", responseData.commit?.html_url || "Commit successful");
+    console.log("Settings saved to repository successfully");
     
   } catch (error) {
     console.error("Error saving settings to repository:", error);
@@ -298,44 +294,5 @@ export async function saveRepoSettings(
   }
 }
 
-// Update saveMasterPassword to also save to repo when a token is available
-export async function saveMasterPasswordToRepo(
-  password: string, 
-  hint?: string, 
-  githubToken?: string
-): Promise<void> {
-  // Save to localStorage as before
-  saveMasterPassword(password, hint);
-  
-  // If we have a GitHub token, also save to repo
-  if (githubToken) {
-    const passwordHash = hashPassword(password);
-    
-    const settings = await loadRepoSettings();
-    settings.master_password_hash = passwordHash;
-    settings.password_hint = hint || '';
-    
-    await saveRepoSettings(settings, githubToken);
-  }
-}
-
-// Function to encrypt and save data to both localStorage and repo
-export async function encryptAndStoreDataToRepo(
-  key: string, 
-  data: string, 
-  password: string,
-  githubToken?: string
-): Promise<void> {
-  // Save to localStorage first
-  encryptAndStoreData(key, data, password);
-  
-  // If we have a GitHub token, also save to repo
-  if (githubToken) {
-    const encrypted = encryptToken(data, password);
-    
-    const settings = await loadRepoSettings();
-    settings[key] = encrypted;
-    
-    await saveRepoSettings(settings, githubToken);
-  }
-}
+// REMOVED: saveMasterPasswordToRepo - functionality integrated into InitialSetup.tsx directly
+// REMOVED: encryptAndStoreDataToRepo - functionality integrated into GitHubSetup.tsx directly

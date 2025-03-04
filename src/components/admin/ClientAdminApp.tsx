@@ -312,10 +312,9 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
       const passwordHash = hashPassword(masterPassword);
       const settings = getMasterPasswordSettings();
       
-      // Prepare settings object
+      // Prepare settings object - only include what's needed
       const repoSettings = {
         github_token: encryptToken(token, masterPassword),
-        admin_password: encryptToken(envVars.password || DEFAULT_PASSWORD, masterPassword),
         master_password_hash: passwordHash,
         password_hint: settings.hint || ''
       };

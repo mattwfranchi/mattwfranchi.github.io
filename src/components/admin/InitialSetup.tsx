@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   encryptToken, 
-  decryptToken,  // Add this import
+  decryptToken,
   saveMasterPassword, 
   encryptAndStoreData, 
   STORAGE_KEYS,
   loadRepoSettings,
-  saveMasterPasswordToRepo,
-  encryptAndStoreDataToRepo
+  saveRepoSettings,  // Keep only this one for repository operations
+  hashPassword       // Add this for hashing the password
 } from '../../utils/cryptoUtil';
 
 interface InitialSetupProps {
@@ -81,7 +81,7 @@ const InitialSetup: React.FC<InitialSetupProps> = ({
         if (repoSettingsAvailable) {
           const settings = await loadRepoSettings();
           try {
-            const decryptedToken = decryptToken(settings.github_token, password);
+            const decryptedToken = decryptToken(settings.github_token || '', password);
             if (!decryptedToken || !decryptedToken.startsWith('ghp_')) {
               setError('Incorrect master password for repository settings');
               return;
@@ -92,13 +92,20 @@ const InitialSetup: React.FC<InitialSetupProps> = ({
           }
         }
         
-        // Save settings to repository
-        await saveMasterPasswordToRepo(password, passwordHint, envToken);
-        console.log("Local settings saved");
+        // Save master password hash and hint to repository
+        const passwordHash = hashPassword(password);
+        await saveRepoSettings({
+          master_password_hash: passwordHash,
+          password_hint: passwordHint || ''
+        }, envToken);
+        console.log("Master password saved to repository");
         
         // If this is first setup with new token, save the token too
         if (!repoSettingsAvailable) {
-          await encryptAndStoreDataToRepo('github_token', envToken, password, envToken);
+          // Encrypt and store the token using the master password
+          const encryptedToken = encryptToken(envToken, password);
+          await saveRepoSettings({ github_token: encryptedToken }, envToken);
+          console.log("GitHub token saved to repository");
         }
       }
 
@@ -125,6 +132,11 @@ const InitialSetup: React.FC<InitialSetupProps> = ({
       
       // Mark setup as complete
       localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETE, 'true');
+      
+      // Store GitHub token in localStorage if available
+      if (envToken) {
+        encryptAndStoreData('github_token', envToken, password);
+      }
       
       // Notify parent component
       onSetupComplete(password);
