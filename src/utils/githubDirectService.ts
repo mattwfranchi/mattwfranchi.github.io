@@ -20,7 +20,7 @@ interface ContentItem {
 
 // Constants
 const REPO_OWNER = 'mattwfranchi';
-const REPO_NAME = 'mattwfranchi';
+const REPO_NAME = 'mattwfranchi.github.io';
 const DEFAULT_BRANCH = 'main';
 
 /**

@@ -3,8 +3,16 @@
  */
 
 import CryptoJS from 'crypto-js';
-import encryptedSettings from '../data/encryptedSettings.json';
 import { commitFile } from './githubService';
+
+// Add this interface at the top of the file, with your other imports
+interface EncryptedSettings {
+  github_token?: string;
+  admin_password?: string;
+  master_password_hash?: string;
+  password_hint?: string;
+  [key: string]: string | undefined;
+}
 
 /**
  * Unified password management system - ensures only one master password is used
@@ -176,7 +184,7 @@ export const clearEncryptionSettings = clearAllSettings;
 
 // Add functions to read settings from the repository file
 // Update this function to fetch from the deployed site
-export async function loadRepoSettings(): Promise<any> {
+export async function loadRepoSettings(): Promise<EncryptedSettings> {
   try {
     // Fetch the settings file from your deployed site
     const response = await fetch('/data/encryptedSettings.json');
@@ -186,6 +194,7 @@ export async function loadRepoSettings(): Promise<any> {
     return await response.json();
   } catch (error) {
     console.error('Failed to load repository settings:', error);
+    // Return default empty settings
     return {
       github_token: "",
       admin_password: "",
@@ -197,27 +206,95 @@ export async function loadRepoSettings(): Promise<any> {
 
 // Function to save encrypted settings to the repository
 export async function saveRepoSettings(
-  settings: typeof encryptedSettings, 
-  githubToken: string
-): Promise<boolean> {
+  newSettings: Partial<EncryptedSettings>, 
+  token: string
+): Promise<void> {
   try {
-    // Generate file content
-    const fileContent = JSON.stringify(settings, null, 2);
+    console.log("Attempting to save settings to repository...");
     
-    // Commit the updated settings to the repository
-    await commitFile(
-      githubToken,
+    // Constants - hardcoded for consistency
+    const REPO_OWNER = 'mattwfranchi';
+    const REPO_NAME = 'mattwfranchi.github.io';
+    
+    // Get the current file to check if it exists and get the SHA
+    let sha: string | undefined;
+    let existingSettings: EncryptedSettings = {
+      github_token: "",
+      admin_password: "",
+      master_password_hash: "",
+      password_hint: ""
+    };
+    
+    try {
+      const response = await fetch(
+        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/data/encryptedSettings.json`,
+        {
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: 'application/vnd.github.v3+json',
+          },
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        sha = data.sha;
+        
+        // Decode the content from base64
+        const content = atob(data.content);
+        existingSettings = JSON.parse(content);
+        console.log("Existing settings found, merging with new settings");
+      }
+    } catch (e) {
+      console.warn("File might not exist yet, creating new one");
+    }
+    
+    // IMPORTANT: Merge the new settings with existing settings
+    const mergedSettings = { ...existingSettings, ...newSettings };
+    
+    // Convert settings to JSON
+    const content = JSON.stringify(mergedSettings, null, 2);
+    
+    // Base64 encode the content for GitHub API
+    const contentBase64 = btoa(content);
+    
+    // Prepare the request body
+    const requestBody: any = {
+      message: 'Update encrypted settings',
+      content: contentBase64,
+    };
+    
+    // If we have a SHA, include it (update operation)
+    if (sha) {
+      requestBody.sha = sha;
+    }
+    
+    // Commit the file to the repository
+    const commitResponse = await fetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/data/encryptedSettings.json`,
       {
-        path: 'public/data/encryptedSettings.json', // Updated path to match deployed location
-        content: fileContent,
-        message: 'Update encrypted settings [automated]'
+        method: 'PUT',
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       }
     );
     
-    return true;
+    if (!commitResponse.ok) {
+      const errorData = await commitResponse.json();
+      console.error("GitHub API error:", errorData);
+      throw new Error(`GitHub API error: ${commitResponse.status} - ${errorData.message || 'Unknown error'}`);
+    }
+    
+    const responseData = await commitResponse.json();
+    console.log("Settings saved to repository successfully:", responseData.commit?.html_url || "Commit successful");
+    
   } catch (error) {
-    console.error('Failed to save repository settings:', error);
-    return false;
+    console.error("Error saving settings to repository:", error);
+    throw error;
   }
 }
 

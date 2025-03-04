@@ -75,9 +75,6 @@ const InitialSetup: React.FC<InitialSetupProps> = ({
       // Save master password locally
       saveMasterPassword(password, passwordHint);
       
-      // Encrypt the default admin password and store it locally
-      encryptAndStoreData('admin_password', defaultAdminPassword, password);
-      
       // If environment token is provided and user wants to use repository settings
       if (envToken && useRepoSettings) {
         // First decrypt the token to make sure password is correct (if using repo settings)
@@ -97,11 +94,32 @@ const InitialSetup: React.FC<InitialSetupProps> = ({
         
         // Save settings to repository
         await saveMasterPasswordToRepo(password, passwordHint, envToken);
-        await encryptAndStoreDataToRepo('admin_password', defaultAdminPassword, password, envToken);
+        console.log("Local settings saved");
         
         // If this is first setup with new token, save the token too
         if (!repoSettingsAvailable) {
           await encryptAndStoreDataToRepo('github_token', envToken, password, envToken);
+        }
+      }
+
+      // Add detailed GitHub token validation
+      if (envToken) {
+        try {
+          // Test the token with a simple API call
+          const response = await fetch('https://api.github.com/user', {
+            headers: {
+              Authorization: `token ${envToken}`
+            }
+          });
+          
+          if (response.ok) {
+            const user = await response.json();
+            console.log("GitHub token is valid, authenticated as:", user.login);
+          } else {
+            console.error("GitHub token validation failed:", await response.text());
+          }
+        } catch (e) {
+          console.error("Error validating GitHub token:", e);
         }
       }
       
