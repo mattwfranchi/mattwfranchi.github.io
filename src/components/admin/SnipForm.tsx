@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { generateContentFile, commitFile } from '../../utils/githubService';
+import { createContent } from '../../utils/githubDirectService';
 
 interface SnipFormProps {
   albums: any[];
@@ -47,49 +47,55 @@ const SnipForm: React.FC<SnipFormProps> = ({ albums, onSuccess, onError, gitHubT
         throw new Error("GitHub token is missing");
       }
       
-      console.log("Using token:", token.substr(0, 4) + "..." + token.substr(-4)); // Log token prefix/suffix for debugging
+      console.log("Using token:", token.substring(0, 4) + '...' + token.substring(token.length - 4)); // Log token prefix/suffix for debugging
       
       // Convert tags string to array
       const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [];
       
+      // Generate unique ID for the snip
+      const snipId = `snip_${Date.now()}`;
+      
       // Format data for content file
       const contentData = {
-        ...formData,
-        tags: tagsArray,
+        id: snipId,
+        title: formData.title,
+        description: formData.description,
         pubDatetime: formData.pubDatetime || new Date().toISOString(),
+        albumId: formData.albumId || undefined,
+        featured: formData.featured,
+        draft: formData.draft,
+        tags: tagsArray,
+        source: formData.source || undefined,
+        sourceUrl: formData.sourceUrl || undefined,
+        order: formData.order ? parseInt(formData.order) : undefined,
+        content: formData.content
       };
       
       console.log("Preparing to submit snip:", contentData.title);
       
-      // Generate the content file
-      const contentFile = generateContentFile('snips', contentData);
-      console.log("Generated content file path:", contentFile.path);
+      // Create content directly with GitHub API
+      const result = await createContent('snips', contentData, token);
       
-      // Commit the file to GitHub
-      console.log("Sending to GitHub API...");
-      const result = await commitFile(token, contentFile);
-      console.log("GitHub API response:", result);
-      
-      if (!result.success) {
-        throw new Error(result.message || 'GitHub API failed to create snip');
+      if (result.success) {
+        onSuccess(result.message || 'Snip created successfully!');
+        
+        // Reset form
+        setFormData({
+          albumId: '',
+          title: '',
+          description: '',
+          pubDatetime: new Date().toISOString().split('T')[0],
+          featured: false,
+          draft: false,
+          tags: '',
+          source: '',
+          sourceUrl: '',
+          order: '',
+          content: ''
+        });
+      } else {
+        onError(result.error || 'Failed to create snip');
       }
-      
-      onSuccess('Snip created successfully!');
-      
-      // Reset form
-      setFormData({
-        albumId: '',
-        title: '',
-        description: '',
-        pubDatetime: new Date().toISOString().split('T')[0],
-        featured: false,
-        draft: false,
-        tags: '',
-        source: '',
-        sourceUrl: '',
-        order: '',
-        content: ''
-      });
     } catch (error) {
       console.error('Error creating snip:', error);
       onError((error as Error).message || 'Failed to create snip');

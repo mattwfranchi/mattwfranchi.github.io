@@ -17,8 +17,12 @@ import {
   saveMasterPassword,
   encryptAndStoreData,
   getDecryptedData,
-  STORAGE_KEYS
+  STORAGE_KEYS,
+  loadRepoSettings,
+  saveRepoSettings
 } from '../../utils/cryptoUtil';
+
+import { getContentList, validateToken } from '../../utils/githubDirectService';
 
 interface ClientAdminAppProps {
   albums: any[];
@@ -45,9 +49,13 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
   const [loginError, setLoginError] = useState('');
   const [isTokenEncrypted, setIsTokenEncrypted] = useState(false);
   const [encryptedToken, setEncryptedToken] = useState<string | null>(null);
-  const [isAdminPasswordEncrypted, setIsAdminPasswordEncrypted] = useState(false);
-  const [storedEncryptedAdminPassword, setStoredEncryptedAdminPassword] = useState<string | null>(null);
   const [isSetupComplete, setIsSetupComplete] = useState(true);
+  const [contentData, setContentData] = useState({
+    albums: props.albums || [],
+    photos: props.photos || [],
+    snips: props.snips || [],
+    playlists: props.playlists || []
+  });
 
   // Load environment variables safely after component mount
   useEffect(() => {
@@ -71,6 +79,26 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
         token: envToken || ''
       });
     }
+    
+    // Try to load repo settings
+    async function attemptLoadRepoSettings() {
+      try {
+        const settings = await loadRepoSettings();
+        if (settings && settings.master_password_hash) {
+          // We have repo settings, ensure we're in a state to prompt for master password
+          if (!localStorage.getItem(STORAGE_KEYS.MASTER_PASSWORD_HASH)) {
+            localStorage.setItem(STORAGE_KEYS.MASTER_PASSWORD_HASH, settings.master_password_hash);
+          }
+          if (settings.password_hint) {
+            localStorage.setItem(STORAGE_KEYS.MASTER_PASSWORD_HINT, settings.password_hint);
+          }
+        }
+      } catch (error) {
+        console.log('Could not load repository settings:', error);
+      }
+    }
+    
+    attemptLoadRepoSettings();
   }, []);
   
   // Check for existing auth on mount
@@ -128,16 +156,20 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
         // First check if repository settings exist
         const repoSettings = await loadRepoSettings();
         
-        if (repoSettings.master_password_hash) {
-          // If we have repo settings, we still need to go through setup 
-          // but it will be a simplified version asking just for the password
-          setIsSetupComplete(false);
+        if (repoSettings && repoSettings.master_password_hash) {
+          // We have repository settings
+          if (!localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE)) {
+            // Local setup is not complete, but we have repo settings
+            // Show the setup screen that will ask for the master password
+            setIsSetupComplete(false);
+          }
         } else {
-          // Check local storage as before
+          // No repo settings, check local storage
           const setupComplete = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) === 'true';
           setIsSetupComplete(setupComplete);
         }
       } catch (e) {
+        console.error('Failed to check repo settings:', e);
         // If we can't access repo settings, fall back to local storage
         const setupComplete = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) === 'true';
         setIsSetupComplete(setupComplete);
@@ -148,6 +180,43 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
     
     checkSetup();
   }, []);
+
+  // Fetch content from GitHub when token becomes available
+  useEffect(() => {
+    const fetchLiveContent = async () => {
+      if (!gitHubToken) return;
+      
+      setLoading(true);
+      
+      try {
+        // Make direct GitHub API calls to fetch content
+        const fetchTypes = ['albums', 'photos', 'snips', 'playlists'];
+        const newData = { ...contentData };
+        
+        // Fetch each content type in parallel
+        const results = await Promise.all(
+          fetchTypes.map(type => getContentList(gitHubToken, type))
+        );
+        
+        // Process results
+        results.forEach((result, index) => {
+          const type = fetchTypes[index] as keyof typeof contentData;
+          
+          if (result.success && result.items) {
+            newData[type] = result.items;
+          }
+        });
+        
+        setContentData(newData);
+      } catch (error) {
+        console.error('Error fetching content:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchLiveContent();
+  }, [gitHubToken]);
 
   // Debug the token value
   useEffect(() => {
@@ -170,16 +239,16 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
       if (verifyPassword(password, settings.passwordHash)) {
         loginSuccess();
         
-        // If we have an environment token but no encrypted token yet,
-        // encrypt and store it now
-        const storedToken = localStorage.getItem(STORAGE_KEYS.GITHUB_TOKEN);
-        if (envVars.token && !storedToken) {
+        // Try to get decrypted GitHub token
+        const decryptedToken = getDecryptedData('github_token', password);
+        if (decryptedToken) {
+          setGitHubToken(decryptedToken);
+          setIsTokenEncrypted(false);
+          setEncryptedToken(null);
+        } else if (envVars.token) {
+          // Encrypt and store the environment token
           encryptAndStoreData('github_token', envVars.token, password);
-          
-          // Also store it the old way for compatibility
-          const encryptedToken = encryptToken(envVars.token, password);
-          localStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, encryptedToken);
-          localStorage.setItem(STORAGE_KEYS.TOKEN_ENCRYPTED, 'true');
+          setGitHubToken(envVars.token);
         }
       } else {
         setLoginError('Incorrect password');
@@ -198,11 +267,12 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
       // If we have a token from environment, also encrypt it
       if (envVars.token) {
         encryptAndStoreData('github_token', envVars.token, password);
-        
-        // Also store it the old way for compatibility
-        const encryptedToken = encryptToken(envVars.token, password);
-        localStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, encryptedToken);
-        localStorage.setItem(STORAGE_KEYS.TOKEN_ENCRYPTED, 'true');
+        setGitHubToken(envVars.token);
+      }
+      
+      // Try to save settings to repository if we have a token
+      if (envVars.token) {
+        saveSettingsToRepository(password, envVars.token);
       }
     } else {
       setLoginError('Incorrect password');
@@ -228,35 +298,78 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
     }
   };
 
+  // Save settings to repository for cross-device access
+  const saveSettingsToRepository = async (masterPassword: string, token: string) => {
+    try {
+      // First validate that the token works
+      const validation = await validateToken(token);
+      if (!validation.valid) {
+        console.error('Cannot save settings to repo: Invalid token');
+        return;
+      }
+      
+      // Get the hash of the master password
+      const passwordHash = hashPassword(masterPassword);
+      const settings = getMasterPasswordSettings();
+      
+      // Prepare settings object
+      const repoSettings = {
+        github_token: encryptToken(token, masterPassword),
+        admin_password: encryptToken(envVars.password || DEFAULT_PASSWORD, masterPassword),
+        master_password_hash: passwordHash,
+        password_hint: settings.hint || ''
+      };
+      
+      // Save to repository
+      await saveRepoSettings(repoSettings, token);
+      console.log('Settings saved to repository');
+    } catch (error) {
+      console.error('Failed to save settings to repository:', error);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('admin_auth');
-    localStorage.removeItem('github_token');
-    localStorage.removeItem('token_encrypted');
-    localStorage.removeItem('token_expiry');
     
-    // Don't clear admin password encryption on logout
-    // clearEncryptionSettings();
+    // Don't remove these on logout:
+    // - token credentials (for convenience)
+    // - setup status (to avoid re-setup)
     
     setIsAuthenticated(false);
     setGitHubToken(null);
   };
 
-  const saveGitHubToken = (token: string, encrypted: boolean = true) => {
-    // Always store as encrypted
-    localStorage.setItem('token_encrypted', 'true');
-    
+  const saveGitHubToken = (token: string, encrypted: boolean = false) => {
     // Store token in localStorage for persistence
     localStorage.setItem('github_token', token);
+    localStorage.setItem('token_encrypted', encrypted.toString());
     
-    // Token is always encrypted now
-    setIsTokenEncrypted(true);
-    setEncryptedToken(token);
+    if (encrypted) {
+      // Token is encrypted, set state accordingly
+      setIsTokenEncrypted(true);
+      setEncryptedToken(token);
+    } else {
+      // Token is not encrypted, use directly
+      setGitHubToken(token);
+      setIsTokenEncrypted(false);
+      setEncryptedToken(null);
+      
+      // Also save encrypted version for next time if we have a master password
+      const settings = getMasterPasswordSettings();
+      if (settings.passwordHash) {
+        // Try to get the master password from session if available
+        const masterPassword = sessionStorage.getItem('master_password');
+        if (masterPassword) {
+          encryptAndStoreData('github_token', token, masterPassword);
+          
+          // Save settings to repository if possible
+          saveSettingsToRepository(masterPassword, token);
+        }
+      }
+    }
   };
   
   const handleTokenDecrypted = (decryptedToken: string) => {
-    // Store the decrypted token temporarily in session storage
-    sessionStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, decryptedToken);
-    
     // Set the active token
     setGitHubToken(decryptedToken);
     setIsTokenEncrypted(false);
@@ -275,8 +388,37 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
     
     localStorage.setItem('admin_auth', 'authenticated');
     localStorage.setItem('token_expiry', expiryDate.toISOString());
+    localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETE, 'true');
     
     setIsAuthenticated(true);
+    
+    // Store password temporarily in session storage for token encryption
+    sessionStorage.setItem('master_password', newPassword);
+    
+    // Try to get decrypted GitHub token if it exists in repository settings
+    const handleRepoToken = async () => {
+      try {
+        const repoSettings = await loadRepoSettings();
+        if (repoSettings && repoSettings.github_token) {
+          try {
+            const decryptedToken = decryptToken(repoSettings.github_token, newPassword);
+            if (decryptedToken && (decryptedToken.startsWith('ghp_') || decryptedToken.startsWith('github_'))) {
+              // Successfully decrypted token from repo settings
+              setGitHubToken(decryptedToken);
+              
+              // Also store in local storage
+              encryptAndStoreData('github_token', decryptedToken, newPassword);
+            }
+          } catch (e) {
+            console.error('Failed to decrypt repository token:', e);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load repository settings:', e);
+      }
+    };
+    
+    handleRepoToken();
   };
 
   // Inactivity timeout setup (auto logout after 2 hours of inactivity)
@@ -315,25 +457,27 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
     };
   }, [isAuthenticated]);
 
-  // If token comes from environment variable, it needs to be encrypted before use
-  useEffect(() => {
-    // If we have a token from environment but no encryption settings,
-    // don't use it directly - force the user to set up encryption first
-    if (envVars.token && !localStorage.getItem('token_password_hash')) {
-      // Clear any direct token to ensure encryption setup
-      setGitHubToken(null);
-    }
-  }, [envVars.token]);
-
+  // Fix loading screen div structure
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
   }
 
   // Show initial setup screen if needed
   if (!isSetupComplete) {
-    return <InitialSetup defaultAdminPassword={DEFAULT_PASSWORD} onSetupComplete={handleSetupComplete} />;
+    return (
+      <InitialSetup 
+        defaultAdminPassword={envVars.password || DEFAULT_PASSWORD} 
+        onSetupComplete={handleSetupComplete}
+        envToken={envVars.token}
+      />
+    );
   }
 
+  // Fix login screen div structure
   if (!isAuthenticated) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -342,7 +486,9 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
           
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Master Password
+              </label>
               <input
                 type="password"
                 id="password"
@@ -351,6 +497,13 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
+              
+              {/* Display password hint if available */}
+              {getMasterPasswordSettings().hint && (
+                <div className="mt-2 text-xs text-gray-500">
+                  <span className="font-semibold">Password hint:</span> {getMasterPasswordSettings().hint}
+                </div>
+              )}
             </div>
             {loginError && (
               <div className="text-red-600 text-sm">{loginError}</div>
@@ -377,6 +530,7 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
     return <GitHubSetup onTokenSave={saveGitHubToken} />;
   }
 
+  // Fix main return structure at the bottom
   return (
     <div className="container mx-auto px-4">
       <div className="py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -384,8 +538,7 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
           <div className="text-sm text-green-600 mb-2">
             Using GitHub token: {envVars.token ? 'From environment' : 'From browser storage'}
           </div>
-          {/* Temporarily add token debug */}
-          <TokenDebug token={gitHubToken || ''} envToken={envVars.token} />
+          {/* Token testing components */}
           <TokenTester token={gitHubToken || ''} />
         </div>
         
@@ -401,8 +554,11 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
       </div>
       
       <AdminInterface 
-        {...props} 
-        gitHubToken={gitHubToken} 
+        albums={contentData.albums} 
+        photos={contentData.photos} 
+        snips={contentData.snips} 
+        playlists={contentData.playlists} 
+        gitHubToken={gitHubToken || ''} 
       />
     </div>
   );

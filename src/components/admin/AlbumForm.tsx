@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { generateContentFile, commitFile } from '../../utils/githubService';
+import React, { useState, FormEvent } from 'react';
+import { createContent } from '../../utils/githubDirectService';
 
 interface AlbumFormProps {
   onSuccess: (message: string) => void;
@@ -9,15 +9,15 @@ interface AlbumFormProps {
 
 const AlbumForm: React.FC<AlbumFormProps> = ({ onSuccess, onError, gitHubToken }) => {
   const [formData, setFormData] = useState({
+    id: '',
     title: '',
     description: '',
-    pubDatetime: new Date().toISOString().split('T')[0],
-    featured: false,
-    draft: false,
+    date: '',
     tags: '',
-    borderColor: '#ffffff',
-    location: ''
+    draft: false,
+    featured: false, // Adding featured flag for consistency
   });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -30,50 +30,55 @@ const AlbumForm: React.FC<AlbumFormProps> = ({ onSuccess, onError, gitHubToken }
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
+    
     try {
-      // Use environment token if available, fall back to provided token
-      const token = import.meta.env.VITE_GITHUB_TOKEN || gitHubToken;
+      // Make sure we have a token
+      if (!gitHubToken) {
+        throw new Error("GitHub token is required");
+      }
+      
+      // Generate ID if not provided
+      const albumId = formData.id || `album_${Date.now()}`;
       
       // Convert tags string to array
       const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [];
       
-      // Format data for content file
-      const contentData = {
-        ...formData,
+      // Prepare data for submission
+      const albumData = {
+        id: albumId,
+        title: formData.title,
+        description: formData.description,
+        date: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString(),
         tags: tagsArray,
-        pubDatetime: formData.pubDatetime || new Date().toISOString().split('T')[0],
+        draft: formData.draft,
+        featured: formData.featured
       };
       
-      // Generate the content file
-      const contentFile = generateContentFile('albums', contentData);
+      // Use the direct GitHub service to create content
+      const result = await createContent('albums', albumData, gitHubToken);
       
-      // Commit the file to GitHub
-      const result = await commitFile(token, contentFile);
-      
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to create album');
+      if (result.success) {
+        onSuccess(result.message || 'Album created successfully');
+        
+        // Reset form
+        setFormData({
+          id: '',
+          title: '',
+          description: '',
+          date: '',
+          tags: '',
+          draft: false,
+          featured: false
+        });
+      } else {
+        onError(result.error || 'Failed to create album');
       }
-      
-      onSuccess('Album created successfully!');
-      
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        pubDatetime: new Date().toISOString().split('T')[0],
-        featured: false,
-        draft: false,
-        tags: '',
-        borderColor: '#ffffff',
-        location: ''
-      });
     } catch (error) {
-      console.error('Error creating album:', error);
-      onError((error as Error).message || 'Failed to create album');
+      console.error("Error creating album:", error);
+      onError((error as Error).message || "Unknown error occurred");
     } finally {
       setIsSubmitting(false);
     }
@@ -82,14 +87,32 @@ const AlbumForm: React.FC<AlbumFormProps> = ({ onSuccess, onError, gitHubToken }
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-6">Create New Album</h2>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Title*
+            <label htmlFor="id" className="block text-sm font-medium text-gray-700 mb-1">
+              Album ID (optional)
             </label>
             <input
               type="text"
+              id="id"
+              name="id"
+              value={formData.id}
+              onChange={handleChange}
+              placeholder="Generated automatically if empty"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">Unique identifier for the album. Leave blank for auto-generation.</p>
+          </div>
+          
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="title"
               name="title"
               value={formData.title}
               onChange={handleChange}
@@ -98,70 +121,47 @@ const AlbumForm: React.FC<AlbumFormProps> = ({ onSuccess, onError, gitHubToken }
             />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Publication Date
-            </label>
-            <input
-              type="date"
-              name="pubDatetime"
-              value={formData.pubDatetime}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description*
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description
             </label>
             <textarea
+              id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
-              required
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            ></textarea>
+            />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tags (comma separated)
+            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+              Date
+            </label>
+            <input
+              type="date"
+              id="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">Defaults to today if left blank.</p>
+          </div>
+          
+          <div>
+            <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
+              Tags (comma-separated)
             </label>
             <input
               type="text"
+              id="tags"
               name="tags"
               value={formData.tags}
               onChange={handleChange}
-              placeholder="tag1, tag2, tag3"
+              placeholder="travel, photography, personal"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location
-            </label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Border Color
-            </label>
-            <input
-              type="color"
-              name="borderColor"
-              value={formData.borderColor}
-              onChange={handleChange}
-              className="w-full h-10 px-1 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           

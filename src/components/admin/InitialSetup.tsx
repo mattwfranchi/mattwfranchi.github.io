@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   encryptToken, 
+  decryptToken,  // Add this import
   saveMasterPassword, 
   encryptAndStoreData, 
   STORAGE_KEYS,

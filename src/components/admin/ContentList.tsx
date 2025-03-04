@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 interface ContentListProps {
-  type: 'albums' | 'photos' | 'snips' | 'playlists';
+  type: string;
   items: any[];
+  isLoading?: boolean;
+  onRefresh?: () => void;
 }
 
-const ContentList: React.FC<ContentListProps> = ({ type, items }) => {
+const ContentList: React.FC<ContentListProps> = ({ type, items, isLoading = false, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredItems, setFilteredItems] = useState(items);
   const [sortConfig, setSortConfig] = useState<{
@@ -147,6 +149,33 @@ const ContentList: React.FC<ContentListProps> = ({ type, items }) => {
       </tr>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  if (!items || items.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <p className="text-gray-500">No {type} found.</p>
+        {onRefresh && (
+          <button 
+            onClick={onRefresh}
+            className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center mx-auto"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>

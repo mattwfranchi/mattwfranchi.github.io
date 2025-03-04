@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PhotoForm from './PhotoForm.tsx';
 import AlbumForm from './AlbumForm.tsx';
 import SnipForm from './SnipForm.tsx';
 import PlaylistForm from './PlaylistForm.tsx';
 import ContentList from './ContentList.tsx';
+import { getContentList } from '../../utils/githubDirectService';
 
 type ContentType = 'albums' | 'photos' | 'snips' | 'playlists';
 
@@ -16,20 +17,67 @@ interface AdminInterfaceProps {
 }
 
 const AdminInterface: React.FC<AdminInterfaceProps> = ({
-  albums,
-  photos,
-  snips,
-  playlists,
+  albums: initialAlbums,
+  photos: initialPhotos,
+  snips: initialSnips,
+  playlists: initialPlaylists,
   gitHubToken
 }) => {
   const [activeTab, setActiveTab] = useState<ContentType>('albums');
   const [contentMode, setContentMode] = useState<'list' | 'create'>('list');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  
+  // State for content lists
+  const [albums, setAlbums] = useState(initialAlbums || []);
+  const [photos, setPhotos] = useState(initialPhotos || []);
+  const [snips, setSnips] = useState(initialSnips || []);
+  const [playlists, setPlaylists] = useState(initialPlaylists || []);
+  
+  // Loading state for data refreshes
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleTabClick = (tab: ContentType) => {
     setActiveTab(tab);
     setContentMode('list');
+    refreshContent(tab);
   };
+  
+  // Function to refresh content when needed
+  const refreshContent = async (type: ContentType = activeTab) => {
+    setIsLoading(true);
+    try {
+      const result = await getContentList(gitHubToken, type);
+      if (result.success && result.items) {
+        switch (type) {
+          case 'albums':
+            setAlbums(result.items);
+            break;
+          case 'photos':
+            setPhotos(result.items);
+            break;
+          case 'snips':
+            setSnips(result.items);
+            break;
+          case 'playlists':
+            setPlaylists(result.items);
+            break;
+        }
+      } else if (result.error) {
+        showNotification(`Failed to load ${type}: ${result.error}`, 'error');
+      }
+    } catch (error) {
+      showNotification(`Error loading content: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Initialize with up-to-date data from GitHub
+  useEffect(() => {
+    if (gitHubToken) {
+      refreshContent(activeTab);
+    }
+  }, [gitHubToken]);
 
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({
@@ -48,12 +96,14 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
   const handleCreateSuccess = (message: string) => {
     setContentMode('list');
     showNotification(message, 'success');
-    console.log('Success:', message); // Add logging
+    console.log('Success:', message);
+    // Refresh the content list after creation
+    refreshContent();
   };
 
   const handleError = (message: string) => {
     showNotification(message, 'error');
-    console.error('Error:', message); // Add logging
+    console.error('Error:', message);
   };
 
   const renderContent = () => {
@@ -87,7 +137,14 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
         break;
     }
     
-    return <ContentList type={activeTab} items={items} />;
+    return (
+      <ContentList 
+        type={activeTab} 
+        items={items} 
+        isLoading={isLoading} 
+        onRefresh={() => refreshContent(activeTab)} 
+      />
+    );
   };
 
   return (

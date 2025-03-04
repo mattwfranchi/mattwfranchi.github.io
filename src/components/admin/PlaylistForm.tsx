@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { generateContentFile, commitFile } from '../../utils/githubService';
+import React, { useState } from 'react';
+import { createContent } from '../../utils/githubDirectService';
 
 interface PlaylistFormProps {
   albums: any[];
@@ -13,45 +13,16 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({ albums, onSuccess, onError,
     albumId: '',
     title: '',
     description: '',
-    pubDatetime: new Date().toISOString().split('T')[0],
     platform: 'spotify',
     playlistUrl: '',
+    pubDatetime: new Date().toISOString().split('T')[0],
     featured: false,
     draft: false,
     tags: '',
-    coverImage: '',
-    mood: '',
     order: ''
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [embedPreview, setEmbedPreview] = useState<string | null>(null);
-
-  // Extract the playlist ID for embed preview
-  useEffect(() => {
-    if (formData.playlistUrl && formData.platform === 'spotify') {
-      try {
-        const url = new URL(formData.playlistUrl);
-        const path = url.pathname;
-        const playlistMatch = path.match(/playlist\/([a-zA-Z0-9]+)/);
-        if (playlistMatch && playlistMatch[1]) {
-          const playlistId = playlistMatch[1];
-          setEmbedPreview(`https://open.spotify.com/embed/playlist/${playlistId}`);
-          return;
-        }
-      } catch (e) {
-        setEmbedPreview(null);
-      }
-    } else if (formData.playlistUrl && formData.platform === 'apple') {
-      // Example Apple Music embed URL structure
-      if (formData.playlistUrl.includes('music.apple.com')) {
-        setEmbedPreview(formData.playlistUrl.replace('music.apple.com', 'embed.music.apple.com'));
-        return;
-      }
-    }
-    
-    setEmbedPreview(null);
-  }, [formData.playlistUrl, formData.platform]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -63,59 +34,99 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({ albums, onSuccess, onError,
     });
   };
 
+  // Extract playlist ID from the URL
+  const extractPlaylistId = (url: string, platform: string): string | null => {
+    try {
+      if (platform === 'spotify') {
+        // Handle Spotify URLs
+        // Format: https://open.spotify.com/playlist/37i9dQZF1DX0XUsuxWHRQd
+        if (url.includes('/playlist/')) {
+          const parts = url.split('/playlist/');
+          if (parts.length > 1) {
+            // Remove any query parameters
+            return parts[1].split('?')[0];
+          }
+        }
+      } else if (platform === 'apple') {
+        // Handle Apple Music URLs
+        // Format: https://music.apple.com/us/playlist/todays-hits/pl.f4d106fed2bd41149aaacabb233eb5eb
+        if (url.includes('/playlist/')) {
+          const parts = url.split('/playlist/');
+          if (parts.length > 1) {
+            const idPart = parts[1].split('/');
+            // Return the last part which should be the ID
+            return idPart[idPart.length - 1].split('?')[0];
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error extracting playlist ID:', error);
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.playlistUrl) {
-      onError('Please enter a playlist URL');
-      return;
-    }
-    
     setIsSubmitting(true);
 
     try {
-      // Use environment token if available, fall back to provided token
-      const token = import.meta.env.VITE_GITHUB_TOKEN || gitHubToken;
+      // Make sure we have the token
+      if (!gitHubToken) {
+        throw new Error('GitHub token is missing');
+      }
       
-      // Convert tags and mood strings to arrays
+      // Validate the URL and extract the ID
+      const playlistId = extractPlaylistId(formData.playlistUrl, formData.platform);
+      if (!playlistId) {
+        throw new Error('Could not extract playlist ID from URL. Please check the format.');
+      }
+
+      // Convert tags string to array
       const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [];
-      const moodArray = formData.mood ? formData.mood.split(',').map(mood => mood.trim()) : [];
+      
+      // Generate unique ID for the playlist
+      const uniqueId = `playlist_${Date.now()}`;
       
       // Format data for content file
       const contentData = {
-        ...formData,
+        id: uniqueId,
+        title: formData.title,
+        description: formData.description,
+        platform: formData.platform,
+        playlistUrl: formData.playlistUrl,
+        playlistId: playlistId, // Store the extracted playlist ID
+        pubDatetime: formData.pubDatetime || new Date().toISOString(),
+        albumId: formData.albumId || undefined,
+        featured: formData.featured,
+        draft: formData.draft,
         tags: tagsArray,
-        mood: moodArray,
-        pubDatetime: formData.pubDatetime || new Date().toISOString().split('T')[0],
+        order: formData.order ? parseInt(formData.order) : undefined
       };
       
-      // Generate the content file
-      const contentFile = generateContentFile('playlists', contentData);
+      console.log("Creating playlist content:", contentData.title);
       
-      // Commit the file to GitHub
-      const result = await commitFile(token, contentFile);
+      // Use the direct GitHub API service
+      const result = await createContent('playlists', contentData, gitHubToken);
       
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to create playlist');
+      if (result.success) {
+        onSuccess(result.message || 'Playlist created successfully!');
+        
+        // Reset form
+        setFormData({
+          albumId: '',
+          title: '',
+          description: '',
+          platform: 'spotify',
+          playlistUrl: '',
+          pubDatetime: new Date().toISOString().split('T')[0],
+          featured: false,
+          draft: false,
+          tags: '',
+          order: ''
+        });
+      } else {
+        onError(result.error || 'Failed to create playlist');
       }
-      
-      onSuccess('Playlist created successfully!');
-      
-      // Reset form
-      setFormData({
-        albumId: '',
-        title: '',
-        description: '',
-        pubDatetime: new Date().toISOString().split('T')[0],
-        platform: 'spotify',
-        playlistUrl: '',
-        featured: false,
-        draft: false,
-        tags: '',
-        coverImage: '',
-        mood: '',
-        order: ''
-      });
     } catch (error) {
       console.error('Error creating playlist:', error);
       onError((error as Error).message || 'Failed to create playlist');
@@ -126,7 +137,8 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({ albums, onSuccess, onError,
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-6">Create New Playlist</h2>
+      <h2 className="text-2xl font-semibold mb-6">Add New Playlist</h2>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -142,55 +154,6 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({ albums, onSuccess, onError,
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Platform
-            </label>
-            <select
-              name="platform"
-              value={formData.platform}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="spotify">Spotify</option>
-              <option value="apple">Apple Music</option>
-            </select>
-          </div>
-          
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Playlist URL*
-            </label>
-            <input
-              type="url"
-              name="playlistUrl"
-              value={formData.playlistUrl}
-              onChange={handleChange}
-              required
-              placeholder="https://open.spotify.com/playlist/..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          
-          {embedPreview && (
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Preview
-              </label>
-              <div className="mt-2 bg-gray-50 border rounded-md p-2">
-                <iframe
-                  src={embedPreview}
-                  width="100%"
-                  height="352"
-                  frameBorder="0"
-                  allow="encrypted-media"
-                  title="Playlist Preview"
-                  className="rounded-md"
-                ></iframe>
-              </div>
-            </div>
-          )}
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -213,6 +176,22 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({ albums, onSuccess, onError,
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Platform*
+            </label>
+            <select
+              name="platform"
+              value={formData.platform}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="spotify">Spotify</option>
+              <option value="apple">Apple Music</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Publication Date
             </label>
             <input
@@ -226,58 +205,35 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({ albums, onSuccess, onError,
           
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description*
+              Playlist URL*
+            </label>
+            <input
+              type="url"
+              name="playlistUrl"
+              value={formData.playlistUrl}
+              onChange={handleChange}
+              placeholder={formData.platform === 'spotify' ? 
+                'https://open.spotify.com/playlist/37i9dQZF1DX0XUsuxWHRQd' : 
+                'https://music.apple.com/us/playlist/todays-hits/pl.f4d106fed2bd41149aaacabb233eb5eb'}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Enter the full playlist URL from {formData.platform === 'spotify' ? 'Spotify' : 'Apple Music'}
+            </p>
+          </div>
+          
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
             </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              required
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             ></textarea>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tags (comma separated)
-            </label>
-            <input
-              type="text"
-              name="tags"
-              value={formData.tags}
-              onChange={handleChange}
-              placeholder="tag1, tag2, tag3"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mood (comma separated)
-            </label>
-            <input
-              type="text"
-              name="mood"
-              value={formData.mood}
-              onChange={handleChange}
-              placeholder="chill, focus, energetic"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cover Image URL (optional)
-            </label>
-            <input
-              type="text"
-              name="coverImage"
-              value={formData.coverImage}
-              onChange={handleChange}
-              placeholder="https://example.com/image.jpg"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
           </div>
           
           <div>
@@ -289,6 +245,20 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({ albums, onSuccess, onError,
               name="order"
               value={formData.order}
               onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tags (comma separated)
+            </label>
+            <input
+              type="text"
+              name="tags"
+              value={formData.tags}
+              onChange={handleChange}
+              placeholder="music, indie, rock"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>

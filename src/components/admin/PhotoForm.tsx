@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fileToBase64, uploadImage, generateContentFile, commitFile } from '../../utils/githubService';
+import { createContent } from '../../utils/githubDirectService';
+import PhotoUpload from './PhotoUpload';
 
 interface PhotoFormProps {
   albums: any[];
@@ -27,19 +28,10 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
     pubDatetime: new Date().toISOString() // Use full ISO format
   });
   
-  const [file, setFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-
-  useEffect(() => {
-    // Clean up preview URL when component unmounts
-    return () => {
-      if (preview) {
-        URL.revokeObjectURL(preview);
-      }
-    };
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -75,22 +67,32 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      setFile(selectedFile);
+  // Handle successful image upload
+  const handleImageUploadSuccess = (url: string) => {
+    setImageUrl(url);
+    // Extract filename from URL for visual feedback
+    const filename = url.split('/').pop() || 'uploaded-image';
+    onSuccess(`Image "${filename}" uploaded successfully`);
+    
+    // If we have a title field that's empty, use the filename as title suggestion
+    if (!formData.title) {
+      const suggestedTitle = filename.split('.')[0]
+        .replace(/-/g, ' ')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
       
-      // Create preview
-      const objectUrl = URL.createObjectURL(selectedFile);
-      setPreview(objectUrl);
+      setFormData(prev => ({
+        ...prev,
+        title: suggestedTitle
+      }));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!file) {
-      onError('Please select an image file');
+    if (!imageUrl) {
+      onError('Please upload an image first');
       return;
     }
     
@@ -100,68 +102,62 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
     }
     
     setIsSubmitting(true);
-
+    
     try {
-      const token = gitHubToken;
+      // Generate a unique ID for the photo
+      const photoId = `photo_${Date.now()}`;
       
-      // Ensure we have a valid date in ISO format
+      // Prepare data for submission
       const photoData = {
-        ...formData,
-        pubDatetime: formData.pubDatetime || new Date().toISOString(),
-      };
-      
-      // Upload image and process
-      const base64Image = await fileToBase64(file);
-      
-      const uploadResult = await uploadImage(token, {
-        filename: file.name,
-        content: base64Image,
-        albumId: formData.albumId
-      });
-      
-      if (!uploadResult.success) {
-        throw new Error(uploadResult.message || 'Failed to upload image');
-      }
-      
-      // Create the markdown content file with the proper date
-      const contentFileData = {
-        ...photoData,
-        photoPath: uploadResult.path
-      };
-      
-      const contentFile = generateContentFile('photos', contentFileData);
-      
-      const contentResult = await commitFile(token, contentFile);
-      
-      if (!contentResult.success) {
-        throw new Error(contentResult.message || 'Failed to create photo content');
-      }
-      
-      onSuccess('Photo uploaded successfully!');
-      
-      // Reset form
-      setFormData({
-        albumId: '',
-        title: '',
-        caption: '',
-        order: '',
+        id: photoId,
+        albumId: formData.albumId,
+        title: formData.title,
+        caption: formData.caption,
+        order: formData.order ? parseInt(formData.order) : undefined,
         metadata: {
-          camera: '',
-          lens: '',
+          camera: formData.metadata.camera,
+          lens: formData.metadata.lens,
           settings: {
-            aperture: '',
-            shutterSpeed: '',
-            iso: '',
-            focalLength: ''
+            aperture: formData.metadata.settings.aperture,
+            shutterSpeed: formData.metadata.settings.shutterSpeed,
+            iso: formData.metadata.settings.iso,
+            focalLength: formData.metadata.settings.focalLength
           }
         },
-        pubDatetime: new Date().toISOString() // Use full ISO format
-      });
-      setFile(null);
-      setPreview(null);
+        pubDatetime: formData.pubDatetime || new Date().toISOString(),
+        photo: imageUrl // Use the uploaded image URL
+      };
+      
+      // Create content file using our direct GitHub service
+      const result = await createContent('photos', photoData, gitHubToken);
+      
+      if (result.success) {
+        onSuccess('Photo added successfully');
+        
+        // Reset the form
+        setFormData({
+          albumId: '',
+          title: '',
+          caption: '',
+          order: '',
+          metadata: {
+            camera: '',
+            lens: '',
+            settings: {
+              aperture: '',
+              shutterSpeed: '',
+              iso: '',
+              focalLength: ''
+            }
+          },
+          pubDatetime: new Date().toISOString()
+        });
+        setImageUrl(null);
+      } else {
+        onError(result.error || 'Failed to create photo content');
+      }
     } catch (error) {
-      console.error('Error uploading photo:', error);
-      onError((error as Error).message || 'Failed to upload photo');
+      onError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -193,19 +189,35 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
           </div>
           
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Photo*
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {preview && (
-              <div className="mt-2">
-                <img src={preview} alt="Preview" className="max-h-64 rounded-md" />
+            {/* Use the reusable PhotoUpload component */}
+            {formData.albumId ? (
+              <>
+                <PhotoUpload
+                  albumId={formData.albumId}
+                  githubToken={gitHubToken}
+                  onSuccess={handleImageUploadSuccess}
+                  onError={onError}
+                />
+                
+                {imageUrl && (
+                  <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-sm text-green-800 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Image uploaded successfully
+                    </p>
+                    <p className="text-xs text-green-700 mt-1 truncate">
+                      {imageUrl}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="border border-yellow-200 bg-yellow-50 p-3 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  Please select an album before uploading photos.
+                </p>
               </div>
             )}
           </div>
@@ -358,10 +370,10 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
         <div className="pt-4">
           <button
             type="submit"
-            disabled={isSubmitting}
-            className={`px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+            disabled={!imageUrl || isSubmitting}
+            className={`px-4 py-2 rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${(!imageUrl || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isSubmitting ? 'Uploading...' : 'Upload Photo'}
+            {isSubmitting ? 'Adding Photo...' : 'Save Photo'}
           </button>
         </div>
       </form>

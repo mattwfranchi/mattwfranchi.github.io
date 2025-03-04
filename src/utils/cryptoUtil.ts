@@ -208,7 +208,7 @@ export async function saveRepoSettings(
     await commitFile(
       githubToken,
       {
-        path: 'src/data/encryptedSettings.json',
+        path: 'public/data/encryptedSettings.json', // Updated path to match deployed location
         content: fileContent,
         message: 'Update encrypted settings [automated]'
       }
