@@ -1,0 +1,21 @@
+---
+import BaseLayout from '@layouts/Layout.astro';
+import ClientAdminApp from '@components/admin/ClientAdminApp';
+import { getCollection } from 'astro:content';
+
+// Pre-fetch content for static build time
+const albums = await getCollection("albums");
+const photos = await getCollection("photos");
+const snips = await getCollection("snips");
+const playlists = await getCollection("playlists");
+---
+
+<BaseLayout title="Admin | Brain Content Management">
+  <ClientAdminApp 
+    albums={albums}
+    photos={photos}
+    snips={snips}
+    playlists={playlists}
+    client:only="react"
+  />
+</BaseLayout>

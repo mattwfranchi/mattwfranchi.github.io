@@ -46,6 +46,14 @@ export default defineConfig({
     optimizeDeps: {
       exclude: ["@resvg/resvg-js"],
     },
+    // Add environment variable handling
+    envPrefix: ['VITE_'],
+    server: {
+      watch: {
+        // Don't reload on .env changes to prevent cyclic restarts
+        ignored: ['**/.env*']
+      }
+    }
   },
   scopedStyleStrategy: "where",
   experimental: {

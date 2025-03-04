@@ -29,6 +29,7 @@ const photos = defineCollection({
       title: z.string().optional(),
       photo: image(),
       caption: z.string().optional(),
+      pubDatetime: z.string().or(z.date()).default(() => new Date().toISOString()),
       order: z.number().optional(),
       metadata: z.object({
         camera: z.string().optional(),
@@ -36,7 +37,7 @@ const photos = defineCollection({
         settings: z.object({
           aperture: z.string().optional(),
           shutterSpeed: z.string().optional(),
-          iso: z.number().optional(),
+          iso: z.union([z.string(), z.number()]).optional(),
           focalLength: z.string().optional(),
         }).optional(),
       }).optional(),
