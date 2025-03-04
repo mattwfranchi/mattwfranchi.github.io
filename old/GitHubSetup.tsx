@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { validateToken } from '../../utils/githubDirectService'; // Changed from githubService
+import { validateToken } from '../src/utils/githubDirectService'; // Changed from githubService
 import { 
   encryptToken, 
   encryptAndStoreData, 
@@ -7,7 +7,7 @@ import {
   verifyPassword,
   STORAGE_KEYS,
   saveRepoSettings // Add this import
-} from '../../utils/cryptoUtil';
+} from '../src/utils/cryptoUtil';
 
 interface GitHubSetupProps {
   onTokenSave: (token: string, encrypted: boolean) => void;

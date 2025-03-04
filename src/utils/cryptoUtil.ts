@@ -296,3 +296,28 @@ export async function saveRepoSettings(
 
 // REMOVED: saveMasterPasswordToRepo - functionality integrated into InitialSetup.tsx directly
 // REMOVED: encryptAndStoreDataToRepo - functionality integrated into GitHubSetup.tsx directly
+
+// Add this function to ensure consistent token encryption
+export function getEncryptedGitHubToken(token: string, password: string): string {
+  // Always use the same encryption method
+  return encryptToken(token, password);
+}
+
+// Add this function to get the token from various sources
+export function getGitHubToken(password: string): string | null {
+  // Try the new unified storage method first
+  const token = getDecryptedData('github_token', password);
+  if (token) return token;
+  
+  // Fall back to the old method
+  const encryptedToken = localStorage.getItem(STORAGE_KEYS.GITHUB_TOKEN);
+  if (encryptedToken) {
+    try {
+      return decryptToken(encryptedToken, password);
+    } catch (e) {
+      console.error("Failed to decrypt token from old storage method");
+    }
+  }
+  
+  return null;
+}

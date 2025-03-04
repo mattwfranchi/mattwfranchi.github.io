@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import AdminInterface from './AdminInterface';
-import GitHubSetup from './GitHubSetup';
+import AuthSetup from './AuthSetup'; // Replace the two components with one
 import TokenTester from './TokenTester';
 import TokenDebug from './TokenDebug';
 import TokenDecrypt from './TokenDecrypt';
-import InitialSetup from './InitialSetup';
+// Remove these imports:
+// import GitHubSetup from './GitHubSetup';
+// import InitialSetup from './InitialSetup';
 import { 
   isEncryptedToken, 
   getEncryptionSettings, 
@@ -468,10 +470,10 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
   // Show initial setup screen if needed
   if (!isSetupComplete) {
     return (
-      <InitialSetup 
-        defaultAdminPassword={envVars.password || DEFAULT_PASSWORD} 
+      <AuthSetup 
         onSetupComplete={handleSetupComplete}
         envToken={envVars.token}
+        mode="initial"
       />
     );
   }
@@ -526,7 +528,7 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
 
   // Skip GitHub setup if token is available from environment or has been decrypted
   if (isAuthenticated && !gitHubToken) {
-    return <GitHubSetup onTokenSave={saveGitHubToken} />;
+    return <AuthSetup onSetupComplete={saveGitHubToken} mode="token" />;
   }
 
   // Fix main return structure at the bottom

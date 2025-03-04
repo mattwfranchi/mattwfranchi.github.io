@@ -8,7 +8,7 @@ import {
   loadRepoSettings,
   saveRepoSettings,  // Keep only this one for repository operations
   hashPassword       // Add this for hashing the password
-} from '../../utils/cryptoUtil';
+} from '../src/utils/cryptoUtil';
 
 interface InitialSetupProps {
   defaultAdminPassword: string;
