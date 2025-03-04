@@ -80,6 +80,64 @@ const AuthSetup: React.FC<AuthSetupProps> = ({
     try {
       // Different validation depending on mode
       if (mode === 'initial') {
+        if (repoSettingsAvailable) {
+          try {
+            // Get the master password hash from repo settings
+            const settings = await loadRepoSettings();
+            const storedHash = settings.master_password_hash;
+            
+            if (!storedHash) {
+              throw new Error("No master password hash found in repository settings");
+            }
+            
+            // Verify the entered password matches the stored hash
+            const passwordHash = hashPassword(password);
+            
+            console.log("Debugging password verification:");
+            console.log("- Entered password:", password);
+            console.log("- Generated hash:", passwordHash);
+            console.log("- Stored hash:", storedHash);
+            console.log("- Match:", passwordHash === storedHash);
+            
+            if (passwordHash !== storedHash) {
+              setError('Incorrect master password');
+              setIsProcessing(false);
+              return;
+            }
+            
+            // If password check passes, store it locally
+            saveMasterPassword(password, settings.password_hint || undefined);
+            
+            // If there's an encrypted token in the repo settings, set it locally too
+            if (settings.github_token) {
+              try {
+                const decryptedToken = decryptToken(settings.github_token, password);
+                if (decryptedToken && (decryptedToken.startsWith('ghp_') || decryptedToken.startsWith('github_'))) {
+                  // Successfully decrypted the token, store it locally
+                  encryptAndStoreData('github_token', decryptedToken, password);
+                  localStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, settings.github_token);
+                  localStorage.setItem(STORAGE_KEYS.TOKEN_ENCRYPTED, 'true');
+                }
+              } catch (e) {
+                console.error("Failed to decrypt token from repository settings", e);
+                // Continue anyway - user can set up the token later
+              }
+            }
+            
+            // Mark setup as complete since we're using existing settings
+            localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETE, 'true');
+            
+            // Complete setup
+            onSetupComplete(password);
+            return;
+          } catch (error) {
+            console.error("Error verifying repository password:", error);
+            setError('Error verifying repository password: ' + (error instanceof Error ? error.message : String(error)));
+            setIsProcessing(false);
+            return;
+          }
+        }
+
         // Validate password for initial setup
         if (!password) {
           setError('Please enter a password');

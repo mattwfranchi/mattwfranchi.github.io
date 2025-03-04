@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { validateToken } from '../../utils/githubService';
+import { validateToken } from '../../utils/githubDirectService'; // Updated import path
 
 interface TokenTesterProps {
   token: string;
