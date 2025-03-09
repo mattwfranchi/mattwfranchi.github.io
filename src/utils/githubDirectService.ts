@@ -156,10 +156,17 @@ export async function createContent(
     Object.entries(contentData).forEach(([key, value]) => {
       if (key !== 'content' && key !== 'id' && !key.startsWith('_')) {
         if (Array.isArray(value)) {
-          frontmatter += `${key}:\n`;
-          value.forEach(item => {
-            frontmatter += `  - ${item}\n`;
-          });
+          if (key === 'tags') {
+            // For tags, use the bracket notation format
+            const formattedTags = value.map(tag => `"${tag}"`).join(', ');
+            frontmatter += `${key}: [${formattedTags}]\n`;
+          } else {
+            // For other arrays, keep using YAML list format
+            frontmatter += `${key}:\n`;
+            value.forEach(item => {
+              frontmatter += `  - ${item}\n`;
+            });
+          }
         }
         else if (typeof value === 'object' && value !== null) {
           // Handle nested objects with YAML-like structure
@@ -252,10 +259,17 @@ export async function updateContent(
     Object.entries(contentData).forEach(([key, value]) => {
       if (key !== 'content' && key !== '_sourceFile' && key !== '_rawContent' && !key.startsWith('_')) {
         if (Array.isArray(value)) {
-          frontmatter += `${key}:\n`;
-          value.forEach(item => {
-            frontmatter += `  - ${item}\n`;
-          });
+          if (key === 'tags') {
+            // For tags, use the bracket notation format
+            const formattedTags = value.map(tag => `"${tag}"`).join(', ');
+            frontmatter += `${key}: [${formattedTags}]\n`;
+          } else {
+            // For other arrays, keep using YAML list format
+            frontmatter += `${key}:\n`;
+            value.forEach(item => {
+              frontmatter += `  - ${item}\n`;
+            });
+          }
         }
         else if (typeof value === 'object' && value !== null) {
           // Handle nested objects with YAML-like structure
