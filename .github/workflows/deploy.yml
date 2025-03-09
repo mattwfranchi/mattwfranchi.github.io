@@ -5,6 +5,11 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# Add concurrency to cancel in-progress jobs
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pages: write
