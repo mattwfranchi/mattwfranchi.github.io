@@ -139,22 +139,27 @@ export async function commitFile({
 /**
  * Create a new content item in the repository
  */
+// Update the function signature to accept ID separately
 export async function createContent(
   contentType: string,
   contentData: any,
-  token: string
+  token: string,
+  id?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    // Generate a filename for the content
-    const id = contentData.id || `${contentType.slice(0, -1)}_${Date.now()}`;
-    const filename = `${id}.md`;
+    // Generate a filename for the content, using provided ID or generating one
+    const contentId = id || contentData.id || `${contentType.slice(0, -1)}-${Date.now()}`;
+    const filename = `${contentId}.md`;
+    
+    // Create a copy of the data without the ID field
+    const { id: _, _sourceFile, ...dataForFrontmatter } = contentData;
     
     // Convert the content data to frontmatter + markdown format
     let frontmatter = '---\n';
     
-    // Convert contentData to frontmatter, excluding content and special properties
-    Object.entries(contentData).forEach(([key, value]) => {
-      if (key !== 'content' && key !== 'id' && !key.startsWith('_')) {
+    // Convert dataForFrontmatter to frontmatter, excluding special properties
+    Object.entries(dataForFrontmatter).forEach(([key, value]) => {
+      if (key !== 'content' && !key.startsWith('_')) {
         if (Array.isArray(value)) {
           if (key === 'tags') {
             // For tags, use the bracket notation format
@@ -193,8 +198,8 @@ export async function createContent(
     frontmatter += '---\n\n';
     
     // Add content after frontmatter if it exists
-    const markdown = contentData.content 
-      ? frontmatter + contentData.content
+    const markdown = dataForFrontmatter.content 
+      ? frontmatter + dataForFrontmatter.content
       : frontmatter;
     
     // Define the file path
@@ -228,6 +233,7 @@ export async function createContent(
 /**
  * Update an existing content item in the repository
  */
+// Similarly update the updateContent function to exclude ID from frontmatter
 export async function updateContent(
   path: string,
   contentData: any,
@@ -252,11 +258,14 @@ export async function updateContent(
     const fileData = await fileResponse.json();
     const fileSha = fileData.sha;
     
+    // Create a copy of the data without the ID field
+    const { id: _, _sourceFile, ...dataForFrontmatter } = contentData;
+    
     // Convert the content data to frontmatter + markdown format
     let frontmatter = '---\n';
     
-    // Convert contentData to frontmatter, excluding content and special properties
-    Object.entries(contentData).forEach(([key, value]) => {
+    // Convert dataForFrontmatter to frontmatter, excluding special properties
+    Object.entries(dataForFrontmatter).forEach(([key, value]) => {
       if (key !== 'content' && key !== '_sourceFile' && key !== '_rawContent' && !key.startsWith('_')) {
         if (Array.isArray(value)) {
           if (key === 'tags') {

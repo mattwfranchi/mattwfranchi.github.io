@@ -25,10 +25,13 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
     id: '',
     title: '',
     description: '',
-    date: '',
+    pubDatetime: '', // Changed from 'date' to 'pubDatetime'
     tags: '',
     draft: false,
     featured: false,
+    borderColor: '#ffffff', // Added
+    location: '', // Added
+    coverPhotoId: '' // Added
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,50 +49,38 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
       // More robust date handling
       let formattedDate = '';
       try {
-        // Check for date in multiple possible locations
-        const dateValue = initialData.date || 
-                          initialData.pubDatetime || 
-                          (initialData.data && (initialData.data.date || initialData.data.pubDatetime)) ||
+        // Check for date in multiple possible locations (prioritize pubDatetime)
+        const dateValue = initialData.pubDatetime || 
+                          initialData.date || 
+                          (initialData.data && (initialData.data.pubDatetime || initialData.data.date)) ||
                           '';
         
         if (dateValue) {
-          // Log the original date value for debugging
+          // Format logic remains the same
           console.log('Original date value:', dateValue);
-          
-          // Try to parse the date - handle different possible formats
           const date = new Date(dateValue);
-          
-          // Check if the date is valid
           if (!isNaN(date.getTime())) {
-            // Format as YYYY-MM-DD for the date input
             const year = date.getFullYear();
-            // Month is 0-indexed in JS Date, so add 1 and pad with 0 if needed
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
             formattedDate = `${year}-${month}-${day}`;
-            console.log('Formatted date:', formattedDate);
-          } else {
-            console.error('Invalid date:', dateValue);
           }
         }
       } catch (e) {
         console.error('Error parsing date:', e);
       }
       
-      // Check which properties are available in the initialData
-      const propertiesToCheck = ['id', 'title', 'description', 'draft', 'featured'];
-      propertiesToCheck.forEach(prop => {
-        console.log(`Property ${prop}:`, initialData[prop]);
-      });
-      
       setFormData({
         id: initialData.id || '',
         title: initialData.title || '',
         description: initialData.description || '',
-        date: formattedDate,
+        pubDatetime: formattedDate, // Changed from 'date'
         tags: tagsString,
         draft: Boolean(initialData.draft),
         featured: Boolean(initialData.featured),
+        borderColor: initialData.borderColor || '#ffffff', // Added
+        location: initialData.location || '', // Added
+        coverPhotoId: initialData.coverPhotoId || '' // Added
       });
     }
   }, [editMode, initialData]);
@@ -124,21 +115,22 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
       }
       
       // Generate ID if not provided (only in create mode)
-      const albumId = formData.id || `album_${Date.now()}`;
+      const albumId = formData.id || `album-${Date.now()}`;
       
       // Convert tags string to array
       const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [];
       
-      // Prepare data for submission
+      // Prepare data for submission - NOTE: Removed id from this object
       const albumData = {
-        id: albumId,
         title: formData.title,
         description: formData.description,
-        // Better date handling
-        date: formatDateForSubmission(formData.date),
+        pubDatetime: formatDateForSubmission(formData.pubDatetime), // Changed from 'date'
         tags: tagsArray,
         draft: formData.draft,
         featured: formData.featured,
+        borderColor: formData.borderColor || "#ffffff",
+        location: formData.location || "", 
+        coverPhotoId: formData.coverPhotoId || "",
         // Preserve the source file path if in edit mode
         _sourceFile: editMode && initialData ? initialData._sourceFile : undefined
       };
@@ -153,8 +145,8 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
           gitHubToken
         );
       } else {
-        // Use the create function
-        result = await createContent('albums', albumData, gitHubToken);
+        // Pass the ID separately for filename generation
+        result = await createContent('albums', albumData, gitHubToken, albumId);
       }
       
       if (result.success) {
@@ -166,10 +158,13 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
             id: '',
             title: '',
             description: '',
-            date: '',
+            pubDatetime: '',
             tags: '',
             draft: false,
-            featured: false
+            featured: false,
+            borderColor: '#ffffff',
+            location: '',
+            coverPhotoId: ''
           });
         }
         
@@ -251,14 +246,14 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
           </div>
           
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-              Date
+            <label htmlFor="pubDatetime" className="block text-sm font-medium text-gray-700 mb-1">
+              Publication Date
             </label>
             <input
               type="date"
-              id="date"
-              name="date"
-              value={formData.date}
+              id="pubDatetime"
+              name="pubDatetime"
+              value={formData.pubDatetime}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
@@ -278,6 +273,51 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
               placeholder="travel, photography, personal"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+          </div>
+          
+          <div>
+            <label htmlFor="borderColor" className="block text-sm font-medium text-gray-700 mb-1">
+              Border Color
+            </label>
+            <input
+              type="color"
+              id="borderColor"
+              name="borderColor"
+              value={formData.borderColor}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+              Location
+            </label>
+            <input
+              type="text"
+              id="location"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="e.g. New York, NY"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="coverPhotoId" className="block text-sm font-medium text-gray-700 mb-1">
+              Cover Photo ID
+            </label>
+            <input
+              type="text"
+              id="coverPhotoId"
+              name="coverPhotoId"
+              value={formData.coverPhotoId}
+              onChange={handleChange}
+              placeholder="e.g. album-cover-1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="mt-1 text-xs text-gray-500">ID of the photo to use as album cover</p>
           </div>
           
           <div className="flex space-x-6">
@@ -333,21 +373,19 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
 // Add this helper function outside your component:
 function formatDateForSubmission(dateString: string): string {
   if (!dateString) {
-    return new Date().toISOString();
+    return new Date().toISOString().split('T')[0]; // Return just the date part: YYYY-MM-DD
   }
   
   try {
-    // For date inputs, the format is YYYY-MM-DD
     const date = new Date(dateString);
     if (!isNaN(date.getTime())) {
-      return date.toISOString();
+      return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD to match la-ny25.md example
     }
   } catch (e) {
     console.error('Error formatting date for submission:', e);
   }
   
-  // Fallback to current date
-  return new Date().toISOString();
+  return new Date().toISOString().split('T')[0];
 }
 
 export default AlbumForm;
