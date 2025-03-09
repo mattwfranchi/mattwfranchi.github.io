@@ -338,45 +338,72 @@ export async function uploadImage(
   token: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    // Optimize image client-side before uploading
-    const optimizedFile = await optimizeImage(file);
+    // Validate inputs
+    if (!file || !albumId || !token) {
+      console.error('Missing required parameters:', { 
+        hasFile: !!file, 
+        hasAlbumId: !!albumId, 
+        hasToken: !!token 
+      });
+      return { success: false, error: 'Missing file, album ID, or authentication token' };
+    }
+
+    // Create a clean filename (remove spaces, special characters)
+    const originalFileName = file.name;
+    const fileExt = originalFileName.split('.').pop()?.toLowerCase() || 'jpg';
     
-    // Generate a slug-friendly filename
-    const filename = file.name.toLowerCase()
-      .replace(/[^a-z0-9.]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+    // Use a sanitized version of the original filename or create a unique filename
+    let cleanFileName = originalFileName
+      .toLowerCase()
+      .replace(/\.[^/.]+$/, '') // Remove extension
+      .replace(/[^a-z0-9]/g, '-') // Replace non-alphanumeric with hyphens
+      .replace(/-+/g, '-')        // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, '');     // Remove leading/trailing hyphens
     
-    // UPDATED: Create path for the image in the correct directory structure
-    // Changed from public/assets/photos/${albumId}/${filename}
-    // to src/content/photos/${albumId}/${filename}
-    const imagePath = `src/content/photos/${albumId}/${filename}`;
+    // Add timestamp to ensure uniqueness
+    cleanFileName = `${cleanFileName}-${Date.now().toString(36)}`;
+    const finalFileName = `${cleanFileName}.${fileExt}`;
     
-    // Read file as binary data
-    const fileData = await readFileAsArrayBuffer(optimizedFile);
+    console.log(`Uploading ${originalFileName} as ${finalFileName} to album ${albumId}`);
+
+    // Create the target path in the repository
+    const path = `src/content/photos/${albumId}/${finalFileName}`;
     
-    // Commit the image file to the repository
-    await commitFile({
-      path: imagePath,
-      content: fileData,
-      message: `Upload image: ${filename} to album ${albumId}`,
-      token
+    // Read the file as ArrayBuffer for binary handling
+    const buffer = await file.arrayBuffer();
+    
+    // Log file information for debugging
+    console.log(`File details - Size: ${file.size}B, Type: ${file.type}`);
+
+    // Attempt to optimize image if possible
+    let optimizedBuffer = buffer;
+    try {
+      optimizedBuffer = await optimizeImage(buffer, fileExt);
+      console.log(`Image optimized from ${buffer.byteLength}B to ${optimizedBuffer.byteLength}B`);
+    } catch (optError) {
+      console.warn('Image optimization failed, using original file:', optError);
+    }
+    
+    // Commit file to GitHub
+    const result = await commitFile({
+      path,
+      content: optimizedBuffer, // Use optimized content
+      message: `Add photo ${finalFileName} to ${albumId} album`,
+      token,
     });
-    
-    // For development, return a path that works with Astro's dev server
-    // This will be interpreted correctly by the content collection
-    const imageUrl = `/assets/photos/${albumId}/${filename}`;
-    
-    return {
-      success: true,
-      url: imageUrl
-    };
+
+    if (result && result.content && result.content.sha) {
+      // Generate the raw GitHub URL for the image
+      const rawUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${path}`;
+      console.log(`Upload successful! URL: ${rawUrl}`);
+      return { success: true, url: rawUrl };
+    } else {
+      throw new Error('Unexpected response from GitHub API');
+    }
   } catch (error) {
     console.error('Error uploading image:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error uploading image'
-    };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error during upload';
+    return { success: false, error: errorMessage };
   }
 }
 
