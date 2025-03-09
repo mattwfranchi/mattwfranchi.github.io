@@ -8,6 +8,7 @@ interface GithubFile {
   path: string;
   content: string;
   message: string;
+  token: string; // Add token to the interface
   branch?: string;
 }
 
@@ -22,6 +23,32 @@ interface ContentItem {
 const REPO_OWNER = 'mattwfranchi';
 const REPO_NAME = 'mattwfranchi.github.io';
 const DEFAULT_BRANCH = 'main';
+
+/**
+ * Convert ArrayBuffer to Base64 string (for binary files)
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Safely convert content to base64 for GitHub API
+ * Handles both strings and binary data
+ */
+function toBase64(content: string | ArrayBuffer): string {
+  if (typeof content === 'string') {
+    // For text content
+    return btoa(unescape(encodeURIComponent(content)));
+  } else {
+    // For binary content
+    return arrayBufferToBase64(content);
+  }
+}
 
 /**
  * Get repository information for a file
@@ -52,17 +79,32 @@ export async function getFileInfo(token: string, path: string): Promise<any> {
 /**
  * Commit a file to the repository
  */
-export async function commitFile(token: string, file: GithubFile): Promise<any> {
-  const { path, content, message, branch = DEFAULT_BRANCH } = file;
-  
+export async function commitFile({
+  path,
+  content,
+  message,
+  token,
+  branch = DEFAULT_BRANCH
+}: GithubFile & { token: string }): Promise<any> {
   try {
     // First check if the file exists
     const existingFile = await getFileInfo(token, path).catch(() => null);
     
+    // Convert content to base64 for GitHub API
+    // Use browser-compatible base64 encoding instead of Node's Buffer
+    const base64Content = toBase64(
+      // Handle binary data properly for images
+      typeof content === 'string' 
+        ? content 
+        : Array.from(new Uint8Array(content))
+            .map(b => String.fromCharCode(b))
+            .join('')
+    );
+    
     // Prepare the request body
     const requestBody: any = {
       message,
-      content: Buffer.from(content).toString('base64'),
+      content: base64Content, // Use the value calculated above, not a duplicate call
       branch
     };
     
@@ -98,49 +140,177 @@ export async function commitFile(token: string, file: GithubFile): Promise<any> 
  * Create a new content item in the repository
  */
 export async function createContent(
-  type: string, 
-  data: ContentItem, 
+  contentType: string,
+  contentData: any,
   token: string
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    // Ensure we have an ID
-    if (!data.id) {
-      data.id = `${Date.now()}`; // Use timestamp as ID if none provided
-    }
+    // Generate a filename for the content
+    const id = contentData.id || `${contentType.slice(0, -1)}_${Date.now()}`;
+    const filename = `${id}.md`;
     
-    // Format the date if provided
-    if (data.date && typeof data.date === 'object' && 'toISOString' in data.date) {
-      data.date = (data.date as Date).toISOString();
-    }
+    // Convert the content data to frontmatter + markdown format
+    let frontmatter = '---\n';
     
-    // Generate content
-    const content = JSON.stringify(data, null, 2);
-    
-    // Create filename
-    const filename = `${data.id}.json`;
-    
-    // Define path in repository
-    const path = `src/content/${type}/${filename}`;
-    
-    // Generate commit message
-    const message = `Add new ${type.slice(0, -1)}: ${data.title || data.id}`;
-    
-    // Commit the file to GitHub
-    await commitFile(token, {
-      path,
-      content,
-      message
+    // Convert contentData to frontmatter, excluding content and special properties
+    Object.entries(contentData).forEach(([key, value]) => {
+      if (key !== 'content' && key !== 'id' && !key.startsWith('_')) {
+        if (Array.isArray(value)) {
+          frontmatter += `${key}:\n`;
+          value.forEach(item => {
+            frontmatter += `  - ${item}\n`;
+          });
+        }
+        else if (typeof value === 'object' && value !== null) {
+          // Handle nested objects with YAML-like structure
+          frontmatter += `${key}:\n`;
+          Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+            if (typeof nestedValue === 'object' && nestedValue !== null) {
+              frontmatter += `  ${nestedKey}:\n`;
+              Object.entries(nestedValue).forEach(([deepKey, deepValue]) => {
+                if (deepValue !== undefined && deepValue !== null && deepValue !== '') {
+                  frontmatter += `    ${deepKey}: ${deepValue}\n`;
+                }
+              });
+            } else if (nestedValue !== undefined && nestedValue !== null && nestedValue !== '') {
+              frontmatter += `  ${nestedKey}: ${nestedValue}\n`;
+            }
+          });
+        }
+        else if (value !== undefined && value !== null) {
+          frontmatter += `${key}: ${value}\n`;
+        }
+      }
     });
     
-    return { 
-      success: true, 
-      message: `Successfully created ${type.slice(0, -1)}: ${data.title || data.id}`
+    frontmatter += '---\n\n';
+    
+    // Add content after frontmatter if it exists
+    const markdown = contentData.content 
+      ? frontmatter + contentData.content
+      : frontmatter;
+    
+    // Define the file path
+    const path = `src/content/${contentType}/${filename}`;
+    
+    // Create the file in GitHub
+    const result = await commitFile({
+      path,
+      content: markdown,
+      message: `Add ${contentType.slice(0, -1)}: ${contentData.title || id}`,
+      token
+    });
+    
+    console.log(`Created ${contentType.slice(0, -1)} file:`, path);
+    
+    return {
+      success: true,
+      message: `${contentType.slice(0, -1).charAt(0).toUpperCase() + contentType.slice(0, -1).slice(1)} created successfully!`
     };
   } catch (error) {
-    console.error(`Error creating ${type}:`, error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error'
+    console.error(`Error creating ${contentType.slice(0, -1)}:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+}
+
+// Add this function after createContent
+
+/**
+ * Update an existing content item in the repository
+ */
+export async function updateContent(
+  path: string,
+  contentData: any,
+  token: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    console.log('Updating content at path:', path);
+    console.log('Content data to update:', contentData);
+    
+    // Get the original file to get its SHA
+    const fileResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!fileResponse.ok) {
+      throw new Error(`Failed to get original file: ${fileResponse.status}`);
+    }
+    
+    const fileData = await fileResponse.json();
+    const fileSha = fileData.sha;
+    
+    // Convert the content data to frontmatter + markdown format
+    let frontmatter = '---\n';
+    
+    // Convert contentData to frontmatter, excluding content and special properties
+    Object.entries(contentData).forEach(([key, value]) => {
+      if (key !== 'content' && key !== '_sourceFile' && key !== '_rawContent' && !key.startsWith('_')) {
+        if (Array.isArray(value)) {
+          frontmatter += `${key}:\n`;
+          value.forEach(item => {
+            frontmatter += `  - ${item}\n`;
+          });
+        }
+        else if (typeof value === 'object' && value !== null) {
+          // Handle nested objects with YAML-like structure
+          frontmatter += `${key}:\n`;
+          Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+            if (typeof nestedValue === 'object' && nestedValue !== null) {
+              frontmatter += `  ${nestedKey}:\n`;
+              Object.entries(nestedValue).forEach(([deepKey, deepValue]) => {
+                if (deepValue !== undefined && deepValue !== null && deepValue !== '') {
+                  frontmatter += `    ${deepKey}: ${deepValue}\n`;
+                }
+              });
+            } else if (nestedValue !== undefined && nestedValue !== null && nestedValue !== '') {
+              frontmatter += `  ${nestedKey}: ${nestedValue}\n`;
+            }
+          });
+        }
+        else if (value !== undefined && value !== null) {
+          frontmatter += `${key}: ${value}\n`;
+        }
+      }
+    });
+    
+    frontmatter += '---\n\n';
+    
+    // Add content after frontmatter if it exists
+    const markdown = contentData.content 
+      ? frontmatter + contentData.content
+      : frontmatter;
+    
+    // Add more logging before sending the request
+    console.log('Generated frontmatter:', frontmatter);
+    console.log('Final markdown content:', markdown);
+    
+    // Update the file in GitHub
+    const result = await commitFile({
+      path,
+      content: markdown,
+      message: `Update content: ${contentData.title || path}`,
+      token,
+      branch: DEFAULT_BRANCH,
+      sha: fileSha
+    });
+    
+    console.log(`Updated content file:`, path);
+    
+    return {
+      success: true,
+      message: `Content updated successfully!`
+    };
+  } catch (error) {
+    console.error(`Error updating content:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
@@ -163,26 +333,26 @@ export async function uploadImage(
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
     
-    // Create path for the image in the repository
-    const imagePath = `public/assets/photos/${albumId}/${filename}`;
+    // UPDATED: Create path for the image in the correct directory structure
+    // Changed from public/assets/photos/${albumId}/${filename}
+    // to src/content/photos/${albumId}/${filename}
+    const imagePath = `src/content/photos/${albumId}/${filename}`;
     
     // Read file as binary data
-    const reader = new FileReader();
-    const fileData = await new Promise<string>((resolve, reject) => {
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsBinaryString(optimizedFile);
-    });
+    const fileData = await readFileAsArrayBuffer(optimizedFile);
     
     // Commit the image file to the repository
-    await commitFile(token, {
+    await commitFile({
       path: imagePath,
       content: fileData,
-      message: `Upload image: ${filename} to album ${albumId}`
+      message: `Upload image: ${filename} to album ${albumId}`,
+      token
     });
     
-    // Return the URL to the image (relative to the public directory)
+    // For development, return a path that works with Astro's dev server
+    // This will be interpreted correctly by the content collection
     const imageUrl = `/assets/photos/${albumId}/${filename}`;
+    
     return {
       success: true,
       url: imageUrl
@@ -194,6 +364,16 @@ export async function uploadImage(
       error: error instanceof Error ? error.message : 'Unknown error uploading image'
     };
   }
+}
+
+// Helper function to read file as array buffer - more reliable for binary data
+function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
 }
 
 // Helper function to convert a file to base64
@@ -214,15 +394,156 @@ export async function getContentList(
   type: string
 ): Promise<{ success: boolean; items?: any[]; error?: string }> {
   try {
-    if (!token || token.trim() === '') {
-      console.error("No GitHub token provided to getContentList");
-      return { success: false, error: "No GitHub token provided" };
+    // For Astro dev environment, try to use the initial data if available
+    if (window.initialContentData && window.initialContentData[type]) {
+      const initialItems = window.initialContentData[type];
+      if (initialItems && initialItems.length > 0) {
+        console.log(`Using initial ${type} data from Astro (${initialItems.length} items)`);
+        return { success: true, items: initialItems };
+      }
     }
     
-    console.log(`Fetching ${type} list with token: ${token.substring(0, 4)}...${token.substring(token.length - 4)}`);
+    // If no initial data available, fetch content from GitHub
+    console.log(`Fetching ${type} from GitHub API`);
+    const items = await fetchContent(type, token);
+    console.log(`Fetched ${items.length} ${type} items from GitHub`);
     
-    // Get the list of files in the content directory
-    const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/src/content/${type}`, {
+    return { success: true, items };
+  } catch (error) {
+    console.error(`Error getting ${type} list:`, error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : `Failed to get ${type}` 
+    };
+  }
+}
+
+// Add helper function to parse frontmatter from Markdown
+function parseFrontmatter(markdown: string): any {
+  try {
+    // Simple frontmatter parser
+    // Looking for content between --- markers at the beginning of the file
+    const frontmatterMatch = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    
+    if (!frontmatterMatch) {
+      return { content: markdown }; // No frontmatter found
+    }
+    
+    const frontmatterRaw = frontmatterMatch[1];
+    const content = markdown.replace(frontmatterMatch[0], '').trim();
+    
+    // Parse YAML-like frontmatter
+    const result: Record<string, any> = { content };
+    
+    // Track list parsing state
+    let currentList: string | null = null;
+    let currentListItems: string[] = [];
+    
+    // Parse line by line
+    const lines = frontmatterRaw.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trimRight(); // Remove trailing spaces
+      
+      // Skip empty lines
+      if (!line.trim()) continue;
+      
+      // Check for list item
+      if (line.trim().startsWith('- ')) {
+        if (currentList) {
+          // Add to current list
+          currentListItems.push(line.trim().substring(2));
+        }
+        continue;
+      }
+      
+      // If we were processing a list and now we found a non-list line,
+      // save the list and reset the list state
+      if (currentList) {
+        result[currentList] = currentListItems;
+        currentList = null;
+        currentListItems = [];
+      }
+      
+      // Handle regular key-value pair
+      const match = line.match(/^([^:]+):\s*(.*)/);
+      if (match) {
+        let [_, key, value] = match;
+        key = key.trim();
+        value = value.trim();
+        
+        // If this is the start of a list
+        if (!value) {
+          const nextLine = i < lines.length - 1 ? lines[i + 1].trim() : '';
+          if (nextLine.startsWith('- ')) {
+            currentList = key;
+            currentListItems = [];
+            continue;
+          }
+        }
+        
+        // Handle arrays (e.g., tags: [tag1, tag2])
+        if (value.startsWith('[') && value.endsWith(']')) {
+          result[key] = value.slice(1, -1).split(',').map(v => v.trim());
+        }
+        // Handle nested objects (treat nested structure as raw text for now)
+        else if (value.includes('{') && value.includes('}')) {
+          try {
+            // Try to parse as JSON
+            result[key] = JSON.parse(value.replace(/'/g, '"'));
+          } catch (e) {
+            // If parsing fails, keep as string
+            result[key] = value;
+          }
+        }
+        // Handle dates
+        else if (value.match(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/)) {
+          result[key] = value; // Keep as string to avoid timezone issues
+        }
+        // Handle booleans
+        else if (value.toLowerCase() === 'true') {
+          result[key] = true;
+        }
+        else if (value.toLowerCase() === 'false') {
+          result[key] = false;
+        }
+        // Handle numbers
+        else if (!isNaN(Number(value)) && value !== '') {
+          result[key] = Number(value);
+        }
+        // Default to string
+        else {
+          result[key] = value;
+        }
+      }
+    }
+    
+    // If we were processing a list at the end, save it
+    if (currentList) {
+      result[currentList] = currentListItems;
+    }
+    
+    // Add special handling for photos - make sure albumId is available
+    if (result.photo && !result.albumId && result.album) {
+      result.albumId = result.album;
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("Error parsing frontmatter:", error);
+    return { content: markdown }; // Return at least the content on failure
+  }
+}
+
+// Add this function after the parseFrontmatter function
+
+/**
+ * Fetch and parse a markdown file from GitHub repository
+ */
+async function fetchAndParseFile(path: string, token: string): Promise<any> {
+  try {
+    // Fetch the file from GitHub
+    const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
       headers: {
         'Authorization': `token ${token}`,
         'Accept': 'application/vnd.github.v3+json'
@@ -230,112 +551,30 @@ export async function getContentList(
     });
     
     if (!response.ok) {
-      if (response.status === 404) {
-        console.log(`Directory src/content/${type} doesn't exist yet, returning empty array`);
-        return { success: true, items: [] }; // Directory doesn't exist yet
-      }
-      
-      console.error(`GitHub API error when fetching content list: ${response.status} ${response.statusText}`);
-      const errorBody = await response.text();
-      console.error("Response body:", errorBody);
-      
-      throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
     }
     
-    const files = await response.json();
-    console.log(`Found ${files.length} files in ${type} directory`);
+    const data = await response.json();
     
-    // Only process JSON files or files without extensions (likely directories with content)
-    const jsonFiles = files.filter((file: any) => {
-      return (file.name.endsWith('.json') && file.type === 'file') || 
-             (file.name.indexOf('.') === -1); // Include files without extensions
-    });
+    // GitHub API returns file content as base64 encoded
+    // Decode it to plain text
+    const content = atob(data.content.replace(/\n/g, '')); // Remove newlines GitHub may add
     
-    console.log(`Processing ${jsonFiles.length} JSON files`);
+    // Parse the file content
+    const parsed = parseFrontmatter(content);
     
-    // If no JSON files found but files exist, we may need to check individual files
-    if (jsonFiles.length === 0 && files.length > 0) {
-      console.log("No JSON files found directly, checking for content structure variations");
-      
-      // Some repositories might have a different structure
-      // Try to process all files and see which ones contain valid JSON
-      const allItems = await Promise.all(
-        files.map(async (file: any) => {
-          if (file.type === 'file') {
-            try {
-              const contentResponse = await fetch(file.download_url);
-              if (contentResponse.ok) {
-                const content = await contentResponse.json();
-                // Add source file info for debugging
-                content._sourceFile = file.name;
-                return content;
-              }
-            } catch (e) {
-              console.log(`File ${file.name} is not valid JSON, skipping`);
-            }
-          }
-          return null;
-        })
-      );
-      
-      // Filter out nulls
-      const validItems = allItems.filter(item => item !== null);
-      console.log(`Found ${validItems.length} valid content items`);
-      
-      return { success: true, items: validItems };
-    }
+    // Add id field based on the file path
+    const filename = path.split('/').pop();
+    const id = filename?.replace('.md', '') || '';
+    parsed.id = id;
     
-    // Fetch and parse each JSON file
-    const items = await Promise.all(
-      jsonFiles.map(async (file: any) => {
-        try {
-          if (file.type === 'file') {
-            const contentResponse = await fetch(file.download_url);
-            if (!contentResponse.ok) {
-              throw new Error(`Failed to fetch content: ${contentResponse.status}`);
-            }
-            const content = await contentResponse.json();
-            // Add source file info for debugging
-            content._sourceFile = file.name;
-            return content;
-          } else if (file.type === 'dir') {
-            // Handle directories if needed
-            // For example, fetch index.json or info.json from the directory
-            const indexResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/src/content/${type}/${file.name}/index.json`, {
-              headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json'
-              }
-            });
-            
-            if (indexResponse.ok) {
-              const indexFile = await indexResponse.json();
-              const contentResponse = await fetch(indexFile.download_url);
-              if (contentResponse.ok) {
-                const content = await contentResponse.json();
-                content._sourceFile = `${file.name}/index.json`;
-                return content;
-              }
-            }
-          }
-        } catch (e) {
-          console.error(`Error processing file ${file.name}:`, e);
-        }
-        return null;
-      })
-    );
+    // Keep raw content for possible use
+    parsed._rawContent = content;
     
-    // Filter out any nulls from errors
-    const validItems = items.filter(item => item !== null);
-    console.log(`Successfully processed ${validItems.length} content items`);
-    
-    return { success: true, items: validItems };
+    return parsed;
   } catch (error) {
-    console.error(`Failed to get ${type} list:`, error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
+    console.error(`Error fetching and parsing file ${path}:`, error);
+    throw error;
   }
 }
 
@@ -382,5 +621,350 @@ export async function validateToken(token: string): Promise<{valid: boolean; mes
       valid: false, 
       message: error instanceof Error ? error.message : 'Unknown error' 
     };
+  }
+}
+
+/**
+ * Delete a content file from the GitHub repository
+ * For photos, also deletes the associated image file
+ */
+export async function deleteContent(
+  path: string,
+  token: string,
+  commitMessage: string = 'Delete content'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // First, get the file to retrieve its SHA - required for deletion
+    const fileResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+    
+    if (!fileResponse.ok) {
+      const errorBody = await fileResponse.text();
+      throw new Error(`Failed to get file: ${fileResponse.status} ${fileResponse.statusText} - ${errorBody}`);
+    }
+    
+    const fileData = await fileResponse.json();
+    const fileSha = fileData.sha;
+    
+    // Check if this is a photo markdown file
+    const isPhotoMarkdown = path.startsWith('src/content/photos/') && path.endsWith('.md');
+    
+    // If this is a photo, we need to find and delete the image file too
+    if (isPhotoMarkdown) {
+      // Try to get the photo content to find the image reference
+      const photoContent = await fetchAndParseFile(path, token);
+      
+      try {
+        // Get the directory path (album path)
+        const directoryPath = path.substring(0, path.lastIndexOf('/'));
+        const baseFilename = path.split('/').pop()?.replace('.md', '');
+        
+        // List all files in the directory to find the image
+        const dirResponse = await fetch(
+          `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${directoryPath}`,
+          {
+            headers: {
+              Authorization: `token ${token}`,
+              Accept: 'application/vnd.github.v3+json'
+            }
+          }
+        );
+        
+        if (dirResponse.ok) {
+          const files = await dirResponse.json();
+          
+          // Look for image files with the same base name
+          const matchingImageFiles = files.filter(file => {
+            // Skip the markdown file itself
+            if (file.path === path) return false;
+            
+            const fileName = file.name;
+            // Check if this is an image file with the same base name
+            return /\.(jpe?g|png|gif|webp)$/i.test(fileName) && 
+                   fileName.replace(/\.[^/.]+$/, '') === baseFilename;
+          });
+          
+          // Delete each matching image file
+          for (const imageFile of matchingImageFiles) {
+            console.log(`Deleting associated image file: ${imageFile.path}`);
+            
+            const imgResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${imageFile.path}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `token ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+              },
+              body: JSON.stringify({
+                message: `Delete image for ${baseFilename}`,
+                sha: imageFile.sha
+              })
+            });
+            
+            if (!imgResponse.ok) {
+              console.error(`Failed to delete image file: ${imageFile.path}`, await imgResponse.text());
+              // Continue with other deletions even if one fails
+            } else {
+              console.log(`Successfully deleted image file: ${imageFile.path}`);
+            }
+          }
+        }
+      } catch (imageError) {
+        console.error('Error finding/deleting associated image file:', imageError);
+        // Continue with markdown deletion even if image deletion fails
+      }
+    }
+    
+    // Now delete the original file (markdown) using its SHA
+    const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({
+        message: commitMessage,
+        sha: fileSha
+      })
+    });
+    
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Failed to delete file: ${response.status} ${response.statusText} - ${errorBody}`);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting content:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error during deletion'
+    };
+  }
+}
+
+// Update the fetchContent function to avoid creating duplicate items:
+
+export async function fetchContent(type: string, token: string): Promise<any[]> {
+  try {
+    // Validate the token
+    const validation = await validateToken(token);
+    if (!validation.valid) {
+      console.error('Invalid token:', validation.message);
+      return [];
+    }
+
+    // Different paths based on content type
+    let directoryPath: string;
+    switch (type) {
+      case 'albums':
+        directoryPath = 'src/content/albums';
+        break;
+      case 'photos':
+        directoryPath = 'src/content/photos';
+        break;
+      case 'snips':
+        directoryPath = 'src/content/snips';
+        break;
+      case 'playlists':
+        directoryPath = 'src/content/playlists';
+        break;
+      default:
+        throw new Error(`Unknown content type: ${type}`);
+    }
+
+    console.log(`Fetching ${type} list with token: ${token.slice(0, 5)}...${token.slice(-4)}`);
+
+    // List the contents of the directory
+    const response = await fetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${directoryPath}`,
+      {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to list directory: ${response.status} ${errorText}`);
+    }
+
+    const items = await response.json();
+    
+    // Filter out non-content files
+    const validItems = Array.isArray(items) ? items : [];
+    console.log(`Found ${validItems.length} files in ${type} directory`);
+
+    // For photos, handle the special case of subdirectories by album
+    if (type === 'photos') {
+      const photoItems = [];
+      
+      // IMPROVED TRACKING: Use normalized IDs for better deduplication
+      const seenPhotoIds = new Set();
+      const seenMarkdownPaths = new Set();
+      const seenImagePaths = new Set();
+      const photosByAlbum = {}; // Track photos by album for better organization
+      
+      // For each subdirectory (album), fetch its contents
+      for (const item of validItems) {
+        if (item.type === 'dir') {
+          const albumPath = item.path;
+          const albumId = item.name; // Album ID is the directory name
+          
+          if (!photosByAlbum[albumId]) {
+            photosByAlbum[albumId] = [];
+          }
+          
+          // Fetch photos in this album
+          const photoResponse = await fetch(
+            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${albumPath}`,
+            {
+              headers: {
+                Authorization: `token ${token}`,
+                Accept: 'application/vnd.github.v3+json'
+              }
+            }
+          );
+          
+          if (photoResponse.ok) {
+            const albumPhotos = await photoResponse.json();
+            
+            // Create a map to track which images have markdown files
+            const photoMap = new Map();
+            
+            // First pass: index all files by their base name (without extension)
+            for (const file of albumPhotos) {
+              const baseName = file.name.replace(/\.[^/.]+$/, '');
+              if (!photoMap.has(baseName)) {
+                photoMap.set(baseName, { markdown: null, image: null });
+              }
+              
+              if (file.name.endsWith('.md')) {
+                photoMap.get(baseName).markdown = file;
+              } else if (/\.(jpe?g|png|gif|webp)$/i.test(file.name)) {
+                photoMap.get(baseName).image = file;
+              }
+            }
+            
+            // Second pass: Process each photo with priority to markdown files
+            for (const [baseName, files] of photoMap.entries()) {
+              const photoId = `${albumId}/${baseName}`;
+              
+              // Skip if we've already processed this photo ID
+              if (seenPhotoIds.has(photoId)) {
+                console.log(`Skipping duplicate photo ID: ${photoId}`);
+                continue;
+              }
+              
+              // Process markdown file if available
+              if (files.markdown) {
+                const mdFile = files.markdown;
+                
+                // Skip duplicate paths
+                if (seenMarkdownPaths.has(mdFile.path)) {
+                  continue;
+                }
+                seenMarkdownPaths.add(mdFile.path);
+                
+                try {
+                  const photoContent = await fetchAndParseFile(mdFile.path, token);
+                  if (photoContent) {
+                    photoContent.albumId = albumId;
+                    photoContent._sourceFile = mdFile.path;
+                    photoContent.id = photoId;
+                    
+                    // If there's also an image file, make sure the photo property points to it
+                    if (files.image) {
+                      // Use GitHub raw URL for better compatibility
+                      photoContent.photo = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${files.image.path}`;
+                    }
+                    
+                    seenPhotoIds.add(photoId);
+                    photoItems.push(photoContent);
+                    photosByAlbum[albumId].push(photoContent);
+                  }
+                } catch (err) {
+                  console.error(`Error processing file ${mdFile.path}:`, err);
+                }
+              } 
+              // If no markdown but has image
+              else if (files.image) {
+                const imgFile = files.image;
+                
+                // Skip duplicate paths
+                if (seenImagePaths.has(imgFile.path)) {
+                  continue;
+                }
+                seenImagePaths.add(imgFile.path);
+                
+                const extension = imgFile.name.split('.').pop() || '';
+                // Generate title from filename
+                const title = baseName.replace(/-/g, ' ').replace(/_/g, ' ')
+                  .replace(/\b\w/g, l => l.toUpperCase());
+                
+                const photoObject = {
+                  id: photoId,
+                  title: title,
+                  albumId: albumId,
+                  photo: `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${imgFile.path}`,
+                  _sourceFile: imgFile.path,
+                  pubDatetime: new Date().toISOString(),
+                  format: extension
+                };
+                
+                seenPhotoIds.add(photoId);
+                photoItems.push(photoObject);
+                photosByAlbum[albumId].push(photoObject);
+              }
+            }
+          } else {
+            console.error(`Failed to fetch album ${albumId}:`, await photoResponse.text());
+          }
+        }
+      }
+      
+      console.log(`Total unique photos found: ${photoItems.length}`);
+      return photoItems;
+    }
+    
+    // Regular content processing for other types (albums, snips, playlists)
+    const contentItems = [];
+    const seenIds = new Set(); // Track already processed IDs to prevent duplicates
+    
+    // Process each content file
+    for (const item of validItems) {
+      // Only process markdown files for regular content
+      if (item.name.endsWith('.md')) {
+        try {
+          const baseName = item.name.replace('.md', '');
+          // Prevent duplicate item processing
+          if (seenIds.has(baseName)) {
+            console.log(`Skipping duplicate file: ${item.name}`);
+            continue;
+          }
+          seenIds.add(baseName);
+          
+          const contentData = await fetchAndParseFile(item.path, token);
+          if (contentData) {
+            contentData._sourceFile = item.path;
+            contentItems.push(contentData);
+          }
+        } catch (err) {
+          console.error(`Error processing file ${item.path}:`, err);
+        }
+      }
+    }
+    
+    return contentItems;
+  } catch (error) {
+    console.error(`Error fetching ${type} content:`, error);
+    return []; // Return empty array on error
   }
 }

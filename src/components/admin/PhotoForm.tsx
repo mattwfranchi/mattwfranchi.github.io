@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { createContent, validateToken } from '../../utils/githubDirectService';
+import React, { useState, useEffect, useMemo } from 'react';
+import { createContent, validateToken, updateContent } from '../../utils/githubDirectService';
 import PhotoUpload from './PhotoUpload';
+import { extractPhotoUrl, normalizePhotoUrl } from '../../utils/contentHelpers';
+import Pagination from './Pagination';
 
 interface PhotoFormProps {
   albums: any[];
@@ -8,9 +10,21 @@ interface PhotoFormProps {
   onError: (message: string) => void;
   gitHubToken: string;
   onRefresh?: () => void; // Optional callback to refresh content
+  editMode?: boolean;
+  initialData?: any;
+  onCancel?: () => void;
 }
 
-const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHubToken, onRefresh }) => {
+const PhotoForm: React.FC<PhotoFormProps> = ({ 
+  albums, 
+  onSuccess, 
+  onError, 
+  gitHubToken, 
+  onRefresh,
+  editMode = false,
+  initialData = null,
+  onCancel
+}) => {
   const [formData, setFormData] = useState({
     albumId: '',
     title: '',
@@ -34,6 +48,125 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTokenValidating, setIsTokenValidating] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12); // Default to 12 photos per page for grid view
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+
+  // Add this to PhotoForm after your existing state variables
+  // For paginating photos in album selector
+  const paginatePhotos = (photos, page, perPage) => {
+    const startIndex = (page - 1) * perPage;
+    return photos.slice(startIndex, startIndex + perPage);
+  };
+
+  // Add this useEffect to reset to page 1 when album selection changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [formData.albumId]);
+
+  // Add this near the pagination logic
+  // Get photos from the selected album
+  const selectedAlbumPhotos = useMemo(() => {
+    if (!formData.albumId || !albums) return [];
+    
+    // Find photos that match the current album ID
+    const albumPhotos = albums.flatMap(album => {
+      if (album.id === formData.albumId && album.photos) {
+        return album.photos;
+      }
+      return [];
+    });
+    
+    return albumPhotos;
+  }, [formData.albumId, albums]);
+
+  // Initialize form with data when in edit mode
+  useEffect(() => {
+    if (editMode && initialData) {
+      console.log('Initial photo data for editing:', initialData);
+      
+      // Format date if available - check both direct and data nested properties
+      let formattedDate = '';
+      try {
+        const dateValue = initialData.pubDatetime || initialData.date || 
+                        (initialData.data && (initialData.data.pubDatetime || initialData.data.date));
+        
+        if (dateValue) {
+          const date = new Date(dateValue);
+          formattedDate = date.toISOString();
+        } else {
+          formattedDate = new Date().toISOString();
+        }
+      } catch (e) {
+        console.error('Error parsing date:', e);
+        formattedDate = new Date().toISOString();
+      }
+      
+      // Extract metadata if available - check both direct and data nested properties
+      const metadata = {
+        camera: '',
+        lens: '',
+        settings: {
+          aperture: '',
+          shutterSpeed: '',
+          iso: '',
+          focalLength: ''
+        }
+      };
+      
+      // Check both direct and data nested properties
+      const metadataSource = initialData.metadata || (initialData.data && initialData.data.metadata);
+      
+      if (metadataSource) {
+        metadata.camera = metadataSource.camera || '';
+        metadata.lens = metadataSource.lens || '';
+        
+        if (metadataSource.settings) {
+          metadata.settings.aperture = metadataSource.settings.aperture || '';
+          metadata.settings.shutterSpeed = metadataSource.settings.shutterSpeed || '';
+          metadata.settings.iso = metadataSource.settings.iso || '';
+          metadata.settings.focalLength = metadataSource.settings.focalLength || '';
+        }
+      }
+      
+      // Get album ID from either direct property or data nested property
+      const albumId = initialData.albumId || (initialData.data && initialData.data.albumId) || '';
+      
+      // Get title from either direct property or data nested property
+      const title = initialData.title || (initialData.data && initialData.data.title) || '';
+      
+      // Get caption from either direct property or data nested property
+      const caption = initialData.caption || (initialData.data && initialData.data.caption) || '';
+      
+      // Get order from either direct property or data nested property
+      const order = initialData.order || (initialData.data && initialData.data.order) || '';
+      
+      // Set form data from initial data
+      setFormData({
+        albumId,
+        title,
+        caption,
+        order: order ? String(order) : '',
+        metadata,
+        pubDatetime: formattedDate
+      });
+      
+      // Set image URL if available
+      const photoUrl = extractPhotoUrl(initialData);
+      if (photoUrl) {
+        // Get albumId for proper path normalization
+        const albumId = initialData.albumId || (initialData.data && initialData.data.albumId);
+        const normalizedUrl = normalizePhotoUrl(photoUrl, albumId);
+        setImageUrl(normalizedUrl);
+        console.log('Setting photo URL:', normalizedUrl);
+        
+        // Also set show advanced if metadata exists
+        if (metadata.camera || metadata.lens) {
+          setShowAdvanced(true);
+        }
+      }
+    }
+  }, [editMode, initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -77,7 +210,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
     onSuccess(`Image "${filename}" uploaded successfully`);
     
     // If we have a title field that's empty, use the filename as title suggestion
-    if (!formData.title) {
+    if (!formData.title && !editMode) {
       const suggestedTitle = filename.split('.')[0]
         .replace(/-/g, ' ')
         .replace(/_/g, ' ')
@@ -120,8 +253,8 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
         throw new Error(`Token validation failed: ${validationResult.message || 'Unknown error'}`);
       }
       
-      // Generate a unique ID for the photo
-      const photoId = `photo_${Date.now()}`;
+      // Generate a unique ID for the photo (if not in edit mode)
+      const photoId = editMode && initialData ? initialData.id : `photo_${Date.now()}`;
       
       // Prepare data for submission
       const photoData = {
@@ -141,45 +274,60 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
           }
         },
         pubDatetime: formData.pubDatetime || new Date().toISOString(),
-        photo: imageUrl // Use the uploaded image URL
+        photo: imageUrl,
+        // Keep the source file path if in edit mode
+        _sourceFile: editMode && initialData ? initialData._sourceFile : undefined
       };
       
-      // Create content file using our direct GitHub service
-      const result = await createContent('photos', photoData, gitHubToken);
+      let result;
       
-      if (result.success) {
-        onSuccess('Photo added successfully');
-        
-        // Reset the form
-        setFormData({
-          albumId: '',
-          title: '',
-          caption: '',
-          order: '',
-          metadata: {
-            camera: '',
-            lens: '',
-            settings: {
-              aperture: '',
-              shutterSpeed: '',
-              iso: '',
-              focalLength: ''
-            }
-          },
-          pubDatetime: new Date().toISOString()
-        });
-        setImageUrl(null);
-        
-        // Call refresh callback if provided
-        if (onRefresh) {
-          onRefresh();
+      if (editMode && initialData && initialData._sourceFile) {
+        // Update existing photo
+        result = await updateContent(initialData._sourceFile, photoData, gitHubToken);
+        if (result.success) {
+          onSuccess('Photo updated successfully');
+        } else {
+          throw new Error(result.error || 'Failed to update photo');
         }
       } else {
-        onError(result.error || 'Failed to create photo content');
+        // Create new photo
+        result = await createContent('photos', photoData, gitHubToken);
+        if (result.success) {
+          onSuccess('Photo added successfully');
+          
+          // Only reset form if not in edit mode
+          if (!editMode) {
+            setFormData({
+              albumId: '',
+              title: '',
+              caption: '',
+              order: '',
+              metadata: {
+                camera: '',
+                lens: '',
+                settings: {
+                  aperture: '',
+                  shutterSpeed: '',
+                  iso: '',
+                  focalLength: ''
+                }
+              },
+              pubDatetime: new Date().toISOString()
+            });
+            setImageUrl(null);
+          }
+        } else {
+          throw new Error(result.error || 'Failed to create photo');
+        }
+      }
+      
+      // Call refresh callback if provided
+      if (onRefresh) {
+        onRefresh();
       }
     } catch (error) {
-      console.error("Error creating photo:", error);
-      onError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(editMode ? "Error updating photo:" : "Error creating photo:", error);
+      onError(error instanceof Error ? error.message : "Unknown error occurred");
     } finally {
       setIsSubmitting(false);
     }
@@ -187,11 +335,42 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
 
   // Determine the button text based on current state
   const buttonText = isTokenValidating ? 'Validating Token...' : 
-                    isSubmitting ? 'Adding Photo...' : 'Save Photo';
+                    isSubmitting ? (editMode ? 'Updating Photo...' : 'Adding Photo...') : 
+                    (editMode ? 'Update Photo' : 'Save Photo');
+
+  // Get paginated photos when displaying album contents
+  const albumPhotos = selectedAlbumPhotos ? 
+    paginatePhotos(selectedAlbumPhotos, currentPage, itemsPerPage) : 
+    [];
+
+  // Add this function to handle photo selection
+  const handlePhotoSelect = (photo) => {
+    setSelectedPhoto(photo);
+    
+    // If a photo is selected, also update the form with its data
+    if (photo) {
+      // Update image URL
+      const photoUrl = extractPhotoUrl(photo);
+      if (photoUrl) {
+        setImageUrl(normalizePhotoUrl(photoUrl, formData.albumId));
+      }
+      
+      // Update title if available
+      if (photo.title) {
+        setFormData(prev => ({
+          ...prev,
+          title: photo.title
+        }));
+      }
+    }
+  };
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-6">Upload New Photo</h2>
+      <h2 className="text-2xl font-semibold mb-6">
+        {editMode ? 'Edit Photo' : 'Upload New Photo'}
+      </h2>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
@@ -204,6 +383,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              disabled={editMode} // Don't allow changing album in edit mode
             >
               <option value="">Select an album</option>
               {albums.map(album => (
@@ -215,8 +395,8 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
           </div>
           
           <div className="md:col-span-2">
-            {/* Use the reusable PhotoUpload component */}
-            {formData.albumId ? (
+            {/* Only show upload component if we don't have an image yet or we're not in edit mode */}
+            {formData.albumId && (!imageUrl || !editMode) ? (
               <>
                 <PhotoUpload
                   albumId={formData.albumId}
@@ -224,22 +404,45 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
                   onSuccess={handleImageUploadSuccess}
                   onError={onError}
                 />
-                
-                {imageUrl && (
-                  <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md">
-                    <p className="text-sm text-green-800 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Image uploaded successfully
-                    </p>
-                    <p className="text-xs text-green-700 mt-1 truncate">
+              </>
+            ) : null}
+            
+            {/* Show uploaded image preview/info */}
+            {imageUrl && (
+              <div className="mt-3 p-4 bg-gray-50 border border-gray-200 rounded-md">
+                <div className="flex flex-wrap items-start">
+                  <div className="flex-shrink-0 mr-4 mb-4">
+                    <img 
+                      src={imageUrl}
+                      alt="Photo preview"
+                      className="h-40 w-auto object-cover rounded-md"
+                      onError={(e) => {
+                        console.error('Image failed to load:', imageUrl);
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Preview';
+                      }}
+                    />
+                  </div>
+                  <div className="flex-grow">
+                    <p className="text-sm font-medium text-gray-700">Current photo:</p>
+                    <p className="text-xs text-gray-500 mt-1 break-all">
                       {imageUrl}
                     </p>
+                    {editMode && (
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl(null)}
+                        className="mt-2 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
+                      >
+                        Replace Image
+                      </button>
+                    )}
                   </div>
-                )}
-              </>
-            ) : (
+                </div>
+              </div>
+            )}
+            
+            {!imageUrl && !formData.albumId && (
               <div className="border border-yellow-200 bg-yellow-50 p-3 rounded-md">
                 <p className="text-sm text-yellow-800">
                   Please select an album before uploading photos.
@@ -393,7 +596,18 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
           )}
         </div>
         
-        <div className="pt-4">
+        <div className="pt-4 flex justify-between">
+          {/* Show cancel button in edit mode */}
+          {editMode && onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+          )}
+          
           <button
             type="submit"
             disabled={!imageUrl || isSubmitting || isTokenValidating}
@@ -403,6 +617,87 @@ const PhotoForm: React.FC<PhotoFormProps> = ({ albums, onSuccess, onError, gitHu
           </button>
         </div>
       </form>
+
+      {/* Add this conditional check before using albumPhotos in your JSX */}
+      {formData.albumId && selectedAlbumPhotos && selectedAlbumPhotos.length > 0 && (
+        <div>
+          <h3 className="text-lg font-medium mt-6 mb-2">Album Photos</h3>
+          {/* Existing photo grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+            {albumPhotos.map((photo) => (
+              // existing photo grid items
+              <div 
+                key={photo.id || photo._sourceFile}
+                className={`relative cursor-pointer rounded-lg overflow-hidden border-2 ${
+                  selectedPhoto === photo ? 'border-indigo-500' : 'border-transparent'
+                }`}
+                onClick={() => handlePhotoSelect(photo)}
+              >
+                {/* Photo preview image */}
+                <img 
+                  src={photo.photo || extractPhotoUrl(photo)} 
+                  alt={photo.title || 'Photo'} 
+                  className="w-full h-32 object-cover"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'data:image/svg+xml;base64,...'; // Fallback image base64
+                  }}
+                />
+                
+                {/* Selection indicator */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {selectedPhoto === photo && (
+                    <div className="bg-indigo-500 bg-opacity-40 absolute inset-0 flex items-center justify-center">
+                      <svg viewBox="0 0 20 20" fill="white" className="w-8 h-8">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Photo title */}
+                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white px-2 py-1 text-xs truncate">
+                  {photo.title || 'Untitled'}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Pagination controls */}
+          <div className="mt-4 flex items-center justify-between">
+            {/* existing pagination controls */}
+            <div className="flex items-center">
+              <label className="text-sm text-gray-600 mr-2">Photos per page:</label>
+              <select 
+                value={itemsPerPage} 
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1); // Reset to first page when changing items per page
+                }}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="12">12</option>
+                <option value="24">24</option>
+                <option value="48">48</option>
+                <option value="96">96</option>
+              </select>
+            </div>
+            
+            <Pagination
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={selectedAlbumPhotos?.length || 0}
+              onPageChange={(page) => setCurrentPage(page)}
+            />
+          </div>
+        </div>
+      )}
+
+      {formData.albumId && (!selectedAlbumPhotos || selectedAlbumPhotos.length === 0) && (
+        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-md text-center">
+          <p className="text-gray-600">No photos in this album yet.</p>
+        </div>
+      )}
     </div>
   );
 };

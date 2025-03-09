@@ -24,7 +24,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
   gitHubToken
 }) => {
   const [activeTab, setActiveTab] = useState<ContentType>('albums');
-  const [contentMode, setContentMode] = useState<'list' | 'create'>('list');
+  const [contentMode, setContentMode] = useState<'list' | 'create' | 'edit'>('list');
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
   // State for content lists
@@ -34,7 +34,15 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
   const [playlists, setPlaylists] = useState(initialPlaylists || []);
   
   // Loading state for data refreshes
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState<Record<ContentType, boolean>>({
+    albums: false,
+    photos: false,
+    snips: false,
+    playlists: false
+  });
+
+  // Add a new state for the item being edited
+  const [editingItem, setEditingItem] = useState<any>(null);
 
   const handleTabClick = (tab: ContentType) => {
     setActiveTab(tab);
@@ -43,48 +51,71 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
   };
   
   // Function to refresh content when needed
-  const refreshContent = async (type: ContentType = activeTab) => {
-    setIsLoading(true);
-    
-    // Validate token before trying to use it
-    if (!gitHubToken || gitHubToken.trim() === '') {
-      showNotification('No GitHub token available. Please set up a token first.', 'error');
-      setIsLoading(false);
-      return;
-    }
+  const refreshContent = async (type: string) => {
+    setLoading(prev => ({ ...prev, [type]: true }));
     
     try {
-      // Validate the token first
-      const validationResult = await validateToken(gitHubToken);
-      if (!validationResult.valid) {
-        showNotification(`Token validation failed: ${validationResult.message}`, 'error');
-        setIsLoading(false);
-        return;
-      }
-      
+      console.log(`Refreshing ${type} content...`);
       const result = await getContentList(gitHubToken, type);
       if (result.success && result.items) {
-        switch (type) {
-          case 'albums':
-            setAlbums(result.items);
-            break;
-          case 'photos':
-            setPhotos(result.items);
-            break;
-          case 'snips':
-            setSnips(result.items);
-            break;
-          case 'playlists':
-            setPlaylists(result.items);
-            break;
+        console.log(`Received ${result.items.length} ${type} items`);
+        
+        // For photos, deduplicate by filename
+        if (type === 'photos') {
+          // Track unique filenames
+          const seen = new Set();
+          const uniqueItems = result.items.filter(item => {
+            // Extract the filename from photo URL/path
+            let photoPath = '';
+            if (typeof item.photo === 'string') {
+              photoPath = item.photo;
+            } else if (item.data && item.data.photo) {
+              photoPath = typeof item.data.photo === 'string' ? 
+                        item.data.photo : 
+                        (item.data.photo.src || '');
+            }
+            
+            // Skip items without a photo
+            if (!photoPath) return false;
+            
+            // Extract filename from path/URL
+            const filename = photoPath.split('/').pop();
+            if (!filename) return false;
+            
+            // Only keep this item if we haven't seen this filename before
+            // Always prioritize GitHub URLs over local paths
+            const isGithubUrl = photoPath.startsWith('https://raw.githubusercontent.com/');
+            if (isGithubUrl || !seen.has(filename)) {
+              seen.add(filename);
+              return true;
+            }
+            
+            return false;
+          });
+          
+          console.log(`Filtered ${result.items.length} photos down to ${uniqueItems.length} unique items`);
+          setPhotos(uniqueItems);
+        } else {
+          // For other content types, use all items
+          switch (type) {
+            case 'albums':
+              setAlbums(result.items);
+              break;
+            case 'snips':
+              setSnips(result.items);
+              break;
+            case 'playlists':
+              setPlaylists(result.items);
+              break;
+          }
         }
       } else if (result.error) {
-        showNotification(`Failed to load ${type}: ${result.error}`, 'error');
+        console.error(`Error fetching ${type}:`, result.error);
       }
     } catch (error) {
-      showNotification(`Error loading content: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+      console.error(`Error refreshing ${type}:`, error);
     } finally {
-      setIsLoading(false);
+      setLoading(prev => ({ ...prev, [type]: false }));
     }
   };
   
@@ -130,100 +161,315 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
     console.error('Error:', message);
   };
 
+  // Handle editing an item
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    setContentMode('edit');
+  };
+
+  // Add a function to handle canceling edit:
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+    setContentMode('list');
+  };
+
+  // Add a function to handle edit success:
+  const handleEditSuccess = (message: string) => {
+    showNotification(message, 'success');
+    setEditingItem(null);
+    setContentMode('list');
+    refreshContent(activeTab);
+  };
+
+  // Handle deleting an item
+  const handleDelete = async (id: string, contentType: ContentType) => {
+    if (!gitHubToken) {
+      showNotification('No GitHub token available', 'error');
+      return;
+    }
+    
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to delete this ${contentType.slice(0, -1)}? This action cannot be undone.`)) {
+      return;
+    }
+    
+    // Set loading state for the specific content type
+    setLoading(prev => ({ ...prev, [contentType]: true }));
+    
+    try {
+      // First validate the token
+      const validationResult = await validateToken(gitHubToken);
+      if (!validationResult.valid) {
+        throw new Error(`Token validation failed: ${validationResult.message}`);
+      }
+      
+      // Find the item to get its source file path
+      let itemToDelete: any;
+      switch (contentType) {
+        case 'albums':
+          itemToDelete = albums.find(item => item.id === id);
+          break;
+        case 'photos':
+          itemToDelete = photos.find(item => item.id === id);
+          break;
+        case 'snips':
+          itemToDelete = snips.find(item => item.id === id);
+          break;
+        case 'playlists':
+          itemToDelete = playlists.find(item => item.id === id);
+          break;
+      }
+      
+      if (!itemToDelete || !itemToDelete._sourceFile) {
+        throw new Error('Item not found or missing source file information');
+      }
+      
+      // Import the deleteContent function
+      const { deleteContent } = await import('../../utils/githubDirectService');
+      
+      // Delete the content file
+      const result = await deleteContent(
+        itemToDelete._sourceFile,
+        gitHubToken,
+        `Delete ${contentType.slice(0, -1)}: ${itemToDelete.title || id}`
+      );
+      
+      if (result.success) {
+        showNotification(`${contentType.slice(0, -1).charAt(0).toUpperCase() + contentType.slice(0, -1).slice(1)} deleted successfully`, 'success');
+        
+        // Update local state to remove the deleted item
+        switch (contentType) {
+          case 'albums':
+            setAlbums(albums.filter(item => item.id !== id));
+            break;
+          case 'photos':
+            setPhotos(photos.filter(item => item.id !== id));
+            break;
+          case 'snips':
+            setSnips(snips.filter(item => item.id !== id));
+            break;
+          case 'playlists':
+            setPlaylists(playlists.filter(item => item.id !== id));
+            break;
+        }
+      } else {
+        throw new Error(result.error || 'Failed to delete item');
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      showNotification(`Error: ${error instanceof Error ? error.message : 'Failed to delete item'}`, 'error');
+    } finally {
+      setLoading(prev => ({ ...prev, [contentType]: false }));
+    }
+  };
+
   const renderContentItem = (item: any) => {
-    // Try to extract title from different possible locations in the data structure
-    const title = item.title || (item.data && item.data.title) || 
-                  (item.frontmatter && item.frontmatter.title) || 
-                  item.id || 'Untitled';
+    try {
+      // Use safe property extraction
+      const title = item.title || (item.data && item.data.title) || 
+                    (item.frontmatter && item.frontmatter.title) || 
+                    item.id || 'Untitled';
+                    
+      const draft = item.draft || (item.data && item.data.draft) || 
+                    (item.frontmatter && item.frontmatter.draft);
+      
+      const description = (item.description || 
+                          (item.data && item.data.description) || 
+                          (item.frontmatter && item.frontmatter.description) || 
+                          '').substring(0, 100);
+      
+      // Get tags safely
+      const tags = item.tags || (item.data && item.data.tags) || 
+                  (item.frontmatter && item.frontmatter.tags) || [];
                   
-    const draft = item.draft || (item.data && item.data.draft) || 
-                  (item.frontmatter && item.frontmatter.draft);
-                  
-    return (
-      <div key={item.id} 
-           className={`p-4 border rounded-md mb-3 ${draft ? 'bg-gray-50' : 'bg-white'}`}>
-        <div className="flex justify-between items-start">
-          <h3 className="font-medium text-lg">{title}</h3>
-          {draft && (
-            <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
-              Draft
-            </span>
-          )}
-        </div>
-        
-        <div className="mt-2 text-sm text-gray-700">
-          {/* Try to find description from different possible locations */}
-          {(item.description || 
-            (item.data && item.data.description) || 
-            (item.frontmatter && item.frontmatter.description) || 
-            '').substring(0, 100)}
-          
-          {/* Display source file for debugging */}
-          {item._sourceFile && (
-            <div className="mt-2 text-xs text-gray-500">
-              Source: {item._sourceFile}
+      const tagsArray = Array.isArray(tags) ? tags : 
+                       typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : [];
+      
+      // Format the date
+      let pubDateStr = 'No date';
+      const pubDate = item.pubDatetime || item.date || 
+                     (item.data && (item.data.pubDatetime || item.data.date)) || 
+                     (item.frontmatter && (item.frontmatter.pubDatetime || item.frontmatter.date));
+      
+      if (pubDate) {
+        try {
+          pubDateStr = new Date(pubDate).toLocaleDateString();
+        } catch (err) {
+          pubDateStr = String(pubDate);
+        }
+      }
+      
+      return (
+        <tr key={item.id} className="border-t hover:bg-gray-50">
+          <td className="px-4 py-3">
+            <div className="font-medium text-gray-800">{title}</div>
+            {item._sourceFile && (
+              <div className="text-sm text-gray-500 truncate max-w-xs">
+                {item._sourceFile}
+              </div>
+            )}
+          </td>
+          <td className="px-4 py-3 text-sm text-gray-600">
+            {pubDateStr}
+          </td>
+          <td className="px-4 py-3">
+            <div className="flex flex-wrap gap-1">
+              {tagsArray.map((tag: string, idx: number) => (
+                <span 
+                  key={idx} 
+                  className="inline-block px-2 py-1 text-xs bg-gray-100 rounded-full text-gray-700"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
-          )}
-        </div>
-        
-        <div className="mt-3 flex gap-2">
-          <button
-            onClick={() => handleEdit(item)}
-            className="px-3 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handleDelete(item.id, activeTab)}
-            className="px-3 py-1 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    );
+          </td>
+          <td className="px-4 py-3 text-center">
+            <div className="flex justify-center space-x-2">
+              {draft ? (
+                <span className="px-2 py-1 text-xs bg-yellow-100 rounded-full text-yellow-800">
+                  Draft
+                </span>
+              ) : (
+                <span className="px-2 py-1 text-xs bg-green-100 rounded-full text-green-800">
+                  Published
+                </span>
+              )}
+            </div>
+          </td>
+          <td className="px-4 py-3 text-center">
+            <div className="flex justify-center space-x-2">
+              <button
+                onClick={() => handleEdit(item)}
+                className="px-2 py-1 text-xs bg-blue-100 rounded text-blue-800 hover:bg-blue-200"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(item.id, activeTab)}
+                className="px-2 py-1 text-xs bg-red-100 rounded text-red-800 hover:bg-red-200"
+              >
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      );
+    } catch (err) {
+      console.error('Error rendering item:', err, item);
+      // Return a fallback UI for broken items
+      return (
+        <tr className="border-t bg-red-50">
+          <td colSpan={5} className="px-4 py-3 text-red-700">
+            Error rendering item {item?.id || 'unknown'}
+          </td>
+        </tr>
+      );
+    }
   };
 
   const renderContent = () => {
     if (contentMode === 'create') {
       switch (activeTab) {
         case 'albums':
-          return <AlbumForm onSuccess={handleCreateSuccess} onError={handleError} gitHubToken={gitHubToken} />;
+          return <AlbumForm 
+                   onSuccess={handleCreateSuccess} 
+                   onError={handleError} 
+                   gitHubToken={gitHubToken}
+                   onRefresh={() => refreshContent('albums')}
+                 />;
         case 'photos':
-          return <PhotoForm albums={albums} onSuccess={handleCreateSuccess} onError={handleError} gitHubToken={gitHubToken} />;
+          return <PhotoForm 
+                   albums={albums} 
+                   onSuccess={handleCreateSuccess} 
+                   onError={handleError} 
+                   gitHubToken={gitHubToken}
+                   onRefresh={() => refreshContent('photos')}
+                 />;
         case 'snips':
-          return <SnipForm albums={albums} onSuccess={handleCreateSuccess} onError={handleError} gitHubToken={gitHubToken} />;
+          return <SnipForm 
+                   onSuccess={handleCreateSuccess} 
+                   onError={handleError} 
+                   gitHubToken={gitHubToken}
+                   onRefresh={() => refreshContent('snips')}
+                 />;
         case 'playlists':
-          return <PlaylistForm albums={albums} onSuccess={handleCreateSuccess} onError={handleError} gitHubToken={gitHubToken} />;
+          return <PlaylistForm 
+                   albums={albums} 
+                   onSuccess={handleCreateSuccess} 
+                   onError={handleError} 
+                   gitHubToken={gitHubToken}
+                   onRefresh={() => refreshContent('playlists')}
+                 />;
+        default:
+          return null;
       }
+    } else if (contentMode === 'edit') {
+      // Render the appropriate edit form based on activeTab
+      if (!editingItem) return null;
+      
+      switch (activeTab) {
+        case 'albums':
+          return <AlbumForm 
+                   editMode={true}
+                   initialData={editingItem}
+                   onSuccess={handleEditSuccess}
+                   onError={handleError}
+                   onCancel={handleCancelEdit}
+                   gitHubToken={gitHubToken}
+                   onRefresh={() => refreshContent('albums')}
+                 />;
+        case 'photos':
+          return <PhotoForm 
+                   editMode={true}
+                   initialData={editingItem}
+                   albums={albums}
+                   onSuccess={handleEditSuccess}
+                   onError={handleError}
+                   onCancel={handleCancelEdit}
+                   gitHubToken={gitHubToken}
+                   onRefresh={() => refreshContent('photos')}
+                 />;
+        case 'snips':
+          return <SnipForm 
+                   editMode={true}
+                   initialData={editingItem}
+                   onSuccess={handleEditSuccess}
+                   onError={handleError}
+                   onCancel={handleCancelEdit}
+                   gitHubToken={gitHubToken}
+                   onRefresh={() => refreshContent('snips')}
+                 />;
+        case 'playlists':
+          return <PlaylistForm 
+                   editMode={true}
+                   initialData={editingItem}
+                   albums={albums}
+                   onSuccess={handleEditSuccess}
+                   onError={handleError}
+                   onCancel={handleCancelEdit}
+                   gitHubToken={gitHubToken}
+                   onRefresh={() => refreshContent('playlists')}
+                 />;
+        default:
+          return null;
+      }
+    } else {
+      // List mode - show content lists
+      return (
+        <ContentList
+          type={activeTab}
+          items={activeTab === 'albums' ? albums : 
+                activeTab === 'photos' ? photos :
+                activeTab === 'snips' ? snips :
+                playlists}
+          isLoading={loading[activeTab]}  // <-- Use the loading state for the active tab
+          onRefresh={() => refreshContent(activeTab)}
+          onEdit={handleEdit}
+          onDelete={(id) => handleDelete(id, activeTab)}
+        />
+      );
     }
-
-    // List view
-    let items;
-    switch (activeTab) {
-      case 'albums':
-        items = albums;
-        break;
-      case 'photos':
-        items = photos;
-        break;
-      case 'snips':
-        items = snips;
-        break;
-      case 'playlists':
-        items = playlists;
-        break;
-    }
-    
-    return (
-      <ContentList 
-        type={activeTab} 
-        items={items} 
-        isLoading={isLoading} 
-        onRefresh={() => refreshContent(activeTab)} 
-        renderItem={renderContentItem}
-      />
-    );
   };
 
   return (
@@ -232,7 +478,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
       
       {/* Notification */}
       {notification && (
-        <div className={`mb-4 p-4 rounded ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+        <div class={`mb-4 p-4 rounded ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           {notification.message}
         </div>
       )}

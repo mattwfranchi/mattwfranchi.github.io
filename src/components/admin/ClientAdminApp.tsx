@@ -18,6 +18,7 @@ import {
 } from '../../utils/cryptoUtil';
 
 import { getContentList, validateToken } from '../../utils/githubDirectService';
+import { normalizeContentItems } from '../../utils/contentHelpers';
 
 interface ClientAdminAppProps {
   albums: any[];
@@ -175,7 +176,7 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
         
         // Make GitHub API calls to fetch content
         const fetchTypes = ['albums', 'photos', 'snips', 'playlists'];
-        const newData = { ...contentData };
+        const newData = {}; // Create a fresh object to avoid retaining old data
         
         // Fetch each content type in parallel
         const results = await Promise.all(
@@ -186,13 +187,34 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
         results.forEach((result, index) => {
           const type = fetchTypes[index] as keyof typeof contentData;
           
-          if (result.success && result.items) {
-            newData[type] = result.items;
+          if (result.success && result.items && result.items.length > 0) {
+            // Only normalize once and only when we have items
+            newData[type] = normalizeContentItems(result.items, type);
+            console.log(`Set ${result.items.length} ${type} items from GitHub`);
           } else if (result.error) {
-            console.error(`Error fetching ${fetchTypes[index]}:`, result.error);
+            console.error(`Error fetching ${type}:`, result.error);
+            
+            // Use existing props data as fallback
+            if (props[type] && props[type].length > 0) {
+              console.log(`Using ${props[type].length} initial ${type} items from Astro`);
+              newData[type] = normalizeContentItems(props[type], type);
+            } else {
+              // If no props data, set empty array
+              newData[type] = [];
+            }
+          } else {
+            // If no items returned and no error, use props data
+            if (props[type] && props[type].length > 0) {
+              console.log(`Using ${props[type].length} initial ${type} items from Astro`);
+              newData[type] = normalizeContentItems(props[type], type);
+            } else {
+              // If no props data, set empty array
+              newData[type] = [];
+            }
           }
         });
         
+        // Update all content at once to avoid duplicate renders
         setContentData(newData);
       } catch (error) {
         console.error('Error fetching content:', error);

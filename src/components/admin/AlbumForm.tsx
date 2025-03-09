@@ -1,19 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { createContent, validateToken } from '../../utils/githubDirectService';
+import { createContent, validateToken, updateContent } from '../../utils/githubDirectService';
 
 interface AlbumFormProps {
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
   gitHubToken: string;
-  onRefresh?: () => void; // Optional callback to refresh the list after creation
+  onRefresh?: () => void;
+  editMode?: boolean;
+  initialData?: any;
+  onCancel?: () => void;
 }
 
 const AlbumForm: React.FC<AlbumFormProps> = ({ 
   onSuccess, 
   onError, 
   gitHubToken,
-  onRefresh 
+  onRefresh,
+  editMode = false,
+  initialData = null,
+  onCancel
 }) => {
   const [formData, setFormData] = useState({
     id: '',
@@ -27,6 +33,66 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTokenValidating, setIsTokenValidating] = useState(false);
+
+  // Initialize form with data when in edit mode
+  useEffect(() => {
+    if (editMode && initialData) {
+      console.log('Initial data for editing:', initialData);
+      
+      const tagsString = Array.isArray(initialData.tags) 
+        ? initialData.tags.join(', ')
+        : initialData.tags || '';
+        
+      // More robust date handling
+      let formattedDate = '';
+      try {
+        // Check for date in multiple possible locations
+        const dateValue = initialData.date || 
+                          initialData.pubDatetime || 
+                          (initialData.data && (initialData.data.date || initialData.data.pubDatetime)) ||
+                          '';
+        
+        if (dateValue) {
+          // Log the original date value for debugging
+          console.log('Original date value:', dateValue);
+          
+          // Try to parse the date - handle different possible formats
+          const date = new Date(dateValue);
+          
+          // Check if the date is valid
+          if (!isNaN(date.getTime())) {
+            // Format as YYYY-MM-DD for the date input
+            const year = date.getFullYear();
+            // Month is 0-indexed in JS Date, so add 1 and pad with 0 if needed
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            formattedDate = `${year}-${month}-${day}`;
+            console.log('Formatted date:', formattedDate);
+          } else {
+            console.error('Invalid date:', dateValue);
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing date:', e);
+      }
+      
+      // Check which properties are available in the initialData
+      const propertiesToCheck = ['id', 'title', 'description', 'draft', 'featured'];
+      propertiesToCheck.forEach(prop => {
+        console.log(`Property ${prop}:`, initialData[prop]);
+      });
+      
+      setFormData({
+        id: initialData.id || '',
+        title: initialData.title || '',
+        description: initialData.description || '',
+        date: formattedDate,
+        tags: tagsString,
+        draft: Boolean(initialData.draft),
+        featured: Boolean(initialData.featured),
+      });
+    }
+  }, [editMode, initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -57,7 +123,7 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
         throw new Error(`Token validation failed: ${validationResult.message || 'Unknown error'}`);
       }
       
-      // Generate ID if not provided
+      // Generate ID if not provided (only in create mode)
       const albumId = formData.id || `album_${Date.now()}`;
       
       // Convert tags string to array
@@ -68,38 +134,54 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
         id: albumId,
         title: formData.title,
         description: formData.description,
-        date: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString(),
+        // Better date handling
+        date: formatDateForSubmission(formData.date),
         tags: tagsArray,
         draft: formData.draft,
-        featured: formData.featured
+        featured: formData.featured,
+        // Preserve the source file path if in edit mode
+        _sourceFile: editMode && initialData ? initialData._sourceFile : undefined
       };
       
-      // Use the direct GitHub service to create content
-      const result = await createContent('albums', albumData, gitHubToken);
+      let result;
+      
+      if (editMode && initialData && initialData._sourceFile) {
+        // Use the update function
+        result = await updateContent(
+          initialData._sourceFile,
+          albumData,
+          gitHubToken
+        );
+      } else {
+        // Use the create function
+        result = await createContent('albums', albumData, gitHubToken);
+      }
       
       if (result.success) {
-        onSuccess(result.message || 'Album created successfully');
+        onSuccess(result.message || (editMode ? 'Album updated successfully' : 'Album created successfully'));
         
-        // Reset form
-        setFormData({
-          id: '',
-          title: '',
-          description: '',
-          date: '',
-          tags: '',
-          draft: false,
-          featured: false
-        });
+        // Only reset form if not in edit mode
+        if (!editMode) {
+          setFormData({
+            id: '',
+            title: '',
+            description: '',
+            date: '',
+            tags: '',
+            draft: false,
+            featured: false
+          });
+        }
         
         // Call refresh callback if provided
         if (onRefresh) {
           onRefresh();
         }
       } else {
-        onError(result.error || 'Failed to create album');
+        onError(result.error || (editMode ? 'Failed to update album' : 'Failed to create album'));
       }
     } catch (error) {
-      console.error("Error creating album:", error);
+      console.error(editMode ? "Error updating album:" : "Error creating album:", error);
       onError(error instanceof Error ? error.message : "Unknown error occurred");
     } finally {
       setIsSubmitting(false);
@@ -107,18 +189,21 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
   };
 
   const buttonText = isTokenValidating ? 'Validating Token...' : 
-                    isSubmitting ? 'Creating...' : 'Create Album';
+                    isSubmitting ? (editMode ? 'Updating...' : 'Creating...') : 
+                    (editMode ? 'Update Album' : 'Create Album');
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-6">Create New Album</h2>
+      <h2 className="text-2xl font-semibold mb-6">
+        {editMode ? 'Edit Album' : 'Create New Album'}
+      </h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Form fields - these remain unchanged */}
+        {/* Form fields - mostly unchanged */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="id" className="block text-sm font-medium text-gray-700 mb-1">
-              Album ID (optional)
+              Album ID {!editMode && '(optional)'}
             </label>
             <input
               type="text"
@@ -126,10 +211,14 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
               name="id"
               value={formData.id}
               onChange={handleChange}
-              placeholder="Generated automatically if empty"
+              placeholder={editMode ? '' : "Generated automatically if empty"}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              readOnly={editMode} // Don't allow changing ID in edit mode
+              disabled={editMode}
             />
-            <p className="mt-1 text-xs text-gray-500">Unique identifier for the album. Leave blank for auto-generation.</p>
+            {!editMode && (
+              <p className="mt-1 text-xs text-gray-500">Unique identifier for the album. Leave blank for auto-generation.</p>
+            )}
           </div>
           
           <div>
@@ -216,7 +305,18 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
           </div>
         </div>
         
-        <div className="pt-4">
+        <div className="pt-4 flex justify-between">
+          {/* Add Cancel button in edit mode */}
+          {editMode && onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            >
+              Cancel
+            </button>
+          )}
+          
           <button
             type="submit"
             disabled={isSubmitting || isTokenValidating}
@@ -229,5 +329,25 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
     </div>
   );
 };
+
+// Add this helper function outside your component:
+function formatDateForSubmission(dateString: string): string {
+  if (!dateString) {
+    return new Date().toISOString();
+  }
+  
+  try {
+    // For date inputs, the format is YYYY-MM-DD
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  } catch (e) {
+    console.error('Error formatting date for submission:', e);
+  }
+  
+  // Fallback to current date
+  return new Date().toISOString();
+}
 
 export default AlbumForm;
