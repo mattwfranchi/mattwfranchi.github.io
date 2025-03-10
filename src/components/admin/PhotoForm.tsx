@@ -51,6 +51,8 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12); // Default to 12 photos per page for grid view
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [imageUploaded, setImageUploaded] = useState(false); // Add a new state variable to track the image upload status
+  const [formMessage, setFormMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 
   // Add this to PhotoForm after your existing state variables
   // For paginating photos in album selector
@@ -202,12 +204,20 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
     }
   };
 
-  // Handle successful image upload
+  // Replace the handleImageUploadSuccess function
   const handleImageUploadSuccess = (url: string) => {
     setImageUrl(url);
+    setImageUploaded(true); // Mark that we've uploaded an image
+    
     // Extract filename from URL for visual feedback
     const filename = url.split('/').pop() || 'uploaded-image';
-    onSuccess(`Image "${filename}" uploaded successfully. Please complete the form below to save photo details.`);
+    
+    // Use a local success message instead of calling the parent's onSuccess
+    // This prevents the parent from thinking the entire form is done
+    setFormMessage({ 
+      type: 'success', 
+      text: `Image "${filename}" uploaded successfully. Please complete the form below to save photo details.` 
+    });
     
     // If we have a title field that's empty, use the filename as title suggestion
     if (!formData.title && !editMode) {
@@ -293,7 +303,12 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
         // Create new photo
         const result = await createContent('photos', photoData, gitHubToken);
         if (result.success) {
+          // Only now notify the parent that the entire process is complete
           onSuccess('Photo added successfully');
+          
+          // Reset form states
+          setImageUploaded(false);
+          setFormMessage(null);
           
           // Only reset form if not in edit mode
           if (!editMode) {
@@ -617,6 +632,16 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
           </button>
         </div>
       </form>
+
+      {/* Add this after your form fields */}
+      {formMessage && (
+        <div className={`mt-4 p-3 rounded-md ${
+          formMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' 
+          : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {formMessage.text}
+        </div>
+      )}
 
       {/* Add this conditional check before using albumPhotos in your JSX */}
       {formData.albumId && selectedAlbumPhotos && selectedAlbumPhotos.length > 0 && (
