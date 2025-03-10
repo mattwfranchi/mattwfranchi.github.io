@@ -85,36 +85,47 @@ export async function commitFile({
   content,
   message,
   token,
-  branch = DEFAULT_BRANCH
+  branch = DEFAULT_BRANCH,
+  sha
 }: GithubFile & { token: string }): Promise<any> {
   try {
-    // First check if the file exists
-    const existingFile = await getFileInfo(token, path).catch(() => null);
+    // First check if the file exists if SHA not provided
+    let fileSha = sha;
+    if (!fileSha) {
+      const existingFile = await getFileInfo(token, path).catch(() => null);
+      if (existingFile) {
+        fileSha = existingFile.sha;
+      }
+    }
     
-    // Convert content to base64 for GitHub API
-    // Use browser-compatible base64 encoding instead of Node's Buffer
-    const base64Content = toBase64(
-      // Handle binary data properly for images
-      typeof content === 'string' 
-        ? content 
-        : Array.from(new Uint8Array(content))
-            .map(b => String.fromCharCode(b))
-            .join('')
-    );
+    // Convert content to base64 for GitHub API - SIMPLIFIED
+    let base64Content: string;
+    if (typeof content === 'string') {
+      // Text content (like markdown)
+      base64Content = btoa(unescape(encodeURIComponent(content)));
+    } else {
+      // Binary content (like images)
+      const bytes = new Uint8Array(content);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      base64Content = btoa(binary);
+    }
     
     // Prepare the request body
     const requestBody: any = {
       message,
-      content: base64Content, // Use the value calculated above, not a duplicate call
+      content: base64Content,
       branch
     };
     
     // If file exists, include the SHA
-    if (existingFile && existingFile.sha) {
-      requestBody.sha = existingFile.sha;
+    if (fileSha) {
+      requestBody.sha = fileSha;
     }
     
-    // Make the API request to create or update the file
+    // Make the API request
     const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
       method: 'PUT',
       headers: {
@@ -125,6 +136,7 @@ export async function commitFile({
       body: JSON.stringify(requestBody)
     });
     
+    // Handle errors and return result
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(`GitHub API error: ${response.status} - ${errorData.message || 'Unknown error'}`);
