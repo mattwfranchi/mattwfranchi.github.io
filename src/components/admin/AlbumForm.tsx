@@ -370,7 +370,8 @@ const AlbumForm: React.FC<AlbumFormProps> = ({
   );
 };
 
-// Add this helper function outside your component:
+// Update the formatDateForSubmission function to ensure it outputs in the right format
+
 function formatDateForSubmission(dateString: string): string {
   if (!dateString) {
     return new Date().toISOString().split('T')[0]; // Return just the date part: YYYY-MM-DD
@@ -379,13 +380,22 @@ function formatDateForSubmission(dateString: string): string {
   try {
     const date = new Date(dateString);
     if (!isNaN(date.getTime())) {
-      return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD to match la-ny25.md example
+      // Format as YYYY-MM-DD exactly
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
   } catch (e) {
     console.error('Error formatting date for submission:', e);
   }
   
-  return new Date().toISOString().split('T')[0];
+  // Default to today in the correct format
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export default AlbumForm;

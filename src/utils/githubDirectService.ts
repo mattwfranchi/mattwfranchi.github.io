@@ -190,7 +190,25 @@ export async function createContent(
           });
         }
         else if (value !== undefined && value !== null) {
-          frontmatter += `${key}: ${value}\n`;
+          // Handle specific types of values for formatting
+          if (typeof value === 'string') {
+            // Special case for dates in ISO format - don't add quotes
+            if (key === 'pubDatetime' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+              frontmatter += `${key}: ${value}\n`;
+            }
+            // Border color is already a hex value with # prefix, so no need to escape further
+            else if (key === 'borderColor' && value.startsWith('#')) {
+              frontmatter += `${key}: "${value}"\n`;
+            }
+            // For all other strings, add quotes
+            else {
+              frontmatter += `${key}: "${value}"\n`;
+            }
+          }
+          // For booleans and numbers, don't add quotes
+          else {
+            frontmatter += `${key}: ${value}\n`;
+          }
         }
       }
     });
@@ -297,7 +315,25 @@ export async function updateContent(
           });
         }
         else if (value !== undefined && value !== null) {
-          frontmatter += `${key}: ${value}\n`;
+          // Handle specific types of values for formatting
+          if (typeof value === 'string') {
+            // Special case for dates in ISO format - don't add quotes
+            if (key === 'pubDatetime' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+              frontmatter += `${key}: ${value}\n`;
+            }
+            // Border color is already a hex value with # prefix, so no need to escape further
+            else if (key === 'borderColor' && value.startsWith('#')) {
+              frontmatter += `${key}: "${value}"\n`;
+            }
+            // For all other strings, add quotes
+            else {
+              frontmatter += `${key}: "${value}"\n`;
+            }
+          }
+          // For booleans and numbers, don't add quotes
+          else {
+            frontmatter += `${key}: ${value}\n`;
+          }
         }
       }
     });
