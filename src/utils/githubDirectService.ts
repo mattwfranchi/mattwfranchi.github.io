@@ -6,10 +6,11 @@ import { optimizeImage } from './imageProcessing';
 
 interface GithubFile {
   path: string;
-  content: string;
+  content: string | ArrayBuffer;
   message: string;
   token: string; // Add token to the interface
   branch?: string;
+  sha?: string; // Add optional SHA property for file updates
 }
 
 interface ContentItem {
@@ -422,9 +423,14 @@ export async function uploadImage(
 
     // Attempt to optimize image if possible
     let optimizedBuffer = buffer;
+    // Modified code for githubDirectService.ts around line ~467
+    // Attempt to optimize image if possible
+    let processedFile = file;
     try {
-      optimizedBuffer = await optimizeImage(buffer, fileExt);
-      console.log(`Image optimized from ${buffer.byteLength}B to ${optimizedBuffer.byteLength}B`);
+      processedFile = await optimizeImage(file);
+      console.log(`Image optimized from ${file.size}B to ${processedFile.size}B`);
+      // Read the optimized file as ArrayBuffer
+      optimizedBuffer = await readFileAsArrayBuffer(processedFile);
     } catch (optError) {
       console.warn('Image optimization failed, using original file:', optError);
     }

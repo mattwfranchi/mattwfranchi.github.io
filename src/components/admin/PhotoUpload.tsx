@@ -56,12 +56,21 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
         return;
       }
       
+      // More granular progress updates
+      setProgress(20);
+      console.log(`Starting upload of ${file.name} to album ${albumId}`);
+      
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 5, 85));
+        setProgress(prev => {
+          // Stop at 85% - the last 15% will be after upload completes
+          if (prev >= 85) {
+            clearInterval(progressInterval);
+            return 85;
+          }
+          return Math.min(prev + 3, 85);
+        });
       }, 500);
-      
-      console.log(`Starting upload of ${file.name} to album ${albumId}`);
       
       // Upload the image
       const result = await uploadImage(file, albumId, githubToken);
@@ -69,14 +78,19 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
       clearInterval(progressInterval);
       
       if (result.success && result.url) {
-        setProgress(100);
+        setProgress(95); // Almost done
         console.log(`Upload succeeded: ${result.url}`);
-        onSuccess(result.url);
         
-        // Reset file input for next upload
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+        // Short delay to show "Processing..." state to improve UX
+        setTimeout(() => {
+          setProgress(100);
+          onSuccess(result.url);
+          
+          // Reset file input for next upload
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }, 800);
       } else {
         setFileError(result.error || 'Failed to upload image');
         onError(result.error || 'Failed to upload image');

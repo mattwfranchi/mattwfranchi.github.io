@@ -207,7 +207,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
     setImageUrl(url);
     // Extract filename from URL for visual feedback
     const filename = url.split('/').pop() || 'uploaded-image';
-    onSuccess(`Image "${filename}" uploaded successfully`);
+    onSuccess(`Image "${filename}" uploaded successfully. Please complete the form below to save photo details.`);
     
     // If we have a title field that's empty, use the filename as title suggestion
     if (!formData.title && !editMode) {
@@ -291,7 +291,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
         }
       } else {
         // Create new photo
-        result = await createContent('photos', photoData, gitHubToken);
+        const result = await createContent('photos', photoData, gitHubToken);
         if (result.success) {
           onSuccess('Photo added successfully');
           
