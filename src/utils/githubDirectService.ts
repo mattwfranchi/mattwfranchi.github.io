@@ -186,22 +186,44 @@ export async function createContent(
             });
           }
         }
-        else if (typeof value === 'object' && value !== null) {
-          // Handle nested objects with YAML-like structure
-          frontmatter += `${key}:\n`;
-          Object.entries(value).forEach(([nestedKey, nestedValue]) => {
-            if (typeof nestedValue === 'object' && nestedValue !== null) {
-              frontmatter += `  ${nestedKey}:\n`;
-              Object.entries(nestedValue).forEach(([deepKey, deepValue]) => {
-                if (deepValue !== undefined && deepValue !== null && deepValue !== '') {
-                  frontmatter += `    ${deepKey}: ${deepValue}\n`;
-                }
-              });
-            } else if (nestedValue !== undefined && nestedValue !== null && nestedValue !== '') {
-              frontmatter += `  ${nestedKey}: ${nestedValue}\n`;
+        // Update the nested object handling in both createContent and updateContent functions
+
+else if (typeof value === 'object' && value !== null) {
+  // Check if object has any non-empty values before including it
+  const hasNonEmptyValues = Object.values(value).some(
+    v => v !== null && v !== undefined && v !== ''
+  );
+  
+  // Only include non-empty objects
+  if (hasNonEmptyValues) {
+    frontmatter += `${key}:\n`;
+    Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+      if (typeof nestedValue === 'object' && nestedValue !== null) {
+        // For nested objects like metadata.settings
+        const hasNestedValues = Object.values(nestedValue).some(
+          v => v !== null && v !== undefined && v !== ''
+        );
+        
+        if (hasNestedValues) {
+          frontmatter += `  ${nestedKey}:\n`;
+          Object.entries(nestedValue).forEach(([deepKey, deepValue]) => {
+            if (deepValue !== undefined && deepValue !== null && deepValue !== '') {
+              frontmatter += `    ${deepKey}: ${deepValue}\n`;
             }
           });
+        } else {
+          // Include empty object with proper YAML syntax instead of null
+          frontmatter += `  ${nestedKey}: {}\n`;
         }
+      } else if (nestedValue !== undefined && nestedValue !== null && nestedValue !== '') {
+        frontmatter += `  ${nestedKey}: ${nestedValue}\n`;
+      }
+    });
+  } else {
+    // Include empty object with proper YAML syntax
+    frontmatter += `${key}: {}\n`;
+  }
+}
         else if (value !== undefined && value !== null) {
           // Handle specific types of values for formatting
           if (typeof value === 'string') {
@@ -319,22 +341,44 @@ export async function updateContent(
             });
           }
         }
-        else if (typeof value === 'object' && value !== null) {
-          // Handle nested objects with YAML-like structure
-          frontmatter += `${key}:\n`;
-          Object.entries(value).forEach(([nestedKey, nestedValue]) => {
-            if (typeof nestedValue === 'object' && nestedValue !== null) {
-              frontmatter += `  ${nestedKey}:\n`;
-              Object.entries(nestedValue).forEach(([deepKey, deepValue]) => {
-                if (deepValue !== undefined && deepValue !== null && deepValue !== '') {
-                  frontmatter += `    ${deepKey}: ${deepValue}\n`;
-                }
-              });
-            } else if (nestedValue !== undefined && nestedValue !== null && nestedValue !== '') {
-              frontmatter += `  ${nestedKey}: ${nestedValue}\n`;
+        // Update the nested object handling in both createContent and updateContent functions
+
+else if (typeof value === 'object' && value !== null) {
+  // Check if object has any non-empty values before including it
+  const hasNonEmptyValues = Object.values(value).some(
+    v => v !== null && v !== undefined && v !== ''
+  );
+  
+  // Only include non-empty objects
+  if (hasNonEmptyValues) {
+    frontmatter += `${key}:\n`;
+    Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+      if (typeof nestedValue === 'object' && nestedValue !== null) {
+        // For nested objects like metadata.settings
+        const hasNestedValues = Object.values(nestedValue).some(
+          v => v !== null && v !== undefined && v !== ''
+        );
+        
+        if (hasNestedValues) {
+          frontmatter += `  ${nestedKey}:\n`;
+          Object.entries(nestedValue).forEach(([deepKey, deepValue]) => {
+            if (deepValue !== undefined && deepValue !== null && deepValue !== '') {
+              frontmatter += `    ${deepKey}: ${deepValue}\n`;
             }
           });
+        } else {
+          // Include empty object with proper YAML syntax instead of null
+          frontmatter += `  ${nestedKey}: {}\n`;
         }
+      } else if (nestedValue !== undefined && nestedValue !== null && nestedValue !== '') {
+        frontmatter += `  ${nestedKey}: ${nestedValue}\n`;
+      }
+    });
+  } else {
+    // Include empty object with proper YAML syntax
+    frontmatter += `${key}: {}\n`;
+  }
+}
         else if (value !== undefined && value !== null) {
           // Handle specific types of values for formatting
           if (typeof value === 'string') {
