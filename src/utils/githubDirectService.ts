@@ -394,7 +394,7 @@ export async function uploadImage(
   file: File, 
   albumId: string,
   token: string
-): Promise<{ success: boolean; url?: string; error?: string }> {
+): Promise<{ success: boolean; url?: string; relativePath?: string; error?: string }> {
   try {
     // Validate inputs
     if (!file || !albumId || !token) {
@@ -455,11 +455,19 @@ export async function uploadImage(
       token,
     });
 
+    // After successful upload, return both URLs
     if (result && result.content && result.content.sha) {
-      // Generate the raw GitHub URL for the image
+      // Generate the raw GitHub URL for the image (for previews)
       const rawUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${path}`;
-      console.log(`Upload successful! URL: ${rawUrl}`);
-      return { success: true, url: rawUrl };
+      // Also provide the relative path for markdown content
+      const relativePath = `./${finalFileName}`;
+      
+      console.log(`Upload successful! URL: ${rawUrl}, Relative: ${relativePath}`);
+      return { 
+        success: true, 
+        url: rawUrl,           // For UI preview
+        relativePath: relativePath  // For markdown file
+      };
     } else {
       throw new Error('Unexpected response from GitHub API');
     }

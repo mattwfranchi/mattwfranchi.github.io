@@ -4,7 +4,7 @@ import { uploadImage } from '../../utils/githubDirectService';
 interface PhotoUploadProps {
   albumId: string;
   githubToken: string;
-  onSuccess: (imageUrl: string) => void;
+  onSuccess: (imageUrl: string, relativePath: string) => void;
   onError: (message: string) => void;
 }
 
@@ -84,7 +84,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
         // Short delay to show "Processing..." state to improve UX
         setTimeout(() => {
           setProgress(100);
-          onSuccess(result.url);
+          onSuccess(result.url || '', result.relativePath || '');
           
           // Reset file input for next upload
           if (fileInputRef.current) {

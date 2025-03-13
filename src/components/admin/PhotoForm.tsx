@@ -44,6 +44,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
   });
   
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageRelativePath, setImageRelativePath] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTokenValidating, setIsTokenValidating] = useState(false);
@@ -205,9 +206,10 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
   };
 
   // Replace the handleImageUploadSuccess function
-  const handleImageUploadSuccess = (url: string) => {
-    setImageUrl(url);
-    setImageUploaded(true); // Mark that we've uploaded an image
+  const handleImageUploadSuccess = (url: string, relativePath: string) => {
+    setImageUrl(url); // Full GitHub URL for preview
+    setImageRelativePath(relativePath); // Relative path for markdown
+    setImageUploaded(true);
     
     // Extract filename from URL for visual feedback
     const filename = url.split('/').pop() || 'uploaded-image';
@@ -236,7 +238,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!imageUrl) {
+    if (!imageUrl || !imageRelativePath) {
       onError('Please upload an image first');
       return;
     }
@@ -284,8 +286,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
           }
         },
         pubDatetime: formData.pubDatetime || new Date().toISOString(),
-        photo: imageUrl,
-        // Keep the source file path if in edit mode
+        photo: imageRelativePath, // Use relative path for markdown
         _sourceFile: editMode && initialData ? initialData._sourceFile : undefined
       };
       
@@ -674,7 +675,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
                   {selectedPhoto === photo && (
                     <div className="bg-indigo-500 bg-opacity-40 absolute inset-0 flex items-center justify-center">
                       <svg viewBox="0 0 20 20" fill="white" className="w-8 h-8">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </div>
                   )}
