@@ -233,8 +233,16 @@ export async function createContent(
       ? frontmatter + dataForFrontmatter.content
       : frontmatter;
     
-    // Define the file path
-    const path = `src/content/${contentType}/${filename}`;
+    // Define the file path - SPECIAL HANDLING FOR PHOTOS
+    let path;
+    if (contentType === 'photos' && dataForFrontmatter.albumId) {
+      // For photos, include the album ID in the path
+      path = `src/content/${contentType}/${dataForFrontmatter.albumId}/${filename}`;
+      console.log(`Creating photo markdown in album directory: ${path}`);
+    } else {
+      // For other content types, use the standard path
+      path = `src/content/${contentType}/${filename}`;
+    }
     
     // Create the file in GitHub
     const result = await commitFile({
