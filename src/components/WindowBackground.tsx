@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import React, { useRef, useEffect, useMemo, useState, memo } from 'react';
 import type { Transform } from '../types/whiteboard';
 import '../styles/window.css';
 import backgroundImage from '../assets/vista.jpg';
@@ -11,7 +11,8 @@ interface WindowBackgroundProps {
   isTransitioning: boolean;
 }
 
-export default function WindowBackground({ transform, isTransitioning }: WindowBackgroundProps) {
+// Memoize the entire component to prevent unnecessary re-renders
+export default memo(function WindowBackground({ transform, isTransitioning }: WindowBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -24,24 +25,33 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
     "--scale": transform.scale,
   } as React.CSSProperties), [transform.x, transform.y, transform.scale]);
 
-  // Adaptive quality based on performance and scale
+  // Adaptive quality with debounced updates to reduce CPU usage
   useEffect(() => {
-    // Reduce quality when zoomed out (smaller details matter less)
-    const newQuality = transform.scale < 0.6 ? 'low' : 
+    const calculateQuality = () => {
+      // Reduce quality when zoomed out (smaller details matter less)
+      const newQuality = transform.scale < 0.6 ? 'low' : 
                        transform.scale < 0.8 ? 'medium' : 'high';
                        
-    // Further reduce quality based on performance config
-    if (performanceConfig.currentPerformanceMode === 'low' || 
-        performanceConfig.currentPerformanceMode === 'minimal') {
-      setQualityLevel('low');
-    } else if (performanceConfig.currentPerformanceMode === 'medium' && newQuality === 'high') {
-      setQualityLevel('medium');
+      // Further reduce quality based on performance config
+      if (performanceConfig.currentPerformanceMode === 'low' || 
+          performanceConfig.currentPerformanceMode === 'minimal') {
+        setQualityLevel('low');
+      } else if (performanceConfig.currentPerformanceMode === 'medium' && newQuality === 'high') {
+        setQualityLevel('medium');
+      } else {
+        setQualityLevel(newQuality);
+      }
+    };
+
+    // Use requestIdleCallback for non-critical quality updates
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => calculateQuality(), { timeout: 500 });
     } else {
-      setQualityLevel(newQuality);
+      setTimeout(calculateQuality, 100);
     }
   }, [transform.scale, performanceConfig.currentPerformanceMode]);
 
-  // Use intersection observer to detect visibility - optimize with simpler check
+  // Use intersection observer to detect visibility - more efficient
   useEffect(() => {
     if (!containerRef.current) return;
     
@@ -62,64 +72,6 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
     return () => observer.disconnect();
   }, []);
 
-  // Performance-optimized styles with minimal recalculations
-  const frameStyle = useMemo(() => ({
-    borderWidth: `${WINDOW_DIMENSIONS.FRAME_BORDER}rem`,
-    willChange: isTransitioning ? 'transform' : 'auto',
-  }), [isTransitioning]);
-
-  // Background style with conditional quality
-  const backgroundStyle = useMemo(() => {
-    const style: React.CSSProperties = { 
-      backgroundImage: `url(${backgroundImage})`,
-    };
-    
-    // Apply quality-based styles
-    if (qualityLevel === 'low') {
-      style.filter = 'brightness(0.9)';
-      style.imageRendering = 'optimizeSpeed';
-    } else if (qualityLevel === 'medium') {
-      style.filter = 'brightness(0.9) contrast(1.05)';
-    } else {
-      style.filter = 'brightness(0.9) contrast(1.1)';
-      style.transform = 'translate3d(0,0,0)'; // GPU acceleration only on high quality
-    }
-    
-    return style;
-  }, [qualityLevel]);
-
-  // Simplified pane rendering based on quality
-  const renderWindowPanes = useMemo(() => {
-    // Simplify panes when low quality is needed
-    if (qualityLevel === 'low') {
-      return (
-        <div className="window-panes simplified">
-          <div className="crosspane-vertical" />
-          <div className="crosspane-horizontal" />
-        </div>
-      );
-    }
-    
-    return (
-      <div className="window-panes">
-        {Array.from({ length: 4 }).map((_, i) => {
-          const positionClass = 
-            i === 0 ? "top-left" : 
-            i === 1 ? "top-right" : 
-            i === 2 ? "bottom-left" : "bottom-right";
-          
-          return (
-            <div key={i} className={`pane ${positionClass}`}>
-              <div className="pane-glass" />
-            </div>
-          );
-        })}
-        <div className="crosspane-vertical" />
-        <div className="crosspane-horizontal" />
-      </div>
-    );
-  }, [qualityLevel]);
-
   // When the background isn't visible, render a simplified version
   if (!isVisible && !isTransitioning) {
     return (
@@ -131,9 +83,10 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
     );
   }
 
+  // Only return the exact elements needed for the current quality level
   return (
     <>
-      {/* Simplified room background */}
+      {/* Simplified room background - conditionally render based on quality */}
       <div 
         className={`cozy-room ${qualityLevel !== 'high' ? 'reduced-quality' : ''}`} 
         style={cssVariables}
@@ -152,16 +105,43 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
       >
         <div 
           className="window-frame"
-          style={frameStyle}
+          style={{
+            borderWidth: `${WINDOW_DIMENSIONS.FRAME_BORDER}rem`,
+            willChange: isTransitioning ? 'transform' : 'auto',
+          }}
         >
           <div
             ref={canvasRef}
             className="nature-scene"
-            style={backgroundStyle}
+            style={{ 
+              backgroundImage: `url(${backgroundImage})`,
+              ...(qualityLevel === 'low' && { 
+                filter: 'brightness(0.9)', 
+                imageRendering: 'optimizeSpeed'
+              })
+            }}
           />
-          <div className="pane-container">
-            {renderWindowPanes}
-          </div>
+          
+          {/* Conditional rendering for panes */}
+          {qualityLevel === 'low' ? (
+            <div className="window-panes simplified">
+              <div className="crosspane-vertical" />
+              <div className="crosspane-horizontal" />
+            </div>
+          ) : (
+            <div className="pane-container">
+              <div className="window-panes">
+                {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((pos, i) => (
+                  <div key={i} className={`pane ${pos}`}>
+                    <div className="pane-glass" />
+                  </div>
+                ))}
+                <div className="crosspane-vertical" />
+                <div className="crosspane-horizontal" />
+              </div>
+            </div>
+          )}
+          
           {qualityLevel !== 'low' && <div className="window-frame-overlay" />}
         </div>
         
@@ -175,4 +155,4 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
       </div>
     </>
   );
-}
+});

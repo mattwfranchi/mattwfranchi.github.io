@@ -606,3 +606,81 @@
 .quality-high .nature-scene {
   will-change: transform; /* Only use will-change in high quality */
 }
+
+/* Add these optimizations at the end of the file */
+
+/* Performance optimization for window elements */
+:root {
+  --enable-gpu: 1;
+  --enable-animations: 1;
+  --enable-3d-effects: 1;
+}
+
+/* Set performance variables based on performance mode */
+.perf-medium {
+  --enable-animations: 0.5;
+  --enable-3d-effects: 0.5;
+}
+
+.perf-low, .perf-minimal {
+  --enable-animations: 0;
+  --enable-3d-effects: 0;
+}
+
+/* GPU optimization - only use for elements that need it */
+.window-frame, .nature-scene {
+  /* Use hardware acceleration only when needed */
+  transform: translate3d(0, 0, calc(var(--enable-gpu) * 0.001px));
+}
+
+/* Reduce DOM size for room elements in low power mode */
+.perf-low .room-wall, 
+.perf-minimal .room-wall {
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* Skip animations during scrolling/zooming */
+.is-scrolling .room-wall,
+.is-scrolling .window-sill,
+.is-scrolling .nature-scene {
+  transition: none !important;
+  animation-play-state: paused !important;
+}
+
+/* Optimize window positioning for smoother scrolling */
+.window-background {
+  /* Improve scroll performance */
+  content-visibility: auto;
+  contain-intrinsic-size: 1000px;
+}
+
+/* Only apply expensive effects in high quality mode */
+.quality-high .window-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: 0 0 200px 100px rgba(173, 216, 230, 0.15);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Skip ambient wall lighting in medium and low quality modes */
+.quality-high .cozy-room::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(40, 60, 100, 0.2) 0%,
+    rgba(20, 30, 60, 0.9) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Reduce room detail even more in reduced-quality mode */
+.reduced-quality .room-wall {
+  opacity: 0.9;
+  transition: none;
+}
