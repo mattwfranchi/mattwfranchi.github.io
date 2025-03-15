@@ -27,6 +27,13 @@ interface ClientAdminAppProps {
   playlists: any[];
 }
 
+interface ContentData {
+  albums: any[];
+  photos: any[];
+  snips: any[];
+  playlists: any[];
+}
+
 // Default fallback password if env var isn't available
 const DEFAULT_PASSWORD = 'admin123';
 const TOKEN_EXPIRY_DAYS = 30;
@@ -44,7 +51,7 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState('');
   const [isSetupComplete, setIsSetupComplete] = useState(true);
-  const [contentData, setContentData] = useState({
+  const [contentData, setContentData] = useState<ContentData>({
     albums: props.albums || [],
     photos: props.photos || [],
     snips: props.snips || [],
@@ -176,7 +183,12 @@ const ClientAdminApp: React.FC<ClientAdminAppProps> = (props) => {
         
         // Make GitHub API calls to fetch content
         const fetchTypes = ['albums', 'photos', 'snips', 'playlists'];
-        const newData = {}; // Create a fresh object to avoid retaining old data
+        const newData: ContentData = {
+          albums: [],
+          photos: [],
+          snips: [],
+          playlists: []
+        };
         
         // Fetch each content type in parallel
         const results = await Promise.all(

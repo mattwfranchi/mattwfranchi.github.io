@@ -15,6 +15,36 @@ interface PhotoFormProps {
   onCancel?: () => void;
 }
 
+interface PhotoFormData {
+  albumId: string;
+  title: string;
+  caption: string;
+  order: string;
+  metadata: {
+    camera: string;
+    lens: string;
+    settings: {
+      aperture: string;
+      shutterSpeed: string;
+      iso: string;
+      focalLength: string;
+    }
+  };
+  pubDatetime: string;
+}
+
+interface Photo {
+  id?: string;
+  _sourceFile?: string;
+  title?: string;
+  photo?: string;
+  data?: {
+    title?: string;
+    albumId?: string;
+  };
+  // Add other photo properties as needed
+}
+
 const PhotoForm: React.FC<PhotoFormProps> = ({ 
   albums, 
   onSuccess, 
@@ -25,7 +55,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
   initialData = null,
   onCancel
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PhotoFormData>({
     albumId: '',
     title: '',
     caption: '',
@@ -51,13 +81,14 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12); // Default to 12 photos per page for grid view
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [imageUploaded, setImageUploaded] = useState(false); // Add a new state variable to track the image upload status
   const [formMessage, setFormMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
 
-  // Add this to PhotoForm after your existing state variables
+  // Update this function with proper type annotations:
+
   // For paginating photos in album selector
-  const paginatePhotos = (photos, page, perPage) => {
+  const paginatePhotos = (photos: Photo[], page: number, perPage: number): Photo[] => {
     const startIndex = (page - 1) * perPage;
     return photos.slice(startIndex, startIndex + perPage);
   };
@@ -181,9 +212,9 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
         setFormData({
           ...formData,
           [parent]: {
-            ...formData[parent as keyof typeof formData],
+            ...formData[parent as keyof PhotoFormData] as Record<string, any>,
             [nestedParent]: {
-              ...(formData[parent as keyof typeof formData] as any)[nestedParent],
+              ...(formData[parent as keyof PhotoFormData] as any)[nestedParent],
               [nestedChild]: value
             }
           }
@@ -192,7 +223,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
         setFormData({
           ...formData,
           [parent]: {
-            ...formData[parent as keyof typeof formData],
+            ...formData[parent as keyof PhotoFormData] as Record<string, any>,
             [child]: value
           }
         });
@@ -360,7 +391,7 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
     [];
 
   // Add this function to handle photo selection
-  const handlePhotoSelect = (photo) => {
+  const handlePhotoSelect = (photo: Photo) => {
     setSelectedPhoto(photo);
     
     // If a photo is selected, also update the form with its data
@@ -371,11 +402,11 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
         setImageUrl(normalizePhotoUrl(photoUrl, formData.albumId));
       }
       
-      // Update title if available
+      // Update title if available - FIX: Ensure title is always a string
       if (photo.title) {
         setFormData(prev => ({
           ...prev,
-          title: photo.title
+          title: photo.title as string // Cast to string to satisfy TypeScript
         }));
       }
     }
@@ -661,12 +692,12 @@ const PhotoForm: React.FC<PhotoFormProps> = ({
               >
                 {/* Photo preview image */}
                 <img 
-                  src={photo.photo || extractPhotoUrl(photo)} 
+                  src={photo.photo || extractPhotoUrl(photo) || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIiAvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZpbGw9IiM4ODg4ODgiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='} 
                   alt={photo.title || 'Photo'} 
                   className="w-full h-32 object-cover"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = 'data:image/svg+xml;base64,...'; // Fallback image base64
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIiAvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZpbGw9IiM4ODg4ODgiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
                   }}
                 />
                 
