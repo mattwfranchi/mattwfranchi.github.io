@@ -153,7 +153,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
     showNotification(message, 'success');
     console.log('Success:', message);
     // Refresh the content list after creation
-    refreshContent();
+    refreshContent(activeTab); // Use the current active tab
   };
 
   const handleError = (message: string) => {
@@ -388,6 +388,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
                  />;
         case 'snips':
           return <SnipForm 
+                   albums={albums} // Add the albums prop here
                    onSuccess={handleCreateSuccess} 
                    onError={handleError} 
                    gitHubToken={gitHubToken}
@@ -434,6 +435,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
           return <SnipForm 
                    editMode={true}
                    initialData={editingItem}
+                   albums={albums} // Add the albums prop here
                    onSuccess={handleEditSuccess}
                    onError={handleError}
                    onCancel={handleCancelEdit}
@@ -478,7 +480,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({
       
       {/* Notification */}
       {notification && (
-        <div class={`mb-4 p-4 rounded ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+        <div className={`mb-4 p-4 rounded ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           {notification.message}
         </div>
       )}

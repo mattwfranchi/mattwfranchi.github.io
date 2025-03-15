@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { createContent, validateToken } from '../../utils/githubDirectService';
+import React, { useState, useEffect } from 'react';
+import { createContent, validateToken, updateContent } from '../../utils/githubDirectService';
 
 interface SnipFormProps {
   albums: any[];
@@ -7,20 +7,26 @@ interface SnipFormProps {
   onError: (message: string) => void;
   gitHubToken: string;
   onRefresh?: () => void; // Optional callback to refresh content after creation
+  editMode?: boolean;
+  initialData?: any;
+  onCancel?: () => void;
 }
 
 const SnipForm: React.FC<SnipFormProps> = ({ 
-  albums, 
+  albums = [], // Added default empty array to prevent undefined errors
   onSuccess, 
   onError, 
   gitHubToken,
-  onRefresh 
+  onRefresh,
+  editMode = false,
+  initialData = null,
+  onCancel
 }) => {
   const [formData, setFormData] = useState({
     albumId: '',
     title: '',
     description: '',
-    pubDatetime: new Date().toISOString().split('T')[0],
+    pubDatetime: new Date().toISOString(), // Use full ISO format for schema compatibility
     featured: false,
     draft: false,
     tags: '',
@@ -32,6 +38,65 @@ const SnipForm: React.FC<SnipFormProps> = ({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTokenValidating, setIsTokenValidating] = useState(false);
+  const [formMessage, setFormMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  // Initialize form with data when in edit mode
+  useEffect(() => {
+    if (editMode && initialData) {
+      console.log('Initial snip data for editing:', initialData);
+      
+      // Format date if available - check both direct and data nested properties
+      let formattedDate = '';
+      try {
+        const dateValue = initialData.pubDatetime || initialData.date || 
+                        (initialData.data && (initialData.data.pubDatetime || initialData.data.date));
+        
+        if (dateValue) {
+          const date = new Date(dateValue);
+          formattedDate = date.toISOString();
+        } else {
+          formattedDate = new Date().toISOString();
+        }
+      } catch (e) {
+        console.error('Error parsing date:', e);
+        formattedDate = new Date().toISOString();
+      }
+      
+      // Get albumId from either direct property or data nested property
+      const albumId = initialData.albumId || (initialData.data && initialData.data.albumId) || '';
+      
+      // Get title and other fields from either direct property or data nested property
+      const title = initialData.title || (initialData.data && initialData.data.title) || '';
+      const description = initialData.description || (initialData.data && initialData.data.description) || '';
+      const featured = initialData.featured || (initialData.data && initialData.data.featured) || false;
+      const draft = initialData.draft || (initialData.data && initialData.data.draft) || false;
+      const source = initialData.source || (initialData.data && initialData.data.source) || '';
+      const sourceUrl = initialData.sourceUrl || (initialData.data && initialData.data.sourceUrl) || '';
+      const order = initialData.order || (initialData.data && initialData.data.order) || '';
+      const content = initialData.content || initialData.body || '';
+      
+      // Get tags, ensure it's a comma-separated string for form
+      let tags = '';
+      const tagsArray = initialData.tags || (initialData.data && initialData.data.tags) || [];
+      if (Array.isArray(tagsArray)) {
+        tags = tagsArray.join(', ');
+      }
+      
+      setFormData({
+        albumId,
+        title,
+        description,
+        pubDatetime: formattedDate,
+        featured,
+        draft,
+        tags,
+        source,
+        sourceUrl,
+        order: order ? String(order) : '',
+        content
+      });
+    }
+  }, [editMode, initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -46,9 +111,9 @@ const SnipForm: React.FC<SnipFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormMessage(null);
 
     try {
-      // Use only the token passed via props, not environment variable
       const token = gitHubToken;
       
       if (!token) {
@@ -64,20 +129,18 @@ const SnipForm: React.FC<SnipFormProps> = ({
         throw new Error(`Token validation failed: ${validationResult.message || 'Unknown error'}`);
       }
       
-      console.log("Using token:", token.substring(0, 4) + '...' + token.substring(token.length - 4)); // Log token prefix/suffix for debugging
-      
       // Convert tags string to array
-      const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [];
+      const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : ['untagged'];
       
-      // Generate unique ID for the snip
-      const snipId = `snip_${Date.now()}`;
+      // Generate unique ID for the snip (if not in edit mode)
+      const snipId = editMode && initialData ? initialData.id : `snip_${Date.now()}`;
       
       // Format data for content file
       const contentData = {
         id: snipId,
         title: formData.title,
         description: formData.description,
-        pubDatetime: formData.pubDatetime || new Date().toISOString(),
+        pubDatetime: formData.pubDatetime, // Keep ISO format for date
         albumId: formData.albumId || undefined,
         featured: formData.featured,
         draft: formData.draft,
@@ -85,42 +148,65 @@ const SnipForm: React.FC<SnipFormProps> = ({
         source: formData.source || undefined,
         sourceUrl: formData.sourceUrl || undefined,
         order: formData.order ? parseInt(formData.order) : undefined,
-        content: formData.content
+        content: formData.content,
+        _sourceFile: editMode && initialData ? initialData._sourceFile : undefined
       };
       
-      console.log("Preparing to submit snip:", contentData.title);
+      let result;
       
-      // Create content directly with GitHub API
-      const result = await createContent('snips', contentData, token);
-      
-      if (result.success) {
-        onSuccess(result.message || 'Snip created successfully!');
-        
-        // Reset form
-        setFormData({
-          albumId: '',
-          title: '',
-          description: '',
-          pubDatetime: new Date().toISOString().split('T')[0],
-          featured: false,
-          draft: false,
-          tags: '',
-          source: '',
-          sourceUrl: '',
-          order: '',
-          content: ''
-        });
-        
-        // Call refresh callback if provided
-        if (onRefresh) {
-          onRefresh();
+      if (editMode && initialData && initialData._sourceFile) {
+        // Update existing snip
+        result = await updateContent(initialData._sourceFile, contentData, token);
+        if (result.success) {
+          onSuccess('Snip updated successfully');
+          
+          // Call refresh callback if provided
+          if (onRefresh) {
+            onRefresh();
+          }
+        } else {
+          throw new Error(result.error || 'Failed to update snip');
         }
       } else {
-        onError(result.error || 'Failed to create snip');
+        // Create new snip
+        result = await createContent('snips', contentData, token);
+        
+        if (result.success) {
+          onSuccess(result.message || 'Snip created successfully!');
+          
+          // Reset form for new entries
+          if (!editMode) {
+            setFormData({
+              albumId: '',
+              title: '',
+              description: '',
+              pubDatetime: new Date().toISOString(),
+              featured: false,
+              draft: false,
+              tags: '',
+              source: '',
+              sourceUrl: '',
+              order: '',
+              content: ''
+            });
+          }
+          
+          // Call refresh callback if provided
+          if (onRefresh) {
+            onRefresh();
+          }
+        } else {
+          throw new Error(result.error || 'Failed to create snip');
+        }
       }
+      
+      setFormMessage({ type: 'success', text: editMode ? 'Snip updated successfully!' : 'Snip created successfully!' });
+      
     } catch (error) {
-      console.error('Error creating snip:', error);
-      onError(error instanceof Error ? error.message : 'Failed to create snip');
+      console.error(editMode ? 'Error updating snip:' : 'Error creating snip:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      onError(errorMessage);
+      setFormMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsSubmitting(false);
     }
@@ -128,11 +214,22 @@ const SnipForm: React.FC<SnipFormProps> = ({
 
   // Determine button text based on current state
   const buttonText = isTokenValidating ? 'Validating Token...' : 
-                    isSubmitting ? 'Creating...' : 'Create Snip';
+                    isSubmitting ? (editMode ? 'Updating...' : 'Creating...') : 
+                    (editMode ? 'Update Snip' : 'Create Snip');
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-6">Create New Snip</h2>
+      <h2 className="text-2xl font-semibold mb-6">{editMode ? 'Edit Snip' : 'Create New Snip'}</h2>
+      
+      {formMessage && (
+        <div className={`mb-4 p-3 rounded-md ${
+          formMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' 
+          : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {formMessage.text}
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -160,7 +257,8 @@ const SnipForm: React.FC<SnipFormProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">None</option>
-              {albums.map(album => (
+              {/* Added safety check with fallback to empty array */}
+              {(albums || []).map(album => (
                 <option key={album.id} value={album.id}>
                   {album.data?.title || album.title || album.id}
                 </option>
@@ -175,8 +273,15 @@ const SnipForm: React.FC<SnipFormProps> = ({
             <input
               type="date"
               name="pubDatetime"
-              value={formData.pubDatetime}
-              onChange={handleChange}
+              value={formData.pubDatetime.split('T')[0]} // Show only YYYY-MM-DD in input
+              onChange={(e) => {
+                // Preserve time portion of the ISO string when updating date
+                const newDate = new Date(`${e.target.value}T00:00:00.000Z`);
+                setFormData({
+                  ...formData,
+                  pubDatetime: newDate.toISOString()
+                });
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
@@ -290,7 +395,18 @@ const SnipForm: React.FC<SnipFormProps> = ({
           </div>
         </div>
         
-        <div className="pt-4">
+        <div className="pt-4 flex justify-between">
+          {/* Show cancel button in edit mode */}
+          {editMode && onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+          )}
+          
           <button
             type="submit"
             disabled={isSubmitting || isTokenValidating}

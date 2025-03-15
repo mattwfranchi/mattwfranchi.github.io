@@ -41,30 +41,28 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
     }
   }, [transform.scale, performanceConfig.currentPerformanceMode]);
 
-  // Use intersection observer to detect visibility
+  // Use intersection observer to detect visibility - optimize with simpler check
   useEffect(() => {
     if (!containerRef.current) return;
     
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        const isInViewport = entry.isIntersecting;
-        setIsVisible(isInViewport);
+        setIsVisible(entry.isIntersecting);
         
-        if (isInViewport) {
-          // Only log when becoming visible to reduce noise
+        // Only log when becoming visible to reduce noise
+        if (entry.isIntersecting) {
           performanceLogger.mark('background_visible');
         }
       },
-      { threshold: [0, 0.1] }
+      { threshold: [0] } // Simplify threshold for better performance
     );
     
     observer.observe(containerRef.current);
-    
     return () => observer.disconnect();
   }, []);
 
-  // Performance-optimized memoized styles
+  // Performance-optimized styles with minimal recalculations
   const frameStyle = useMemo(() => ({
     borderWidth: `${WINDOW_DIMENSIONS.FRAME_BORDER}rem`,
     willChange: isTransitioning ? 'transform' : 'auto',
@@ -72,16 +70,9 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
 
   // Background style with conditional quality
   const backgroundStyle = useMemo(() => {
-    const style: React.CSSProperties = {
+    const style: React.CSSProperties = { 
       backgroundImage: `url(${backgroundImage})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
     };
-    
-    // Only use hardware acceleration when needed
-    if (isTransitioning || qualityLevel === 'high') {
-      style.transform = 'translate3d(0,0,0)'; // Force GPU acceleration
-    }
     
     // Apply quality-based styles
     if (qualityLevel === 'low') {
@@ -91,15 +82,16 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
       style.filter = 'brightness(0.9) contrast(1.05)';
     } else {
       style.filter = 'brightness(0.9) contrast(1.1)';
+      style.transform = 'translate3d(0,0,0)'; // GPU acceleration only on high quality
     }
     
     return style;
-  }, [qualityLevel, isTransitioning]);
+  }, [qualityLevel]);
 
-  // Optimize pane rendering based on quality
+  // Simplified pane rendering based on quality
   const renderWindowPanes = useMemo(() => {
     // Simplify panes when low quality is needed
-    if (qualityLevel === 'low' && !isTransitioning) {
+    if (qualityLevel === 'low') {
       return (
         <div className="window-panes simplified">
           <div className="crosspane-vertical" />
@@ -111,11 +103,10 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
     return (
       <div className="window-panes">
         {Array.from({ length: 4 }).map((_, i) => {
-          let positionClass = "";
-          if (i === 0) positionClass = "top-left";
-          if (i === 1) positionClass = "top-right";
-          if (i === 2) positionClass = "bottom-left";
-          if (i === 3) positionClass = "bottom-right";
+          const positionClass = 
+            i === 0 ? "top-left" : 
+            i === 1 ? "top-right" : 
+            i === 2 ? "bottom-left" : "bottom-right";
           
           return (
             <div key={i} className={`pane ${positionClass}`}>
@@ -127,7 +118,7 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
         <div className="crosspane-horizontal" />
       </div>
     );
-  }, [qualityLevel, isTransitioning]);
+  }, [qualityLevel]);
 
   // When the background isn't visible, render a simplified version
   if (!isVisible && !isTransitioning) {
@@ -141,26 +132,47 @@ export default function WindowBackground({ transform, isTransitioning }: WindowB
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={`window-background ${isTransitioning ? 'is-transitioning' : ''} quality-${qualityLevel}`}
-      style={cssVariables}
-    >
+    <>
+      {/* Simplified room background */}
       <div 
-        className="window-frame"
-        style={frameStyle}
+        className={`cozy-room ${qualityLevel !== 'high' ? 'reduced-quality' : ''}`} 
+        style={cssVariables}
       >
-        <div
-          ref={canvasRef}
-          className="nature-scene"
-          style={backgroundStyle}
-        />
-        <div className="pane-container">
-          {renderWindowPanes}
-        </div>
-        {qualityLevel !== 'low' && <div className="window-frame-overlay" />}
+        <div className="room-wall wall-left"></div>
+        <div className="room-wall wall-back"></div>
+        {/* Only render floor in high quality mode */}
+        {qualityLevel === 'high' && <div className="room-floor"></div>}
       </div>
-      {qualityLevel !== 'low' && <div className="window-overlay" />}
-    </div>
+
+      {/* Window itself */}
+      <div
+        ref={containerRef}
+        className={`window-background ${isTransitioning ? 'is-transitioning' : ''} quality-${qualityLevel}`}
+        style={cssVariables}
+      >
+        <div 
+          className="window-frame"
+          style={frameStyle}
+        >
+          <div
+            ref={canvasRef}
+            className="nature-scene"
+            style={backgroundStyle}
+          />
+          <div className="pane-container">
+            {renderWindowPanes}
+          </div>
+          {qualityLevel !== 'low' && <div className="window-frame-overlay" />}
+        </div>
+        
+        {/* Window sill - simplified when in low quality mode */}
+        <div className={`window-sill ${qualityLevel === 'low' ? 'simplified' : ''}`}>
+          <div className="sill-top"></div>
+          <div className="sill-front"></div>
+        </div>
+        
+        {qualityLevel !== 'low' && <div className="window-overlay" />}
+      </div>
+    </>
   );
 }

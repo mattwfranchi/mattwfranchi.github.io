@@ -9,6 +9,11 @@
   --window-frame-inner-border: 4.5rem;
   --window-pane-gap: 4.5rem;
   --window-cross-pane-width: 5rem;
+  --room-wall-color: #233156;
+  --room-wall-dark: #1a2440;
+  --sill-oak-light: #c89272;
+  --sill-oak-mid: #b47e56;
+  --sill-oak-dark: #9e6b4a;
 }
 
 /* Base Styles */
@@ -18,16 +23,17 @@
   left: 50%;
   width: var(--window-width);
   height: var(--window-height);
-  contain: size;
+  contain: size layout; /* Add containment to minimize repaints */
   transform-origin: center center;
   /* Use the same transform pattern as transform-container */
   transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
-  overflow: hidden;
-  z-index: 0;
+  overflow: visible !important; /* Override the hidden overflow */
+  z-index: 1; /* Above room walls */
 }
 
 .window-background.is-transitioning {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform; /* Optimize transform performance */
 }
 
 /* Performance-optimized simplified background when offscreen */
@@ -65,7 +71,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  contain: size;
+  contain: size paint; /* Add containment */
   transform: translateZ(0);
   background-image: url('../assets/vista.jpg');
   background-size: cover;
@@ -384,4 +390,219 @@
   inset: 0;
   pointer-events: none;
   z-index: 2;
+}
+
+/* Add these styles at the end of your existing window.css file */
+
+/* Cozy rectangular room styling */
+.cozy-room {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 8000px; /* Reduced size for better performance */
+  height: 6000px;
+  transform-origin: center center;
+  transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
+  pointer-events: none;
+  z-index: -2; /* Behind window */
+  perspective: 1000px;
+  contain: layout paint; /* Add containment for better performance */
+  will-change: transform; /* Optimize transform performance */
+}
+
+/* Reduce room detail in reduced-quality mode */
+.cozy-room.reduced-quality {
+  width: 5000px;
+  height: 4000px;
+}
+
+/* Room walls - positioned to create a corner */
+.room-wall {
+  position: absolute;
+  background-color: var(--room-wall-color); /* Navy blue */
+  contain: layout paint; /* Add containment */
+}
+
+/* Left wall (side wall) */
+.wall-left {
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: var(--room-wall-color); /* Navy blue */
+  /* Use simple gradient instead of complex 3D transforms */
+  background-image: 
+    linear-gradient(
+      to right,
+      rgba(20, 30, 60, 1) 0%,
+      rgba(35, 49, 86, 1) 100%
+    );
+  /* Remove costly repeating pattern for better performance */
+  box-shadow: inset 0 0 100px rgba(0,0,0,0.4); /* Simplified shadow */
+}
+
+/* Back wall (behind the window) */
+.wall-back {
+  top: 0;
+  right: 0; 
+  width: 50%;
+  height: 100%;
+  background: var(--room-wall-color); /* Navy blue */
+  background-image: 
+    linear-gradient(
+      to left,
+      rgba(20, 30, 60, 0.9) 0%,
+      rgba(35, 49, 86, 1) 100%
+    );
+  box-shadow: inset 0 0 100px rgba(0,0,0,0.4); /* Simplified shadow */
+}
+
+/* Floor */
+.room-floor {
+  position: absolute;
+  bottom: -10%;
+  left: 0;
+  width: 100%;
+  height: 10%;
+  background: var(--room-wall-dark); /* Darker blue for floor */
+  transform-origin: top center;
+  transform: rotateX(90deg);
+  z-index: 1;
+  contain: paint;
+}
+
+/* Oak window sill - positioned relative to the window */
+.window-sill {
+  position: absolute;
+  bottom: -60px;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  z-index: 3;
+  contain: layout paint; /* Add containment */
+}
+
+/* Simplified sill for lower performance modes */
+.window-sill.simplified {
+  height: 40px;
+  bottom: -40px;
+}
+
+.sill-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  background: linear-gradient(
+    to bottom,
+    var(--sill-oak-mid) 0%, /* Oak color */
+    var(--sill-oak-light) 100%
+  );
+  box-shadow: inset 0 2px 5px rgba(255,255,255,0.2);
+}
+
+.sill-front {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  background: linear-gradient(
+    to bottom,
+    var(--sill-oak-dark) 0%,
+    #8f5c3b 100%
+  );
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+}
+
+/* Simplified styles for low quality mode */
+.simplified .sill-top,
+.simplified .sill-front {
+  height: 20px;
+  background: var(--sill-oak-mid);
+  box-shadow: none;
+}
+
+/* Add a subtle light effect from the window to the room */
+.window-background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  box-shadow: 0 0 200px 100px rgba(173, 216, 230, 0.15); /* Subtle blue light */
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Ambient wall lighting */
+.cozy-room::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(40, 60, 100, 0.2) 0%,
+    rgba(20, 30, 60, 0.9) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Quality adjustments for room elements */
+.quality-low .room-wall,
+.quality-medium .room-wall {
+  background-image: none;
+  background-color: var(--room-wall-color);
+  box-shadow: none;
+}
+
+.quality-low .window-sill {
+  height: 40px;
+  bottom: -40px;
+}
+
+.quality-low .sill-top,
+.quality-low .sill-front {
+  height: 20px;
+  background: #b47e56;
+  box-shadow: none;
+}
+
+/* Mobile optimizations */
+@media (max-width: 480px) {
+  .cozy-room {
+    display: none; /* Hide room on small screens for performance */
+  }
+
+  .window-sill {
+    height: 30px;
+    bottom: -15px;
+  }
+
+  .sill-top, .sill-front {
+    height: 15px;
+    box-shadow: none;
+  }
+}
+
+/* Remove 3D transforms in low quality mode for the entire scene */
+.quality-low .wall-left,
+.quality-low .wall-back {
+  transform: none;
+}
+
+/* Remove overlay in low quality */
+.quality-low .window-background::after {
+  display: none;
+}
+
+/* High quality specific enhancements - only applied when needed */
+.quality-high .nature-scene {
+  will-change: transform; /* Only use will-change in high quality */
 }

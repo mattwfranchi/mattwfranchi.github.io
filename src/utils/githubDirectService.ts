@@ -152,7 +152,6 @@ export async function commitFile({
 /**
  * Create a new content item in the repository
  */
-// Update the function signature to accept ID separately
 export async function createContent(
   contentType: string,
   contentData: any,
@@ -160,10 +159,22 @@ export async function createContent(
   id?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    // Generate a filename for the content, using provided ID or generating one
-    const contentId = id || contentData.id || `${contentType.slice(0, -1)}-${Date.now()}`;
+    // Generate a slugified version of the title for the filename
+    const title = contentData.title || '';
+    const titleSlug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
+      .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
+      .substring(0, 50);           // Limit length to avoid overly long filenames
+    
+    // Generate a filename for the content, using provided ID or generating one with title
+    const timestamp = Date.now();
+    const contentId = id || contentData.id || 
+      `${contentType.slice(0, -1)}${titleSlug ? `-${titleSlug}` : ''}-${timestamp}`;
+    
     const filename = `${contentId}.md`;
     
+    // The rest of the function remains the same
     // Create a copy of the data without the ID field
     const { id: _, _sourceFile, ...dataForFrontmatter } = contentData;
     

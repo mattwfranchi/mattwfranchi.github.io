@@ -1,20 +1,26 @@
-import React, { useState } from 'react';
-import { createContent, validateToken } from '../../utils/githubDirectService';
+import React, { useState, useEffect } from 'react';
+import { createContent, validateToken, updateContent } from '../../utils/githubDirectService';
 
 interface PlaylistFormProps {
   albums: any[];
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
   gitHubToken: string;
-  onRefresh?: () => void; // Optional callback to refresh content after creation
+  onRefresh?: () => void; // Optional callback to refresh content
+  editMode?: boolean;
+  initialData?: any;
+  onCancel?: () => void;
 }
 
 const PlaylistForm: React.FC<PlaylistFormProps> = ({ 
-  albums, 
+  albums = [], // Add default empty array to prevent undefined errors
   onSuccess, 
   onError, 
   gitHubToken,
-  onRefresh 
+  onRefresh,
+  editMode = false,
+  initialData = null,
+  onCancel
 }) => {
   const [formData, setFormData] = useState({
     albumId: '',
@@ -22,24 +28,113 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
     description: '',
     platform: 'spotify',
     playlistUrl: '',
-    pubDatetime: new Date().toISOString().split('T')[0],
+    playlistId: '', // Added to store the extracted ID
+    pubDatetime: new Date().toISOString(), // Use full ISO format for schema compatibility
     featured: false,
     draft: false,
     tags: '',
+    coverImage: '',
+    mood: '', // Added to match schema
     order: ''
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTokenValidating, setIsTokenValidating] = useState(false);
+  const [formMessage, setFormMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  // Initialize form with data when in edit mode
+  useEffect(() => {
+    if (editMode && initialData) {
+      console.log('Initial playlist data for editing:', initialData);
+      
+      // Format date if available - check both direct and data nested properties
+      let formattedDate = '';
+      try {
+        const dateValue = initialData.pubDatetime || initialData.date || 
+                        (initialData.data && (initialData.data.pubDatetime || initialData.data.date));
+        
+        if (dateValue) {
+          const date = new Date(dateValue);
+          formattedDate = date.toISOString();
+        } else {
+          formattedDate = new Date().toISOString();
+        }
+      } catch (e) {
+        console.error('Error parsing date:', e);
+        formattedDate = new Date().toISOString();
+      }
+      
+      // Get albumId from either direct property or data nested property
+      const albumId = initialData.albumId || (initialData.data && initialData.data.albumId) || '';
+      
+      // Get title and other fields from either direct property or data nested property
+      const title = initialData.title || (initialData.data && initialData.data.title) || '';
+      const description = initialData.description || (initialData.data && initialData.data.description) || '';
+      const featured = initialData.featured || (initialData.data && initialData.data.featured) || false;
+      const draft = initialData.draft || (initialData.data && initialData.data.draft) || false;
+      const platform = initialData.platform || (initialData.data && initialData.data.platform) || 'spotify';
+      const playlistUrl = initialData.playlistUrl || (initialData.data && initialData.data.playlistUrl) || '';
+      const playlistId = initialData.playlistId || (initialData.data && initialData.data.playlistId) || '';
+      const coverImage = initialData.coverImage || (initialData.data && initialData.data.coverImage) || '';
+      const order = initialData.order || (initialData.data && initialData.data.order) || '';
+      
+      // Get tags, ensure it's a comma-separated string for form
+      let tags = '';
+      const tagsArray = initialData.tags || (initialData.data && initialData.data.tags) || [];
+      if (Array.isArray(tagsArray)) {
+        tags = tagsArray.join(', ');
+      }
+
+      // Get mood, ensure it's a comma-separated string for form
+      let mood = '';
+      const moodArray = initialData.mood || (initialData.data && initialData.data.mood) || [];
+      if (Array.isArray(moodArray)) {
+        mood = moodArray.join(', ');
+      }
+      
+      setFormData({
+        albumId,
+        title,
+        description,
+        platform,
+        playlistUrl,
+        playlistId,
+        pubDatetime: formattedDate,
+        featured,
+        draft,
+        tags,
+        coverImage,
+        mood,
+        order: order ? String(order) : '',
+      });
+    }
+  }, [editMode, initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
     
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+    // If changing the playlist URL, try to extract the ID
+    if (name === 'playlistUrl') {
+      const extractedId = extractPlaylistId(value, formData.platform);
+      if (extractedId) {
+        setFormData({
+          ...formData,
+          playlistUrl: value,
+          playlistId: extractedId
+        });
+      } else {
+        setFormData({
+          ...formData,
+          [name]: value
+        });
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: type === 'checkbox' ? checked : value
+      });
+    }
   };
 
   // Extract playlist ID from the URL
@@ -76,16 +171,18 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormMessage(null);
 
     try {
-      // Make sure we have the token
-      if (!gitHubToken) {
-        throw new Error('GitHub token is missing');
+      const token = gitHubToken;
+      
+      if (!token) {
+        throw new Error("GitHub token is missing");
       }
       
       // Validate the token first
       setIsTokenValidating(true);
-      const validationResult = await validateToken(gitHubToken);
+      const validationResult = await validateToken(token);
       setIsTokenValidating(false);
       
       if (!validationResult.valid) {
@@ -93,16 +190,19 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
       }
       
       // Validate the URL and extract the ID
-      const playlistId = extractPlaylistId(formData.playlistUrl, formData.platform);
+      const playlistId = formData.playlistId || extractPlaylistId(formData.playlistUrl, formData.platform);
       if (!playlistId) {
         throw new Error('Could not extract playlist ID from URL. Please check the format.');
       }
 
       // Convert tags string to array
-      const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [];
+      const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : ['untagged'];
       
-      // Generate unique ID for the playlist
-      const uniqueId = `playlist_${Date.now()}`;
+      // Convert mood string to array
+      const moodArray = formData.mood ? formData.mood.split(',').map(item => item.trim()) : undefined;
+      
+      // Generate unique ID for the playlist (if not in edit mode)
+      const uniqueId = editMode && initialData ? initialData.id : `playlist_${Date.now()}`;
       
       // Format data for content file
       const contentData = {
@@ -111,47 +211,76 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
         description: formData.description,
         platform: formData.platform,
         playlistUrl: formData.playlistUrl,
-        playlistId: playlistId, // Store the extracted playlist ID
-        pubDatetime: formData.pubDatetime || new Date().toISOString(),
+        playlistId: playlistId,
+        pubDatetime: formData.pubDatetime,
         albumId: formData.albumId || undefined,
         featured: formData.featured,
         draft: formData.draft,
         tags: tagsArray,
-        order: formData.order ? parseInt(formData.order) : undefined
+        coverImage: formData.coverImage || undefined,
+        mood: moodArray,
+        order: formData.order ? parseInt(formData.order) : undefined,
+        _sourceFile: editMode && initialData ? initialData._sourceFile : undefined
       };
       
-      console.log("Creating playlist content:", contentData.title);
+      let result;
       
-      // Use the direct GitHub API service
-      const result = await createContent('playlists', contentData, gitHubToken);
-      
-      if (result.success) {
-        onSuccess(result.message || 'Playlist created successfully!');
-        
-        // Reset form
-        setFormData({
-          albumId: '',
-          title: '',
-          description: '',
-          platform: 'spotify',
-          playlistUrl: '',
-          pubDatetime: new Date().toISOString().split('T')[0],
-          featured: false,
-          draft: false,
-          tags: '',
-          order: ''
-        });
-        
-        // Call refresh callback if provided
-        if (onRefresh) {
-          onRefresh();
+      if (editMode && initialData && initialData._sourceFile) {
+        // Update existing playlist
+        result = await updateContent(initialData._sourceFile, contentData, token);
+        if (result.success) {
+          onSuccess('Playlist updated successfully');
+          
+          // Call refresh callback if provided
+          if (onRefresh) {
+            onRefresh();
+          }
+        } else {
+          throw new Error(result.error || 'Failed to update playlist');
         }
       } else {
-        onError(result.error || 'Failed to create playlist');
+        // Create new playlist
+        console.log("Creating playlist content:", contentData.title);
+        result = await createContent('playlists', contentData, token);
+        
+        if (result.success) {
+          onSuccess(result.message || 'Playlist created successfully!');
+          
+          // Reset form for new entries
+          if (!editMode) {
+            setFormData({
+              albumId: '',
+              title: '',
+              description: '',
+              platform: 'spotify',
+              playlistUrl: '',
+              playlistId: '',
+              pubDatetime: new Date().toISOString(),
+              featured: false,
+              draft: false,
+              tags: '',
+              coverImage: '',
+              mood: '',
+              order: ''
+            });
+          }
+          
+          // Call refresh callback if provided
+          if (onRefresh) {
+            onRefresh();
+          }
+        } else {
+          throw new Error(result.error || 'Failed to create playlist');
+        }
       }
+      
+      setFormMessage({ type: 'success', text: editMode ? 'Playlist updated successfully!' : 'Playlist created successfully!' });
+      
     } catch (error) {
-      console.error('Error creating playlist:', error);
-      onError(error instanceof Error ? error.message : 'Failed to create playlist');
+      console.error(editMode ? 'Error updating playlist:' : 'Error creating playlist:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      onError(errorMessage);
+      setFormMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsSubmitting(false);
       setIsTokenValidating(false); // Ensure token validation state is reset
@@ -160,11 +289,21 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
 
   // Determine button text based on current state
   const buttonText = isTokenValidating ? 'Validating Token...' : 
-                    isSubmitting ? 'Creating...' : 'Create Playlist';
+                    isSubmitting ? (editMode ? 'Updating...' : 'Creating...') : 
+                    (editMode ? 'Update Playlist' : 'Create Playlist');
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-6">Add New Playlist</h2>
+      <h2 className="text-2xl font-semibold mb-6">{editMode ? 'Edit Playlist' : 'Add New Playlist'}</h2>
+      
+      {formMessage && (
+        <div className={`mb-4 p-3 rounded-md ${
+          formMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' 
+          : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {formMessage.text}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -193,7 +332,7 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">None</option>
-              {albums.map(album => (
+              {(albums || []).map(album => (
                 <option key={album.id} value={album.id}>
                   {album.data?.title || album.title || album.id}
                 </option>
@@ -224,8 +363,15 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
             <input
               type="date"
               name="pubDatetime"
-              value={formData.pubDatetime}
-              onChange={handleChange}
+              value={formData.pubDatetime.split('T')[0]} // Show only YYYY-MM-DD in input
+              onChange={(e) => {
+                // Preserve time portion of the ISO string when updating date
+                const newDate = new Date(`${e.target.value}T00:00:00.000Z`);
+                setFormData({
+                  ...formData,
+                  pubDatetime: newDate.toISOString()
+                });
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
@@ -250,6 +396,20 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
             </p>
           </div>
           
+          {formData.playlistId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Playlist ID (extracted)
+              </label>
+              <input
+                type="text"
+                value={formData.playlistId}
+                readOnly
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-500"
+              />
+            </div>
+          )}
+          
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Description
@@ -261,6 +421,20 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             ></textarea>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Cover Image URL (optional)
+            </label>
+            <input
+              type="url"
+              name="coverImage"
+              value={formData.coverImage}
+              onChange={handleChange}
+              placeholder="https://example.com/cover-image.jpg"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
           
           <div>
@@ -290,6 +464,20 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
             />
           </div>
           
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Mood (comma separated, optional)
+            </label>
+            <input
+              type="text"
+              name="mood"
+              value={formData.mood}
+              onChange={handleChange}
+              placeholder="chill, upbeat, relaxing"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          
           <div className="flex space-x-6">
             <label className="flex items-center space-x-2">
               <input
@@ -315,7 +503,18 @@ const PlaylistForm: React.FC<PlaylistFormProps> = ({
           </div>
         </div>
         
-        <div className="pt-4">
+        <div className="pt-4 flex justify-between">
+          {/* Show cancel button in edit mode */}
+          {editMode && onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+          )}
+          
           <button
             type="submit"
             disabled={isSubmitting || isTokenValidating}
