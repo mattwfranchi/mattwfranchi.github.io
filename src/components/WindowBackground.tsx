@@ -14,7 +14,7 @@ interface WindowBackgroundProps {
 // Memoize the entire component to prevent unnecessary re-renders
 export default memo(function WindowBackground({ transform, isTransitioning }: WindowBackgroundProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
   const [qualityLevel, setQualityLevel] = useState<'high' | 'medium' | 'low'>('high');
 
@@ -117,7 +117,7 @@ export default memo(function WindowBackground({ transform, isTransitioning }: Wi
               backgroundImage: `url(${backgroundImage})`,
               ...(qualityLevel === 'low' && { 
                 filter: 'brightness(0.9)', 
-                imageRendering: 'optimizeSpeed'
+                imageRendering: 'pixelated' // Changed from 'optimizeSpeed' to 'pixelated'
               })
             }}
           />

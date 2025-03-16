@@ -20,6 +20,22 @@ interface ContentItem {
   [key: string]: any;
 }
 
+// Add this to the top of the file with other interfaces
+interface ContentDataMap {
+  [key: string]: any[] | undefined;  // Make index signature compatible with optional properties
+  photos?: any[];
+  albums?: any[];
+  snips?: any[];
+  playlists?: any[];
+}
+
+// Extend the Window interface
+declare global {
+  interface Window {
+    initialContentData?: ContentDataMap;
+  }
+}
+
 // Constants
 const REPO_OWNER = 'mattwfranchi';
 const REPO_NAME = 'mattwfranchi.github.io';
@@ -570,7 +586,9 @@ export async function getContentList(
 ): Promise<{ success: boolean; items?: any[]; error?: string }> {
   try {
     // For Astro dev environment, try to use the initial data if available
-    if (window.initialContentData && window.initialContentData[type]) {
+    if (typeof window !== 'undefined' && 
+        window.initialContentData && 
+        window.initialContentData[type]) {
       const initialItems = window.initialContentData[type];
       if (initialItems && initialItems.length > 0) {
         console.log(`Using initial ${type} data from Astro (${initialItems.length} items)`);
@@ -853,7 +871,11 @@ export async function deleteContent(
           const files = await dirResponse.json();
           
           // Look for image files with the same base name
-          const matchingImageFiles = files.filter(file => {
+          const matchingImageFiles = files.filter((file: { 
+            path: string; 
+            name: string; 
+            sha: string;
+          }) => {
             // Skip the markdown file itself
             if (file.path === path) return false;
             
@@ -985,7 +1007,7 @@ export async function fetchContent(type: string, token: string): Promise<any[]> 
       const seenPhotoIds = new Set();
       const seenMarkdownPaths = new Set();
       const seenImagePaths = new Set();
-      const photosByAlbum = {}; // Track photos by album for better organization
+      const photosByAlbum: Record<string, any[]> = {}; // Track photos by album for better organization
       
       // For each subdirectory (album), fetch its contents
       for (const item of validItems) {
@@ -1082,7 +1104,7 @@ export async function fetchContent(type: string, token: string): Promise<any[]> 
                 const extension = imgFile.name.split('.').pop() || '';
                 // Generate title from filename
                 const title = baseName.replace(/-/g, ' ').replace(/_/g, ' ')
-                  .replace(/\b\w/g, l => l.toUpperCase());
+                .replace(/\b\w/g, (l: string) => l.toUpperCase());
                 
                 const photoObject = {
                   id: photoId,

@@ -56,13 +56,14 @@ export interface PhotoData {
 export interface WhiteboardContentProps {
   items: WhiteboardItem[];
   focusedCardId?: string | null;
-  draggingId?: string | null;  // Allow null
-  resizingId?: string | null;  // Allow null
+  draggingId: string | null;  // Allow null
+  resizingId: string | null;  // Allow null
   onDragStart: (id: string, event: React.MouseEvent) => void;
   onDragEnd: (id: string) => void;
   onExpand: (id: string) => void;
-  onResize: (id: string, event: React.MouseEvent) => void;
+  onResize: any; // Update this with proper type if needed
   photosByAlbum: Record<string, PhotoData[]>;
+  onLongPress: (id: string) => void; // Add this line to fix the error
 }
 
 export interface CardWrapperProps {
