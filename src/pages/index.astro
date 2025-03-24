@@ -32,22 +32,29 @@ const optimizedProjectImages = await Promise.all(
     .map(async (project) => {
       try {
         if (project.data.imgpath) {
-          // Import image dynamically for optimization
-          const imagePath = `/src${project.data.imgpath}`;
-          const image = await import(imagePath);
+          // Fix the import path - remove the leading slash and use a relative path
+          // This is crucial for proper asset processing in production
+          const imagePath = project.data.imgpath.replace(/^\//, '');
           
-          // Create the optimized image
-          return {
-            project: project,
-            optimizedImage: {
-              src: image.default.src,
-              width: image.default.width,
-              height: image.default.height
-            }
-          };
+          try {
+            // Try importing directly from assets folder
+            const image = await import(`../assets/${imagePath.replace(/^assets\//, '')}`);
+            
+            return {
+              project: project,
+              optimizedImage: {
+                src: image.default.src,
+                width: image.default.width,
+                height: image.default.height
+              }
+            };
+          } catch (importError) {
+            console.error(`Error importing image: ${importError.message}`);
+            return { project, optimizedImage: null };
+          }
         }
       } catch (error) {
-        console.error(`Error optimizing image for project ${project.data.title}:`, error);
+        console.error(`Error processing image for project ${project.data.title}:`, error);
       }
       return { project, optimizedImage: null };
     })

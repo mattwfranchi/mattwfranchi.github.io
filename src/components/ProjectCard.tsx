@@ -55,13 +55,21 @@ export default function ProjectCard({ project, secHeading = true, optimizedImage
 
       <div className="flex justify-center">
         {imgpath && optimizedImage ? (
-          // Use the optimized image passed as a prop
+          // Use the optimized image when available
           <img 
             src={optimizedImage.src} 
             alt={title} 
             className="w-3/4 object-center object-cover p-4"
             width={optimizedImage.width}
             height={optimizedImage.height}
+            loading="lazy"
+          />
+        ) : imgpath ? (
+          // Fallback to direct path if optimization failed
+          <img 
+            src={imgpath}
+            alt={title} 
+            className="w-3/4 object-center object-cover p-4"
             loading="lazy"
           />
         ) : youtubeId ? (
