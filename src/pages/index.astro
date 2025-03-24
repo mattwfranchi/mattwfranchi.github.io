@@ -6,17 +6,23 @@ import Footer from "@components/Footer.astro";
 import LinkButton from "@components/LinkButton.astro";
 import Hr from "@components/Hr.astro";
 import Card from "@components/Card";
-import MinCard from "@components/MinCard";
+import ProjectCard from "@components/ProjectCard";
 import Socials from "@components/Socials.astro";
 import getSortedPosts from "@utils/getSortedPosts";
 import generateOgImageForSite from "@utils/generateOgImageForSite";
 import { SITE, SOCIALS } from "@config";
 
 const posts = await getCollection("blog");
+const projects = await getCollection("projects");
 
 const sortedPosts = getSortedPosts(posts);
 const featuredPosts = sortedPosts.filter(({ data }) => data.featured);
 const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
+
+// Sort projects by order field
+const sortedProjects = projects.sort((a, b) => 
+  (a.data.order || Infinity) - (b.data.order || Infinity)
+);
 
 const socialCount = SOCIALS.filter(social => social.active).length;
 ---
@@ -36,7 +42,7 @@ const socialCount = SOCIALS.filter(social => social.active).length;
       }
      
       <p>
-        I am a third-year Computer Science PhD Candidate at Cornell University. I study at Cornell's New York City campus, Cornell Tech. Before that, I was an undergraduate student at Clemson University, where I completed a Bachelor's Degree in Computer Science (during the pandemic, unfortunately). I am also a research fellow at <a href="https://hayden.ai">Hayden AI Technologies</a>.  My research is supported by the Cornell Dean's Excellence Fellowship and the <a href="https://dli.tech.cornell.edu">Digital Life Initiative</a> Doctoral Fellowship. 
+        I am a third-year Computer Science PhD Candidate at Cornell University, based at the New York City campus, Cornell Tech. Before that, I was an undergraduate student at Clemson University, where I completed a Bachelor's Degree in Computer Science (during the pandemic, unfortunately). I was also a research fellow at <a href="https://hayden.ai">Hayden AI Technologies</a>.  My research is supported by the Cornell Dean's Excellence Fellowship and the <a href="https://dli.tech.cornell.edu">Digital Life Initiative</a> Doctoral Fellowship. 
         <br><br>
         
         My research interests include urban data science; computational social science, particularly in issues pertaining to societal inequality; fashion & design; and computer vision towards urban sensing. My research has been published in the New York Times, The Economist, Gothamist, and other local NYC news outlets.
@@ -44,37 +50,22 @@ const socialCount = SOCIALS.filter(social => social.active).length;
         I play classical and neoclassical piano music, and write my own 'peaceful piano' compositions since 2020.
 
       </p>
-      
-      
     </section>
 
     <Hr />
 
     <section id='selected-work'>
-    <h2>Selected Work</h2>
-    <ul>
-    <MinCard
-      href="https://www.nytimes.com/2024/07/29/nyregion/street-wars-crowded-sidewalks-times-square.html"
-      frontmatter={{ venue: "The New York Times", title: "Think N.Y.C.’s Roads Are Crowded? Good Luck on the Sidewalks.", imgpath:"/assets/selected-work/relative_claustrophobia_by_census_tract.svg" }}
-      secHeading={true}
-    />
-    <MinCard
-      href="https://dl.acm.org/doi/10.1145/3640792.3675740"
-      frontmatter={{ venue: "ACM AutoUI '24", tag:"[Best Paper Honorable Mention]", title: "Towards Instrumented Fingerprinting of Urban Traffic: A Novel Methodology using Distributed Mobile Point-of-View Cameras", imgpath: "/assets/selected-work/autoui.png"}}
-      
-    />
-    <MinCard 
-      href="https://economist.com/science-and-technology/2024/03/13/new-york-city-is-covered-in-illegal-scaffolding"
-      frontmatter={{ venue: "The Economist", title: "New York City is covered in illegal scaffolding", imgpath: "/assets/selected-work/scaffolding.png"}}
-    />
-    <MinCard
-      href="https://dl.acm.org/doi/10.1145/3593013.3594020"
-      frontmatter={{ venue: "ACM FAccT '23", title: "Detecting disparities in police deployments using dashcam data", imgpath: "/assets/selected-work/d2pd3.png"}}
-      
-      secHeading={true}
-    />
-    </ul>
-
+      <h2>Selected Work</h2>
+      <ul>
+        {
+          sortedProjects.map((project, index) => (
+            <ProjectCard 
+              project={project}
+              secHeading={index === 0 || index === 3} 
+            />
+          ))
+        }
+      </ul>
     </section>
 
     <Hr />
@@ -98,27 +89,6 @@ const socialCount = SOCIALS.filter(social => social.active).length;
         </>
       )
     }
-    <!-- 
-    {
-      recentPosts.length > 0 && (
-        <section id="recent-posts">
-          <h2>Recent Posts</h2>
-          <ul>
-            {recentPosts.map(
-              ({ data, slug }, index) =>
-                index < SITE.postPerIndex && (
-                  <Card
-                    href={`/posts/${slug}/`}
-                    frontmatter={data}
-                    secHeading={false}
-                  />
-                )
-            )}
-          </ul>
-        </section>
-      )
-    }
-    -->
 
     <div class="all-posts-btn-wrapper">
       <LinkButton href="/posts/">
@@ -177,5 +147,4 @@ const socialCount = SOCIALS.filter(social => social.active).length;
   #selected-work h2 {
     @apply text-2xl font-semibold tracking-wide;
   }
-
 </style>

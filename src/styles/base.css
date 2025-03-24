@@ -195,4 +195,27 @@
   .focus-outline {
     @apply outline-2 outline-offset-1 outline-skin-fill focus-visible:no-underline focus-visible:outline-dashed;
   }
+  
+  /* Project Card Styles */
+  .project-card {
+    @apply my-6;
+  }
+  
+  .project-venue {
+    @apply font-['GTAmerica-Regular-Italic'] italic;
+  }
+  
+  .project-tag {
+    @apply font-['GTAmerica-Bold'] font-bold;
+  }
+  
+  /* Mobile menu background - ONLY affects mobile view */
+  @media (max-width: 640px) {
+    #menu-items:not(.display-none) {
+      @apply absolute top-full right-0 mt-1 rounded-md shadow-lg z-50 py-2;
+      background-color: rgba(var(--color-fill), 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(var(--color-border), 0.2);
+    }
+  }
 }

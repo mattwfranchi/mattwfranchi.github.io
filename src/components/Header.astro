@@ -210,15 +210,22 @@ const { activeNav } = Astro.props;
 </style>
 
 <script>
-  // In the <script> section of your Header.astro file, replace the existing script with:
+  // Store a reference to the click handler to properly remove it
+  let navClickHandler;
 
   function toggleNav() {
-    // Toggle menu
+    // Get elements
     const menuBtn = document.querySelector(".hamburger-menu");
     const menuIcon = document.querySelector(".menu-icon");
     const menuItems = document.querySelector("#menu-items");
 
-    menuBtn?.addEventListener("click", () => {
+    // Remove any existing event listener first to prevent duplicates
+    if (navClickHandler && menuBtn) {
+      menuBtn.removeEventListener("click", navClickHandler);
+    }
+
+    // Create the click handler
+    navClickHandler = () => {
       const menuExpanded = menuBtn.getAttribute("aria-expanded") === "true";
       menuIcon?.classList.toggle("is-active");
       menuBtn.setAttribute("aria-expanded", menuExpanded ? "false" : "true");
@@ -227,7 +234,10 @@ const { activeNav } = Astro.props;
         menuExpanded ? "Open Menu" : "Close Menu"
       );
       menuItems?.classList.toggle("display-none");
-    });
+    };
+
+    // Add the event listener
+    menuBtn?.addEventListener("click", navClickHandler);
   }
 
   // Handle sticky header animation
@@ -244,11 +254,17 @@ const { activeNav } = Astro.props;
     ticking = false;
   }
 
+  // Initialize on load and page transitions
+  function initHeader() {
+    toggleNav();
+    updateHeader();
+  }
+
   // Check scroll position immediately on load
-  document.addEventListener('DOMContentLoaded', updateHeader);
+  document.addEventListener('DOMContentLoaded', initHeader);
 
   // Check scroll position after view transitions
-  document.addEventListener('astro:page-load', updateHeader);
+  document.addEventListener('astro:page-load', initHeader);
 
   // Handle scroll events
   window.addEventListener('scroll', () => {
@@ -257,10 +273,4 @@ const { activeNav } = Astro.props;
       ticking = true;
     }
   });
-
-  // Initialize nav
-  toggleNav();
-
-  // Re-initialize nav after view transitions
-  document.addEventListener("astro:page-load", toggleNav);
 </script>

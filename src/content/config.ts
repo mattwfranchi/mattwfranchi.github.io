@@ -93,4 +93,23 @@ const playlists = defineCollection({
   }),
 });
 
-export const collections = { blog, albums, photos, snips, playlists };
+const projects = defineCollection({
+  schema: z.object({
+    title: z.string(),
+    venue: z.string(),
+    tag: z.string().optional(),
+    href: z.string().url(),
+    imgpath: z.string().optional(),
+    youtubeId: z.string().optional(),
+    pubDatetime: z.date(),
+    featured: z.boolean().optional(),
+    draft: z.boolean().optional(),
+    tags: z.array(z.string()).default(["others"]),
+    description: z.string().optional(),
+    order: z.number().optional(),
+  }).refine(data => data.imgpath || data.youtubeId, {
+    message: "Either imgpath or youtubeId must be provided",
+  }),
+});
+
+export const collections = { blog, albums, photos, snips, playlists, projects };
