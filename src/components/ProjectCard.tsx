@@ -4,9 +4,10 @@ import type { CollectionEntry } from "astro:content";
 export interface Props {
   project: CollectionEntry<"projects">;
   secHeading?: boolean;
+  optimizedImage?: { src: string; width: number; height: number; };
 }
 
-export default function ProjectCard({ project, secHeading = true }: Props) {
+export default function ProjectCard({ project, secHeading = true, optimizedImage }: Props) {
   const { data, slug } = project;
   const { venue, title, tag, description, imgpath, youtubeId, href } = data;
   
@@ -53,12 +54,15 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
       </a>
 
       <div className="flex justify-center">
-        {imgpath ? (
-          // Display image if imgpath is provided
+        {imgpath && optimizedImage ? (
+          // Use the optimized image passed as a prop
           <img 
-            src={imgpath} 
+            src={optimizedImage.src} 
             alt={title} 
-            className="w-3/4 object-center object-cover p-4" 
+            className="w-3/4 object-center object-cover p-4"
+            width={optimizedImage.width}
+            height={optimizedImage.height}
+            loading="lazy"
           />
         ) : youtubeId ? (
           // Display YouTube video if youtubeId is provided

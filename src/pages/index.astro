@@ -11,6 +11,7 @@ import Socials from "@components/Socials.astro";
 import getSortedPosts from "@utils/getSortedPosts";
 import generateOgImageForSite from "@utils/generateOgImageForSite";
 import { SITE, SOCIALS } from "@config";
+import { Image } from "astro:assets";
 
 const posts = await getCollection("blog");
 const projects = await getCollection("projects");
@@ -22,6 +23,34 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
 // Sort projects by order field
 const sortedProjects = projects.sort((a, b) => 
   (a.data.order || Infinity) - (b.data.order || Infinity)
+);
+
+// Pre-optimize images for projects
+const optimizedProjectImages = await Promise.all(
+  sortedProjects
+    .filter(project => project.data.imgpath)
+    .map(async (project) => {
+      try {
+        if (project.data.imgpath) {
+          // Import image dynamically for optimization
+          const imagePath = `/src${project.data.imgpath}`;
+          const image = await import(imagePath);
+          
+          // Create the optimized image
+          return {
+            project: project,
+            optimizedImage: {
+              src: image.default.src,
+              width: image.default.width,
+              height: image.default.height
+            }
+          };
+        }
+      } catch (error) {
+        console.error(`Error optimizing image for project ${project.data.title}:`, error);
+      }
+      return { project, optimizedImage: null };
+    })
 );
 
 const socialCount = SOCIALS.filter(social => social.active).length;
@@ -57,14 +86,16 @@ const socialCount = SOCIALS.filter(social => social.active).length;
     <section id='selected-work'>
       <h2>Selected Work</h2>
       <ul>
-        {
-          sortedProjects.map((project, index) => (
+        {sortedProjects.map(project => {
+          // Find the optimized image for this project
+          const optimizedData = optimizedProjectImages.find(p => p.project.id === project.id);
+          return (
             <ProjectCard 
-              project={project}
-              secHeading={index === 0 || index === 3} 
+              project={project} 
+              optimizedImage={optimizedData?.optimizedImage} 
             />
-          ))
-        }
+          );
+        })}
       </ul>
     </section>
 
