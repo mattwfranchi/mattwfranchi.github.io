@@ -4,12 +4,12 @@ import type { CollectionEntry } from "astro:content";
 export interface Props {
   project: CollectionEntry<"projects">;
   secHeading?: boolean;
-  optimizedImage?: { src: string; width: number; height: number; };
 }
 
-export default function ProjectCard({ project, secHeading = true, optimizedImage }: Props) {
+export default function ProjectCard({ project, secHeading = true }: Props) {
   const { data, slug } = project;
-  const { venue, title, tag, description, imgpath, youtubeId, href } = data;
+  const { venue, title, tag, description, youtubeId, href } = data;
+  // Removed imgpath from destructuring since we're not using it anymore
   
   // Function to get YouTube embed URL from ID or full URL
   const getYoutubeEmbedUrl = (id: string) => {
@@ -54,26 +54,40 @@ export default function ProjectCard({ project, secHeading = true, optimizedImage
       </a>
 
       <div className="flex justify-center">
-        {imgpath && optimizedImage ? (
-          // Use the optimized image when available
-          <img 
-            src={optimizedImage.src} 
-            alt={title} 
-            className="w-3/4 object-center object-cover p-4"
-            width={optimizedImage.width}
-            height={optimizedImage.height}
-            loading="lazy"
-          />
-        ) : imgpath ? (
-          // Fallback to direct path if optimization failed
-          <img 
-            src={imgpath}
-            alt={title} 
-            className="w-3/4 object-center object-cover p-4"
-            loading="lazy"
-          />
+        {data.image ? (
+          // Use the optimized image from the schema with debugging
+          <>
+            {console.log(`[ProjectCard Debug] Image data for "${title}":`, 
+              {
+                src: data.image.src,
+                width: data.image.width,
+                height: data.image.height,
+                imageType: typeof data.image,
+                hasProps: !!data.image.src && !!data.image.width && !!data.image.height
+              }
+            )}
+            {data.image.src ? (
+              <img 
+                src={data.image.src} 
+                alt={title} 
+                className="w-3/4 object-center object-cover p-4"
+                width={data.image.width}
+                height={data.image.height}
+                loading="lazy"
+                onError={(e) => {
+                  console.error(`[ProjectCard Error] Failed to load image for "${title}":`, e);
+                  e.currentTarget.style.display = 'none';
+                }}
+                onLoad={() => console.log(`[ProjectCard Success] Image loaded for "${title}"`)}
+              />
+            ) : (
+              <div className="w-3/4 p-4 bg-red-100 text-red-800">
+                Image source missing for: {title}
+              </div>
+            )}
+          </>
         ) : youtubeId ? (
-          // Display YouTube video if youtubeId is provided
+          // Display YouTube video
           <div className="w-3/4 p-4 aspect-video">
             <iframe
               className="w-full h-full"
@@ -84,7 +98,12 @@ export default function ProjectCard({ project, secHeading = true, optimizedImage
               loading="lazy"
             ></iframe>
           </div>
-        ) : null}
+        ) : (
+          // Fallback when no image or video is available
+          <div className="w-3/4 p-4 bg-yellow-100 text-yellow-800">
+            No image or video available for: {title}
+          </div>
+        )}
       </div>
 
       {description && <p>{description}</p>}

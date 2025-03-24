@@ -9,9 +9,7 @@ import Card from "@components/Card";
 import ProjectCard from "@components/ProjectCard";
 import Socials from "@components/Socials.astro";
 import getSortedPosts from "@utils/getSortedPosts";
-import generateOgImageForSite from "@utils/generateOgImageForSite";
 import { SITE, SOCIALS } from "@config";
-import { Image } from "astro:assets";
 
 const posts = await getCollection("blog");
 const projects = await getCollection("projects");
@@ -23,41 +21,6 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
 // Sort projects by order field
 const sortedProjects = projects.sort((a, b) => 
   (a.data.order || Infinity) - (b.data.order || Infinity)
-);
-
-// Pre-optimize images for projects
-const optimizedProjectImages = await Promise.all(
-  sortedProjects
-    .filter(project => project.data.imgpath)
-    .map(async (project) => {
-      try {
-        if (project.data.imgpath) {
-          // Fix the import path - remove the leading slash and use a relative path
-          // This is crucial for proper asset processing in production
-          const imagePath = project.data.imgpath.replace(/^\//, '');
-          
-          try {
-            // Try importing directly from assets folder
-            const image = await import(`../assets/${imagePath.replace(/^assets\//, '')}`);
-            
-            return {
-              project: project,
-              optimizedImage: {
-                src: image.default.src,
-                width: image.default.width,
-                height: image.default.height
-              }
-            };
-          } catch (importError) {
-            console.error(`Error importing image: ${importError.message}`);
-            return { project, optimizedImage: null };
-          }
-        }
-      } catch (error) {
-        console.error(`Error processing image for project ${project.data.title}:`, error);
-      }
-      return { project, optimizedImage: null };
-    })
 );
 
 const socialCount = SOCIALS.filter(social => social.active).length;
@@ -93,16 +56,9 @@ const socialCount = SOCIALS.filter(social => social.active).length;
     <section id='selected-work'>
       <h2>Selected Work</h2>
       <ul>
-        {sortedProjects.map(project => {
-          // Find the optimized image for this project
-          const optimizedData = optimizedProjectImages.find(p => p.project.id === project.id);
-          return (
-            <ProjectCard 
-              project={project} 
-              optimizedImage={optimizedData?.optimizedImage} 
-            />
-          );
-        })}
+        {sortedProjects.map(project => (
+          <ProjectCard project={project} />
+        ))}
       </ul>
     </section>
 
