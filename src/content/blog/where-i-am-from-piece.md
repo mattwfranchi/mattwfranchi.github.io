@@ -4,15 +4,15 @@ pubDatetime: 2025-03-15T03:30:08.994Z
 modDatetime:
 title: Where I am from, in nots
 slug: where-i-am-from
-featured: false
+featured: true
 draft: false
 tags:
   - writing
 description:
-  A short piece that attempts to answer the prompt, 'where are you from?' 
+  A short piece in the first issue of Skills/Hobbies/Interests that attempts to answer the prompt, 'where are you from?'
 ---
 
-*This piece appeared in the first edition of Skills, Hobbies, Interests.*
+*This piece appeared in the first issue of [Skills/Hobbies/Interests](https://www.instagram.com/skillshobbiesinterests/).*
 
 At daybreak, we drive about 45 minutes northwest to Lee Falls, in the backwoods of South Carolina, in a car that I sold to Carvana three years ago. I'm in the midst of college during Coronavirus, but hiking is the perfect socially-distanced activity when studying in upstate SC at Clemson. I've not been there in over two years, but this place still fascinates me. Someone had an oddly still encounter in the meadow with a black bear. Another heard choral voices coming from the ridge. There are old mineshafts about.
 

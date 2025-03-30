@@ -4,7 +4,7 @@ pubDatetime: 2024-02-09T03:30:08.994Z
 modDatetime:
 title: Is the English Alphabet at its Brim?
 slug: alphabet-at-the-brim
-featured: true
+featured: false
 draft: false
 tags:
   - research
