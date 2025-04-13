@@ -28,18 +28,14 @@ export default memo(function WindowBackground({ transform, isTransitioning }: Wi
   // Adaptive quality with debounced updates to reduce CPU usage
   useEffect(() => {
     const calculateQuality = () => {
-      // Reduce quality when zoomed out (smaller details matter less)
-      const newQuality = transform.scale < 0.6 ? 'low' : 
-                       transform.scale < 0.8 ? 'medium' : 'high';
-                       
-      // Further reduce quality based on performance config
+      // Only use performance config for quality, ignore zoom level
       if (performanceConfig.currentPerformanceMode === 'low' || 
           performanceConfig.currentPerformanceMode === 'minimal') {
         setQualityLevel('low');
-      } else if (performanceConfig.currentPerformanceMode === 'medium' && newQuality === 'high') {
+      } else if (performanceConfig.currentPerformanceMode === 'medium') {
         setQualityLevel('medium');
       } else {
-        setQualityLevel(newQuality);
+        setQualityLevel('high');
       }
     };
 
@@ -49,7 +45,7 @@ export default memo(function WindowBackground({ transform, isTransitioning }: Wi
     } else {
       setTimeout(calculateQuality, 100);
     }
-  }, [transform.scale, performanceConfig.currentPerformanceMode]);
+  }, [performanceConfig.currentPerformanceMode]);
 
   // Use intersection observer to detect visibility - more efficient
   useEffect(() => {
@@ -116,8 +112,7 @@ export default memo(function WindowBackground({ transform, isTransitioning }: Wi
             style={{ 
               backgroundImage: `url(${backgroundImage})`,
               ...(qualityLevel === 'low' && { 
-                filter: 'brightness(0.9)', 
-                imageRendering: 'pixelated' // Changed from 'optimizeSpeed' to 'pixelated'
+                filter: 'brightness(0.9)'
               })
             }}
           />

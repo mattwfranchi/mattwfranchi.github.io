@@ -9,7 +9,6 @@ export interface Props {
 export default function ProjectCard({ project, secHeading = true }: Props) {
   const { data, slug } = project;
   const { venue, title, tag, description, youtubeId, href } = data;
-  // Removed imgpath from destructuring since we're not using it anymore
   
   // Function to get YouTube embed URL from ID or full URL
   const getYoutubeEmbedUrl = (id: string) => {
@@ -66,25 +65,19 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
                 hasProps: !!data.image.src && !!data.image.width && !!data.image.height
               }
             )}
-            {data.image.src ? (
-              <img 
-                src={data.image.src} 
-                alt={title} 
-                className="w-3/4 object-center object-cover p-4"
-                width={data.image.width}
-                height={data.image.height}
-                loading="lazy"
-                onError={(e) => {
-                  console.error(`[ProjectCard Error] Failed to load image for "${title}":`, e);
-                  e.currentTarget.style.display = 'none';
-                }}
-                onLoad={() => console.log(`[ProjectCard Success] Image loaded for "${title}"`)}
-              />
-            ) : (
-              <div className="w-3/4 p-4 bg-red-100 text-red-800">
-                Image source missing for: {title}
-              </div>
-            )}
+            <img 
+              src={data.image.src} 
+              alt={title} 
+              className="w-3/4 object-center object-cover p-4"
+              width={data.image.width}
+              height={data.image.height}
+              loading="lazy"
+              onError={(e) => {
+                console.error(`[ProjectCard Error] Failed to load image for "${title}":`, e);
+                console.error(`Attempted image URL: ${data.image.src}`);
+              }}
+              onLoad={() => console.log(`[ProjectCard Success] Image loaded for "${title}"`)}
+            />
           </>
         ) : youtubeId ? (
           // Display YouTube video
@@ -98,12 +91,7 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
               loading="lazy"
             ></iframe>
           </div>
-        ) : (
-          // Fallback when no image or video is available
-          <div className="w-3/4 p-4 bg-yellow-100 text-yellow-800">
-            No image or video available for: {title}
-          </div>
-        )}
+        ) : null}
       </div>
 
       {description && <p>{description}</p>}

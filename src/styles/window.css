@@ -74,23 +74,24 @@
   contain: size paint; /* Add containment */
   transform: translateZ(0);
   background-image: url('../assets/vista.jpg');
-  background-size: cover;
+  background-size: cover; /* Keep this consistent */
   background-position: center;
   z-index: 0;
   filter: brightness(0.9) contrast(1.1);
   /* Use will-change only during transitions */
 }
 
-/* Quality-based performance optimizations */
+/* Quality-based performance optimizations - maintain consistent background-size */
 .quality-medium .nature-scene {
   filter: brightness(0.9) contrast(1.05); /* Slightly reduced contrast */
   image-rendering: auto; /* Default rendering for medium quality */
+  background-size: cover; /* Keep consistent with high quality */
 }
 
 .quality-low .nature-scene {
   filter: brightness(0.9); /* Remove contrast enhancement */
-  image-rendering: optimizeSpeed; /* Faster but lower quality rendering */
-  background-size: auto; /* Less precise but faster rendering */
+  image-rendering: auto; /* Changed from optimizeSpeed to auto for consistency */
+  background-size: cover; /* Keep consistent with other quality levels */
 }
 
 /* Mobile optimizations */
@@ -165,15 +166,17 @@
   backface-visibility: hidden;
   /* Use a more efficient background rendering */
   background-attachment: scroll;
-  /* Ensure image quality doesn't exceed what's needed */
-  image-rendering: optimizeSpeed;
+  /* Ensure consistent background size */
+  background-size: cover;
+  /* Ensure image quality doesn't degrade */
+  image-rendering: auto;
 }
 
 /* Optimize small screen rendering without completely hiding elements */
 @media (max-width: 480px) {
   .mobile-optimized .nature-scene {
     filter: none; /* Remove all filters on very small screens */
-    background-size: auto; /* Less precise but faster rendering */
+    background-size: cover; /* Keep consistent sizing */
     /* Further optimize with aggressive content visibility */
     content-visibility: auto;
   }
