@@ -8,10 +8,9 @@ let initializeAppPerformance: (() => void) | undefined;
 let performanceLogger: { mark?: (name: string) => void } = {};
 
 try {
-  const perfUtils = require('../utils/performanceUtils');
-  const loggerUtils = require('../utils/performanceLogger');
+  const perfUtils = require('../utils/performance');
   initializeAppPerformance = perfUtils.initializeAppPerformance;
-  performanceLogger = loggerUtils.performanceLogger;
+  performanceLogger = perfUtils.performanceLogger;
 } catch (e) {
   console.log('Performance monitoring not available');
 }

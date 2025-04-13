@@ -14,7 +14,7 @@ import { WINDOW_DIMENSIONS, STICKY_NOTE, SCALES } from '../constants/whiteboard'
 import WindowBackground from './WindowBackground';
 import { calculateInitialLayout } from '../utils/itemLayoutUtils';
 import ErrorBoundary from './ErrorBoundary';
-import { performanceLogger } from '../utils/performanceLogger';
+import { performanceLogger } from '../utils/performance';
 
 // Debug flag to control logging
 const DEBUG = false;

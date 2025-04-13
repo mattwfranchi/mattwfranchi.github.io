@@ -69,7 +69,7 @@ console.timeEnd('brain-page-data-processing');
 <script>
 // Load performance utilities if available
 try {
-  const { initializeAppPerformance } = await import('../../utils/performanceUtils');
+  const { initializeAppPerformance } = await import('../../utils/performance');
   
   // Initialize performance monitoring when the page loads
   document.addEventListener('DOMContentLoaded', () => {

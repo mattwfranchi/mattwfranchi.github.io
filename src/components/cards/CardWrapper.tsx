@@ -201,6 +201,7 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
   const stickyNoteStyle: CSSProperties = {
     backgroundColor: animationProperties.color,
     transformOrigin: animationProperties.transformOrigin,
+    // Remove the grid pattern background
     // Only apply animation styles conditionally for performance
     ...(!isInteracting && isVisible ? {
       animation: `${animationProperties.animationType} var(--flutter-duration) ease-in-out infinite ${animationProperties.delay}s`,
@@ -227,29 +228,32 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
           ${isExpanded ? 'is-resized' : ''}
           ${isTransitioning ? 'is-transitioning-size' : ''}
           ${!isPrioritized && !isVisible ? 'simplified-animation' : ''}
+          etched-content
         `} 
         style={stickyNoteStyle}
       >
-        {children}
+        <div className="sticky-note-content etched-text">
+          {children}
+        </div>
         
         <div className="absolute top-2 right-2 flex items-center space-x-2 z-10">
           <button
             onClick={handleExpandButtonClick}
-            className="w-6 h-6 rounded-sm bg-gray-900/80 border border-cyan-500/30 
+            className="w-6 h-6 rounded-sm bg-gray-900/70 border border-cyan-500/30 
                        hover:bg-cyan-900/30 transition-all duration-200 flex items-center 
-                       justify-center group"
+                       justify-center group etched-button"
             title={isExpanded ? "Collapse" : "Expand"}
           >
             {isExpanded ? (
               <Minimize2 
                 size={14} 
-                className="text-cyan-500/70 group-hover:text-cyan-400 
+                className="text-cyan-500/90 group-hover:text-cyan-400 
                            transform group-hover:scale-110 transition-all duration-200" 
               />
             ) : (
               <Maximize2 
                 size={14} 
-                className="text-cyan-500/70 group-hover:text-cyan-400 
+                className="text-cyan-500/90 group-hover:text-cyan-400 
                            transform group-hover:scale-110 transition-all duration-200" 
               />
             )}
@@ -261,12 +265,12 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
                      flex items-center justify-center group"
           onMouseDown={handleResizeMouseDown}
         >
-          <div className="w-4 h-4 rounded-sm bg-gray-900/80 border border-cyan-500/30 
+          <div className="w-4 h-4 rounded-sm bg-gray-900/70 border border-cyan-500/30 
                          group-hover:bg-cyan-900/30 transition-all duration-200 
-                         flex items-center justify-center">
+                         flex items-center justify-center etched-button">
             <CornerRightDown 
               size={12} 
-              className="text-cyan-500/70 group-hover:text-cyan-400 
+              className="text-cyan-500/90 group-hover:text-cyan-400 
                          transform group-hover:scale-110 transition-all duration-200" 
             />
           </div>

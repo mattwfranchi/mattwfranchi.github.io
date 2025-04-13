@@ -3,8 +3,7 @@ import type { Transform } from '../types/whiteboard';
 import '../styles/window.css';
 import backgroundImage from '../assets/vista.jpg';
 import { WINDOW_DIMENSIONS } from '../constants/whiteboard';
-import { performanceLogger } from '../utils/performanceLogger';
-import { performanceConfig } from '../utils/performanceUtils';
+import { performanceLogger, performanceConfig } from '../utils/performance';
 
 interface WindowBackgroundProps {
   transform: Transform;
