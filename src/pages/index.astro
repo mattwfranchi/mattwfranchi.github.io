@@ -92,6 +92,9 @@ const socialCount = SOCIALS.filter(social => social.active).length;
       <section id='selected-work'>
         <h2 class="main-section-heading">Research</h2>
         
+        <!-- Add a spacer div for extra vertical space -->
+        <div class="section-spacer"></div>
+        
         <!-- Papers section -->
         {paperProjects.length > 0 && (
           <>
@@ -132,8 +135,14 @@ const socialCount = SOCIALS.filter(social => social.active).length;
       
       if (heroLogo && headerLogo && logoLink) {
         // Store original positions after DOM is fully loaded
-        let heroLogoRect = heroLogo.getBoundingClientRect();
-        let headerLogoRect = headerLogo.getBoundingClientRect();
+        const heroLogoRect = heroLogo.getBoundingClientRect();
+        const headerLogoRect = headerLogo.getBoundingClientRect();
+        
+        // Save original positions
+        const heroTop = heroLogoRect.top;
+        const heroLeft = heroLogoRect.left;
+        const headerTop = headerLogoRect.top;
+        const headerLeft = headerLogoRect.left;
         
         // Initial state
         if (window.scrollY === 0) {
@@ -148,20 +157,38 @@ const socialCount = SOCIALS.filter(social => social.active).length;
         window.addEventListener('scroll', () => {
           const scrollY = window.scrollY;
           
-          // Define the transition zone - shorter for smoother animation
+          // Define the transition zone 
           const transitionStart = 0;
           const transitionEnd = 100; // shorter transition zone
           
           if (scrollY <= transitionStart) {
-            // Before transition: hero logo visible
+            // Before transition: hero logo visible, in original position
+            heroLogo.style.position = 'relative';
+            heroLogo.style.top = '0';
+            heroLogo.style.left = '0';
+            heroLogo.style.transform = 'none';
             heroLogo.style.opacity = '1';
             headerLogo.style.opacity = '0';
           } else if (scrollY > transitionStart && scrollY < transitionEnd) {
-            // During transition: crossfade between logos
+            // During transition: smoothly animate position and opacity
             const progress = (scrollY - transitionStart) / (transitionEnd - transitionStart);
             
-            heroLogo.style.opacity = 1 - progress;
-            headerLogo.style.opacity = progress;
+            // Position heroLogo absolutely during transition
+            heroLogo.style.position = 'fixed';
+            heroLogo.style.top = `${headerTop}px`;
+            
+            // Calculate the left position difference and interpolate
+            const leftDiff = headerLeft - heroLeft;
+            heroLogo.style.left = `${heroLeft + (leftDiff * progress)}px`;
+            
+            // Scale down during transition
+            const initialScale = 1;
+            const targetScale = 0.8;
+            heroLogo.style.transform = `scale(${initialScale - ((initialScale - targetScale) * progress)})`;
+            
+            // Crossfade between logos
+            heroLogo.style.opacity = (1 - progress).toString();
+            headerLogo.style.opacity = progress.toString();
           } else {
             // After transition: header logo fully visible
             heroLogo.style.opacity = '0';
@@ -169,10 +196,16 @@ const socialCount = SOCIALS.filter(social => social.active).length;
           }
         });
         
-        // Handle resize
+        // Recalculate on resize
         window.addEventListener('resize', () => {
-          heroLogoRect = heroLogo.getBoundingClientRect();
-          headerLogoRect = headerLogo.getBoundingClientRect();
+          const newHeroRect = heroLogo.getBoundingClientRect();
+          const newHeaderRect = headerLogo.getBoundingClientRect();
+          
+          // Update position values
+          const heroTop = newHeroRect.top;
+          const heroLeft = newHeroRect.left;
+          const headerTop = newHeaderRect.top;
+          const headerLeft = newHeaderRect.left;
         });
       }
     });
@@ -287,6 +320,12 @@ const socialCount = SOCIALS.filter(social => social.active).length;
       padding: 10px;
       z-index: 9999;
       display: none; /* Hide by default, enable with ?debug=true in URL */
+    }
+
+    /* Spacer div for section spacing */
+    .section-spacer {
+      height: 2rem; /* Adjusts the space between sections */
+      width: 100%;
     }
   </style>
 
