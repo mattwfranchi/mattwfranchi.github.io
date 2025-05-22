@@ -14,7 +14,7 @@ const { activeNav } = Astro.props;
   <a id="skip-to-content" href="#main-content">Skip to content</a>
   <div class="nav-container">
     <div class="top-nav-wrap">
-      <a href="/" class="logo whitespace-nowrap">
+      <a href="/" class="logo whitespace-nowrap" id="header-logo">
         {
           LOGO_IMAGE.enable ? (
             <img
@@ -28,6 +28,7 @@ const { activeNav } = Astro.props;
           ) 
         }
       </a>
+      <Hr class="header-divider" />
       <nav id="nav-menu">
         <button
           class="hamburger-menu focus-outline"
@@ -57,12 +58,7 @@ const { activeNav } = Astro.props;
         <ul id="menu-items" class="display-none sm:flex">
           <li>
             <a href="/posts/" class={activeNav === "posts" ? "active" : ""}>
-              POSTS
-            </a>
-          </li>
-          <li>
-            <a href="/tags/" class={activeNav === "tags" ? "active" : ""}>
-              TAGS
+              WRITING
             </a>
           </li>
           <li>
@@ -114,100 +110,7 @@ const { activeNav } = Astro.props;
       </nav>
     </div>
   </div>
-  <Hr />
 </header>
-
-<style>
-  #skip-to-content {
-    @apply absolute -top-full left-16 z-50 bg-skin-accent px-3 py-2 text-skin-inverted transition-all focus:top-4;
-  }
-  header {
-    @apply fixed top-0 left-0 right-0 z-50 bg-skin-fill transition-all duration-300;
-    height: 88px;
-  }
-  header.shrunk {
-    height: 64px;
-  }
-  .nav-container {
-    @apply mx-auto flex max-w-3xl flex-col items-center justify-between sm:flex-row;
-  }
-  .top-nav-wrap {
-    @apply relative flex w-full items-start justify-between p-4 sm:items-center transition-all duration-300;
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-  }
-  header.shrunk .top-nav-wrap {
-    @apply py-3;
-  }
-  .logo {
-    @apply absolute py-1 text-xl font-semibold sm:static sm:text-2xl transition-all duration-300;
-  }
-  header.shrunk .logo {
-    @apply text-lg sm:text-xl;
-  }
-  .hamburger-menu {
-    @apply self-end p-2 sm:hidden;
-  }
-  .hamburger-menu svg {
-    @apply h-6 w-6 scale-125 fill-skin-base;
-  }
-
-  nav {
-    @apply flex w-full flex-col items-center sm:ml-2 sm:flex-row sm:justify-end sm:space-x-4 sm:py-0;
-  }
-  nav ul {
-    @apply mt-4 grid w-44 grid-cols-2 grid-rows-4 gap-x-2 gap-y-2 sm:ml-0 sm:mt-0 sm:w-auto sm:gap-x-5 sm:gap-y-0;
-  }
-  nav ul li {
-    @apply col-span-2 flex items-center justify-center;
-  }
-  nav ul li a {
-    @apply w-full px-4 py-3 text-center font-medium hover:text-skin-accent sm:my-0 sm:px-2 sm:py-1;
-  }
-  nav ul li:nth-last-child(2) a {
-    @apply w-auto;
-  }
-  nav ul li:nth-last-child(1),
-  nav ul li:nth-last-child(2) {
-    @apply col-span-1;
-  }
-  nav a.active {
-    @apply underline decoration-wavy decoration-2 underline-offset-4;
-  }
-  nav a.active svg {
-    @apply fill-skin-accent;
-  }
-
-  nav button {
-    @apply p-1;
-  }
-  nav button svg {
-    @apply h-6 w-6 fill-skin-base hover:fill-skin-accent;
-  }
-  #theme-btn {
-    @apply p-3 sm:p-1;
-  }
-  #theme-btn svg {
-    @apply scale-125 hover:rotate-12 sm:scale-100;
-  }
-
-  .menu-icon line {
-    @apply transition-opacity duration-75 ease-in-out;
-  }
-  .menu-icon .close {
-    opacity: 0;
-  }
-  .menu-icon.is-active .line {
-    @apply opacity-0;
-  }
-  .menu-icon.is-active .close {
-    @apply opacity-100;
-  }
-
-  #main-content {
-    @apply pt-24; /* Add padding to account for fixed header */
-  }
-</style>
 
 <script>
   // Store a reference to the click handler to properly remove it
@@ -227,17 +130,38 @@ const { activeNav } = Astro.props;
     // Create the click handler
     navClickHandler = () => {
       const menuExpanded = menuBtn.getAttribute("aria-expanded") === "true";
+      
+      // Toggle menu icon state
       menuIcon?.classList.toggle("is-active");
+      
+      // Update aria attributes
       menuBtn.setAttribute("aria-expanded", menuExpanded ? "false" : "true");
       menuBtn.setAttribute(
         "aria-label",
         menuExpanded ? "Open Menu" : "Close Menu"
       );
-      menuItems?.classList.toggle("display-none");
+      
+      // Toggle menu visibility - only on mobile
+      if (window.innerWidth < 640) {
+        menuItems?.classList.toggle("display-none");
+      }
     };
 
     // Add the event listener
     menuBtn?.addEventListener("click", navClickHandler);
+    
+    // Ensure correct initial state
+    if (menuBtn && menuItems) {
+      if (window.innerWidth < 640) {
+        // On mobile: Hide menu initially, set aria-expanded to false
+        menuItems.classList.add("display-none");
+        menuBtn.setAttribute("aria-expanded", "false");
+        menuIcon?.classList.remove("is-active");
+      } else {
+        // On desktop: Show menu, set aria-expanded to true
+        menuItems.classList.remove("display-none");
+      }
+    }
   }
 
   // Handle sticky header animation
@@ -265,6 +189,25 @@ const { activeNav } = Astro.props;
 
   // Check scroll position after view transitions
   document.addEventListener('astro:page-load', initHeader);
+
+  // Handle resize events to make sure the menu state is correct
+  window.addEventListener('resize', () => {
+    const menuItems = document.querySelector("#menu-items");
+    const menuBtn = document.querySelector(".hamburger-menu");
+    const menuIcon = document.querySelector(".menu-icon");
+
+    if (window.innerWidth >= 640 && menuItems) {
+      // On desktop: Always show menu regardless of previous state
+      menuItems.classList.remove("display-none");
+    } else if (window.innerWidth < 640 && menuItems && menuBtn) {
+      // On mobile: Hide menu unless expanded
+      const expanded = menuBtn.getAttribute("aria-expanded") === "true";
+      if (!expanded) {
+        menuItems.classList.add("display-none");
+        menuIcon?.classList.remove("is-active");
+      }
+    }
+  });
 
   // Handle scroll events
   window.addEventListener('scroll', () => {

@@ -26,8 +26,8 @@ const { currentPage, totalPages, paginatedPosts, tag, tagName } = Astro.props;
     titleTransition={tag}
     pageDesc={`All the articles with the tag "${tagName}".`}
   >
-    <h1 slot="title" transition:name={tag}>{`Tag:${tag}`}</h1>
-    <ul>
+    <h1 slot="title" transition:name={tag} class="hidden">{`Tag:${tag}`}</h1>
+    <ul class="tag-post-list">
       {
         paginatedPosts.map(({ data, slug }) => (
           <Card href={`/posts/${slug}/`} frontmatter={data} />
@@ -47,3 +47,13 @@ const { currentPage, totalPages, paginatedPosts, tag, tagName } = Astro.props;
 
   <Footer noMarginTop={totalPages > 1} />
 </Layout>
+
+<style>
+  .tag-post-list {
+    @apply mt-8;
+  }
+  
+  .hidden {
+    @apply sr-only;
+  }
+</style>

@@ -1,8 +1,9 @@
 ---
-title: "Towards Instrumented Fingerprinting of Urban Traffic: A Novel Methodology using Distributed Mobile Point-of-View Cameras"
+title: "Urban Fingerprinting"
 venue: "ACM AutoUI '24"
-tag: "[Best Paper Honorable Mention]"
-href: "https://dl.acm.org/doi/10.1145/3640792.3675740"
+tag: ""
+category: "paper"
+pdf: "https://dl.acm.org/doi/10.1145/3640792.3675740"
 image: "../../assets/selected-work/autoui.png"
 pubDatetime: 2024-06-15
 featured: true

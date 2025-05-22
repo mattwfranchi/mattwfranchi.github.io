@@ -99,7 +99,10 @@ const projects = defineCollection({
       title: z.string(),
       venue: z.string(),
       tag: z.string().optional(),
-      href: z.string().url(),
+      pdf: z.string().url().optional(), // PDF link
+      site: z.string().url().optional(), // Website link
+      bib: z.string().optional(), // BibTeX citation text
+      category: z.enum(["paper", "not-paper"]).default("not-paper"), // New category field
       image: image().optional(),
       youtubeId: z.string().optional(),
       pubDatetime: z.date(),

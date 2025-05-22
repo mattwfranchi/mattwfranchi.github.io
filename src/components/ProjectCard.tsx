@@ -1,5 +1,6 @@
 import { slugifyStr } from "@utils/slugify";
 import type { CollectionEntry } from "astro:content";
+import { useState, useRef, useEffect } from "react";
 
 export interface Props {
   project: CollectionEntry<"projects">;
@@ -8,13 +9,20 @@ export interface Props {
 
 export default function ProjectCard({ project, secHeading = true }: Props) {
   const { data, slug } = project;
-  const { venue, title, tag, description, youtubeId, href } = data;
+  const { venue, title, tag, description, youtubeId, href, pdf, site, bib } = data;
+  
+  // State for description visibility
+  const [showDescription, setShowDescription] = useState(false);
+  // State for BibTeX visibility
+  const [showBib, setShowBib] = useState(false);
+  // State for animation progress
+  const [animatedText, setAnimatedText] = useState("");
+  // Ref for the description container
+  const descriptionRef = useRef<HTMLDivElement>(null);
   
   // Function to get YouTube embed URL from ID or full URL
   const getYoutubeEmbedUrl = (id: string) => {
-    // Check if it's already an ID or a full URL
     if (id.includes('youtube.com') || id.includes('youtu.be')) {
-      // Extract ID from URL
       const urlObj = new URL(id);
       if (id.includes('youtube.com')) {
         return `https://www.youtube.com/embed/${urlObj.searchParams.get('v')}`;
@@ -22,26 +30,56 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
         return `https://www.youtube.com/embed/${urlObj.pathname.substring(1)}`;
       }
     }
-    // Assume it's already an ID
     return `https://www.youtube.com/embed/${id}`;
   };
 
   const headerProps = {
     style: { viewTransitionName: slugifyStr(title) },
-    className: "text-lg font-medium decoration-dashed hover:underline",
+    className: "text-base font-medium decoration-dashed hover:underline line-clamp-2",
+  };
+
+  // Animation effect when description is shown
+  useEffect(() => {
+    if (showDescription && description) {
+      console.log("Starting animation for description");
+      setAnimatedText("");
+      let currentIndex = 0;
+      const typingSpeed = 8; // Changed from 20ms to 5ms per character for faster typing
+      
+      const typingInterval = setInterval(() => {
+        if (currentIndex < description.length) {
+          setAnimatedText(prev => prev + description.charAt(currentIndex));
+          currentIndex++;
+        } else {
+          clearInterval(typingInterval);
+        }
+      }, typingSpeed);
+      
+      return () => clearInterval(typingInterval);
+    }
+  }, [showDescription, description]);
+
+  const toggleDescription = () => {
+    console.log("Toggle description clicked, current state:", showDescription);
+    setShowDescription(!showDescription);
+    if (showBib) setShowBib(false);
+  };
+
+  const toggleBib = () => {
+    setShowBib(!showBib);
+    if (showDescription) setShowDescription(false);
   };
 
   return (
-    <li className="my-6 project-card">
-      <div>
-        <span className="project-venue">{venue}</span>{" "}
+    <li className="project-card">
+      <div className="project-header">
+        <span className="project-venue line-clamp-1">{venue}</span>{" "}
         {tag && <span className="project-tag">{tag}</span>}
-        <br />
       </div>
       
       <a
         href={href}
-        className="inline-block text-lg font-medium text-skin-accent decoration-dashed underline-offset-4 focus-visible:no-underline focus-visible:underline-offset-0"
+        className="inline-block text-skin-accent decoration-dashed underline-offset-4 focus-visible:no-underline focus-visible:underline-offset-0"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -52,36 +90,18 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
         )}
       </a>
 
-      <div className="flex justify-center">
+      <div className="project-media">
         {data.image ? (
-          // Use the optimized image from the schema with debugging
-          <>
-            {console.log(`[ProjectCard Debug] Image data for "${title}":`, 
-              {
-                src: data.image.src,
-                width: data.image.width,
-                height: data.image.height,
-                imageType: typeof data.image,
-                hasProps: !!data.image.src && !!data.image.width && !!data.image.height
-              }
-            )}
-            <img 
-              src={data.image.src} 
-              alt={title} 
-              className="w-3/4 object-center object-cover p-4"
-              width={data.image.width}
-              height={data.image.height}
-              loading="lazy"
-              onError={(e) => {
-                console.error(`[ProjectCard Error] Failed to load image for "${title}":`, e);
-                console.error(`Attempted image URL: ${data.image.src}`);
-              }}
-              onLoad={() => console.log(`[ProjectCard Success] Image loaded for "${title}"`)}
-            />
-          </>
+          <img 
+            src={data.image.src} 
+            alt={title} 
+            className="w-full object-cover"
+            width={data.image.width}
+            height={data.image.height}
+            loading="lazy"
+          />
         ) : youtubeId ? (
-          // Display YouTube video
-          <div className="w-3/4 p-4 aspect-video">
+          <div className="aspect-video">
             <iframe
               className="w-full h-full"
               src={getYoutubeEmbedUrl(youtubeId)}
@@ -94,7 +114,51 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
         ) : null}
       </div>
 
-      {description && <p>{description}</p>}
+      <div className="project-links">
+        {pdf && (
+          <a href={pdf} target="_blank" rel="noopener noreferrer" className="project-button pdf-button">
+            PDF
+          </a>
+        )}
+        {site && (
+          <a href={site} target="_blank" rel="noopener noreferrer" className="project-button site-button">
+            Site
+          </a>
+        )}
+        {bib && (
+          <button onClick={toggleBib} className="project-button bib-button">
+            BibTeX
+          </button>
+        )}
+        {description && (
+          <button 
+            onClick={toggleDescription} 
+            className={`project-button desc-button ${showDescription ? 'active' : ''}`}
+            aria-expanded={showDescription}
+          >
+            {showDescription ? "Hide" : "Abstract"}
+          </button>
+        )}
+      </div>
+      
+      {/* Inline description instead of overlay */}
+      {showDescription && description && (
+        <div 
+          className="project-description-inline"
+          ref={descriptionRef}
+        >
+          <div className="typing-text">
+            {animatedText}
+            <span className="typing-cursor">|</span>
+          </div>
+        </div>
+      )}
+      
+      {bib && showBib && (
+        <div className="project-bib mt-2">
+          <pre className="bib-content">{bib}</pre>
+        </div>
+      )}
     </li>
   );
 }

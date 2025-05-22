@@ -23,122 +23,284 @@ const sortedProjects = projects.sort((a, b) =>
   (a.data.order || Infinity) - (b.data.order || Infinity)
 );
 
+// Debug logging for projects before splitting
+console.log(`Total projects: ${sortedProjects.length}`);
+sortedProjects.forEach((project, index) => {
+  console.log(`Project ${index + 1}: ${project.data.title} - Category: ${project.data.category}`);
+});
+
+// Split projects by category
+const paperProjects = sortedProjects.filter(project => project.data.category === "paper");
+const otherProjects = sortedProjects.filter(project => project.data.category === "not-paper");
+
+// Debug logging for split projects
+console.log(`Paper projects: ${paperProjects.length}`);
+console.log(`Other projects: ${otherProjects.length}`);
+
 const socialCount = SOCIALS.filter(social => social.active).length;
 ---
 
-<Layout>
+<Layout pageType="home">
   <Header />
-  <main id="main-content">
-    <section id="hero">
-      {
-        // only display if at least one social link is enabled
-        socialCount > 0 && (
-          <div class="social-wrapper">
-            <div class="social-links"></div>
-            <Socials />
-          </div>
-        )
-      }
-     
-      <p>
-        I am a third-year Computer Science PhD Candidate at Cornell University, based at the New York City campus, Cornell Tech. Before that, I was an undergraduate student at Clemson University, where I completed a Bachelor's Degree in Computer Science (during the pandemic, unfortunately). I was also a research fellow at <a href="https://hayden.ai">Hayden AI Technologies</a>.  My research is supported by the Cornell Dean's Excellence Fellowship and the <a href="https://dli.tech.cornell.edu">Digital Life Initiative</a> Doctoral Fellowship. 
-        <br><br>
+  <main id="main-content" class="home-content pt-24">
+    <div class="left-col">
+      <section id="hero">
+        <h1 id="hero-logo" class="site-logo text-3xl font-bold mb-4">matt franchi</h1>
+        {
+          // only display if at least one social link is enabled
+          socialCount > 0 && false && (
+            <div class="social-wrapper">
+              <div class="social-links"></div>
+              <Socials />
+            </div>
+          )
+        }
+        <p>
+          I am a third-year Computer Science PhD Candidate at Cornell University, based at the New York City campus, <a href="https://tech.cornell.edu">Cornell Tech</a>. Before that, I completed a Bachelor's Degree in Computer Science and General & Departmental Honors curricula at the Clemson University Honors College (during the pandemic, unfortunately). This summer, I am a research fellow at the <a href="https://www.designtrust.org/">Design Trust for Public Space</a>. In 2024, I was a research fellow at <a href="https://hayden.ai">Hayden AI Technologies</a>.  My research is supported by the Cornell Dean's Excellence Fellowship, the Siegel PiTech PhD Impact Fellowship, and the <a href="https://dli.tech.cornell.edu">Digital Life Initiative</a> Doctoral Fellowship. 
+          <br><br>
+          My research interests include urban data science; computational social science, particularly in issues pertaining to societal inequality; fashion & design; and computer vision towards urban sensing. My research has been covered in the New York Times, The Economist, Gothamist, and other local NYC news outlets.
+          <br><br>
+          I play classical and neoclassical piano music, and write my own 'peaceful piano' compositions since 2020.
+        </p>
+      </section>
+      <Hr />
+      <section id="featured">
+        <h2 class="main-section-heading">Writing</h2>
+        <ul>
+          {featuredPosts.map(({ data, slug }) => (
+            <Card
+              href={`/posts/${slug}/`}
+              frontmatter={data}
+              secHeading={false}
+            />
+          ))}
+        </ul>
+        {recentPosts.length > 0 && <Hr />}
+        <div class="all-posts-btn-wrapper">
+          <LinkButton href="/posts/">
+            All Posts
+            <svg xmlns="http://www.w3.org/2000/svg"
+              ><path
+                d="m11.293 17.293 1.414 1.414L19.414 12l-6.707-6.707-1.414 1.414L15.586 11H6v2h9.586z"
+              ></path>
+            </svg>
+          </LinkButton>
+        </div>
+      </section>
+    </div>
+    <div class="right-col">
+      <section id='selected-work'>
+        <h2 class="main-section-heading">Research</h2>
         
-        My research interests include urban data science; computational social science, particularly in issues pertaining to societal inequality; fashion & design; and computer vision towards urban sensing. My research has been covered in the New York Times, The Economist, Gothamist, and other local NYC news outlets.
-        <br><br>
-        I play classical and neoclassical piano music, and write my own 'peaceful piano' compositions since 2020.
-
-      </p>
-    </section>
-
-    <Hr />
-
-    <section id='selected-work'>
-      <h2>Selected Work</h2>
-      <ul>
-        {sortedProjects.map(project => (
-          <ProjectCard project={project} />
-        ))}
-      </ul>
-    </section>
-
-    <Hr />
-
-    {
-      featuredPosts.length > 0 && (
-        <>
-          <section id="featured">
-            <h2>Writing</h2>
-            <ul>
-              {featuredPosts.map(({ data, slug }) => (
-                <Card
-                  href={`/posts/${slug}/`}
-                  frontmatter={data}
-                  secHeading={false}
-                />
-              ))}
-            </ul>
-          </section>
-          {recentPosts.length > 0 && <Hr />}
-        </>
-      )
-    }
-
-    <div class="all-posts-btn-wrapper">
-      <LinkButton href="/posts/">
-        All Posts
-        <svg xmlns="http://www.w3.org/2000/svg"
-          ><path
-            d="m11.293 17.293 1.414 1.414L19.414 12l-6.707-6.707-1.414 1.414L15.586 11H6v2h9.586z"
-          ></path>
-        </svg>
-      </LinkButton>
+        <!-- Papers section -->
+        {paperProjects.length > 0 && (
+          <>
+            <h3 class="subsection-heading">Papers</h3>
+            <div class="projects-grid-container">
+              <div class="projects-grid">
+                {paperProjects.map(project => (
+                  <ProjectCard project={project} client:load />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+        
+        <!-- Other projects section -->
+        {otherProjects.length > 0 && (
+          <>
+            <h3 class="subsection-heading mt-6">Other Research</h3>
+            <div class="projects-grid-container">
+              <div class="projects-grid">
+                {otherProjects.map(project => (
+                  <ProjectCard project={project} client:load />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </section>
     </div>
   </main>
-
   <Footer />
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const heroLogo = document.getElementById('hero-logo');
+      const headerLogo = document.getElementById('header-logo');
+      const logoLink = document.getElementById('logo-link');
+      
+      if (heroLogo && headerLogo && logoLink) {
+        // Store original positions after DOM is fully loaded
+        let heroLogoRect = heroLogo.getBoundingClientRect();
+        let headerLogoRect = headerLogo.getBoundingClientRect();
+        
+        // Initial state
+        if (window.scrollY === 0) {
+          headerLogo.style.opacity = '0';
+          heroLogo.style.opacity = '1';
+        } else {
+          headerLogo.style.opacity = '1';
+          heroLogo.style.opacity = '0';
+        }
+        
+        // Smooth scroll handling
+        window.addEventListener('scroll', () => {
+          const scrollY = window.scrollY;
+          
+          // Define the transition zone - shorter for smoother animation
+          const transitionStart = 0;
+          const transitionEnd = 100; // shorter transition zone
+          
+          if (scrollY <= transitionStart) {
+            // Before transition: hero logo visible
+            heroLogo.style.opacity = '1';
+            headerLogo.style.opacity = '0';
+          } else if (scrollY > transitionStart && scrollY < transitionEnd) {
+            // During transition: crossfade between logos
+            const progress = (scrollY - transitionStart) / (transitionEnd - transitionStart);
+            
+            heroLogo.style.opacity = 1 - progress;
+            headerLogo.style.opacity = progress;
+          } else {
+            // After transition: header logo fully visible
+            heroLogo.style.opacity = '0';
+            headerLogo.style.opacity = '1';
+          }
+        });
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+          heroLogoRect = heroLogo.getBoundingClientRect();
+          headerLogoRect = headerLogo.getBoundingClientRect();
+        });
+      }
+    });
+
+    // Debug helper function
+    window.debugReact = function(message) {
+      console.log(`[Debug] ${message}`);
+      const debugElement = document.getElementById('react-debug');
+      if (debugElement) {
+        const now = new Date();
+        const timeStr = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+        debugElement.innerHTML += `<div>${timeStr} - ${message}</div>`;
+      }
+    };
+  </script>
+
+  <style>
+    /* Remove or simplify duplicated styles that are now in base.css */
+    #hero {
+      position: relative;
+    }
+    
+    /* Make responsive for mobile */
+    @media (max-width: 900px) {
+      .home-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+    }
+    
+    /* Main section heading styling */
+    .main-section-heading {
+      @apply text-2xl font-['GTAmerica-Medium'] mb-5 text-skin-accent pb-2;
+      position: relative;
+      display: inline-block;
+    }
+    
+    /* Add a subtle underline effect to main section headings */
+    .main-section-heading::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: rgb(var(--color-accent));
+      opacity: 0.6;
+      border-radius: 1px;
+    }
+    
+    .subsection-heading {
+      @apply text-lg font-['GTAmerica-Medium'] mb-3 text-skin-base;
+      position: relative;
+      display: inline-block;
+      padding-left: 0.75rem;
+    }
+    
+    /* Add a vertical accent line before subsection headings */
+    .subsection-heading::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.2em;
+      height: 0.8em;
+      width: 3px;
+      background-color: rgb(var(--color-accent));
+      border-radius: 1px;
+    }
+    
+    /* Debugging info styling */
+    .debug-info {
+      background-color: rgba(255, 240, 240, 0.7);
+      border: 1px solid #ffcccc;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border-radius: 0.25rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+    
+    /* On production, you can add this to hide debugging */
+    /* .debug-info { display: none; } */
+    
+    /* Ensure proper stacking context for overlay */
+    :root {
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Fix any potential z-index issues with header */
+    #main-header {
+      z-index: 100; /* High but lower than overlay */
+    }
+    
+    /* Ensure animations run smoothly */
+    .typing-text, .typing-cursor {
+      will-change: opacity, transform;
+    }
+
+    /* Debug panel */
+    #react-debug {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 300px;
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 10px;
+      z-index: 9999;
+      display: none; /* Hide by default, enable with ?debug=true in URL */
+    }
+  </style>
+
+  <div id="react-debug"></div>
+
+  <script>
+    // Enable debug panel if ?debug=true is in URL
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.location.search.includes('debug=true')) {
+        const debugPanel = document.getElementById('react-debug');
+        if (debugPanel) {
+          debugPanel.style.display = 'block';
+        }
+      }
+    });
+  </script>
 </Layout>
-
-<style>
-  /* ===== Hero Section ===== */
-  #hero {
-    @apply pb-6 pt-24;
-  }
-  #hero h1 {
-    @apply my-4 inline-block text-xl font-bold sm:my-0 sm:text-5xl;
-  }
-  #hero .rss-link {
-    @apply mb-6;
-  }
-  #hero .rss-icon {
-    @apply mb-2 h-6 w-6 scale-110 fill-skin-accent sm:mb-3 sm:scale-125;
-  }
-  #hero p {
-    @apply my-2;
-  }
-  .social-wrapper {
-    @apply mt-4 pb-8 flex flex-col items-center sm:flex-row sm:items-center sm:justify-center;
-  }
-
-  /* ===== Featured & Recent Posts Sections ===== */
-  #featured,
-  #recent-posts {
-    @apply pb-6 pt-12;
-  }
-  #featured h2,
-  #recent-posts h2 {
-    @apply text-2xl font-semibold tracking-wide;
-  }
-  .all-posts-btn-wrapper {
-    @apply my-8 text-center;
-  }
-
-  /* ===== MinCard Section ===== */
-  #selected-work {
-    @apply pb-6 pt-12;
-  }
-
-  #selected-work h2 {
-    @apply text-2xl font-semibold tracking-wide;
-  }
-</style>

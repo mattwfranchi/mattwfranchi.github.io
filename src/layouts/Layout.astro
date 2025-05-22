@@ -14,6 +14,7 @@ export interface Props {
   pubDatetime?: Date;
   modDatetime?: Date | null;
   scrollSmooth?: boolean;
+  pageType?: "home" | "post" | "other";
 }
 
 const {
@@ -26,6 +27,7 @@ const {
   pubDatetime,
   modDatetime,
   scrollSmooth = false,
+  pageType = "other",
 } = Astro.props;
 
 const socialImageURL = new URL(
@@ -139,7 +141,7 @@ const structuredData = {
 
     <script is:inline src="/toggle-theme.js"></script>
   </head>
-  <body>
+  <body class={`${pageType}-page`}>
     <slot />
   </body>
 </html>

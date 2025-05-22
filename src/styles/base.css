@@ -1,4 +1,3 @@
-@import "./photog.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -92,8 +91,7 @@
   body {
     @apply flex min-h-[100svh] flex-col bg-skin-fill font-mono text-skin-base selection:bg-skin-accent/70 selection:text-skin-inverted;
   }
-  section,
-  footer {
+  section {
     @apply mx-auto max-w-3xl px-4;
   }
   a {
@@ -176,6 +174,383 @@
     font-weight: var(--shiki-dark-font-weight) !important;
     text-decoration: var(--shiki-dark-text-decoration) !important;
   }
+
+  /* ===== Header Styles ===== */
+  #skip-to-content {
+    @apply absolute -top-full left-16 z-50 bg-skin-accent px-3 py-2 text-skin-inverted transition-all focus:top-4;
+  }
+  header#main-header {
+    @apply fixed top-0 left-0 right-0 z-50 bg-skin-fill transition-all duration-300;
+    height: 88px;
+  }
+  header#main-header.shrunk {
+    height: 64px;
+  }
+  .nav-container {
+    @apply flex w-full flex-col items-center justify-between;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  /* 
+   * On mobile: stack logo, divider, nav vertically.
+   * On desktop: arrange logo, divider, nav in a row.
+   */
+  .top-nav-wrap {
+    @apply relative w-full transition-all duration-300;
+    display: flex;
+    padding: 1.5rem 5vw;
+    width: 100%;
+    max-width: 100%;
+  }
+  @media (min-width: 640px) {
+    .top-nav-wrap {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+  }
+  header#main-header.shrunk .top-nav-wrap {
+    @apply py-3;
+  }
+  .logo {
+    @apply py-1 text-xl font-semibold sm:static sm:text-2xl transition-all duration-300;
+    position: static;
+  }
+  header#main-header.shrunk .logo {
+    @apply text-lg sm:text-xl;
+  }
+  .hamburger-menu {
+    @apply self-end p-2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 50;
+  }
+  .hamburger-menu svg {
+    @apply h-6 w-6 scale-125 fill-skin-base;
+  }
+  nav#nav-menu {
+    @apply flex w-full flex-col items-center sm:ml-2 sm:flex-row sm:justify-end sm:space-x-4 sm:py-0;
+  }
+  nav#nav-menu ul {
+    @apply mt-4 grid w-44 grid-cols-2 grid-rows-4 gap-x-2 gap-y-2 sm:ml-0 sm:mt-0 sm:w-auto sm:gap-x-5 sm:gap-y-0;
+  }
+  nav#nav-menu ul li {
+    @apply col-span-2 flex items-center justify-center;
+  }
+  nav#nav-menu ul li a {
+    @apply w-full px-4 py-3 text-center font-medium hover:text-skin-accent sm:my-0 sm:px-2 sm:py-1;
+  }
+  nav#nav-menu ul li:nth-last-child(2) a {
+    @apply w-auto;
+  }
+  nav#nav-menu ul li:nth-last-child(1),
+  nav#nav-menu ul li:nth-last-child(2) {
+    @apply col-span-1;
+  }
+  nav#nav-menu a.active {
+    @apply underline decoration-wavy decoration-2 underline-offset-4;
+  }
+  nav#nav-menu a.active svg {
+    @apply fill-skin-accent;
+  }
+  nav#nav-menu button {
+    @apply p-1;
+  }
+  nav#nav-menu button svg {
+    @apply h-6 w-6 fill-skin-base hover:fill-skin-accent;
+  }
+  #theme-btn {
+    @apply p-3 sm:p-1;
+  }
+  #theme-btn svg {
+    @apply scale-125 hover:rotate-12 sm:scale-100;
+  }
+  .menu-icon line {
+    @apply transition-opacity duration-75 ease-in-out;
+  }
+  .menu-icon .close {
+    opacity: 0;
+  }
+  .menu-icon.is-active .line {
+    @apply opacity-0;
+  }
+  .menu-icon.is-active .close {
+    @apply opacity-100;
+  }
+  #main-content {
+    @apply pt-24; /* Add padding to account for fixed header */
+  }
+
+  /* Divider styling for the Hr between logo and nav */
+  .header-divider {
+    border: none;
+    border-top: 1px solid rgb(var(--color-border));
+    width: 100%;
+    max-width: none;
+    height: 0;
+    margin: 0.5rem 0;
+  }
+  @media (min-width: 640px) {
+    .header-divider {
+      border-top: none;
+      border-left: 1px solid rgb(var(--color-border));
+      width: 0;
+      height: 2.5rem;
+      align-self: stretch;
+      margin: 0 1rem;
+    }
+  }
+
+  /* Only show mobile menu when hamburger is active and on mobile */
+  @media (max-width: 639px) {
+    /* Default state: menu is hidden on mobile */
+    #menu-items {
+      display: none !important;
+    }
+    
+    /* When display-none class is removed (menu is active) */
+    #menu-items:not(.display-none) {
+      @apply absolute top-full right-0 mt-1 rounded-md shadow-lg z-50 py-2;
+      display: block !important;
+      width: auto;
+      min-width: 200px;
+      background-color: rgba(var(--color-fill), 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(var(--color-border), 0.2);
+    }
+    
+    /* Ensure menu items are styled correctly */
+    #menu-items li {
+      @apply w-full;
+    }
+    
+    #menu-items li a {
+      @apply block px-4 py-2 text-right;
+    }
+  }
+
+  /* Always show nav on desktop and reset all mobile-specific styles */
+  @media (min-width: 640px) {
+    #menu-items {
+      display: flex !important;
+      position: static !important;
+      background: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      margin-top: 0 !important;
+      padding: 0 !important;
+      backdrop-filter: none !important;
+      width: auto !important;
+      min-width: unset !important;
+    }
+    
+    #menu-items.display-none {
+      display: flex !important;
+    }
+    
+    /* Hide hamburger on desktop */
+    .hamburger-menu {
+      display: none !important;
+    }
+  }
+
+  /* Hamburger button styling */
+  .hamburger-menu {
+    @apply self-end p-2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 50;
+  }
+  
+  /* Hamburger icon animation */
+  .menu-icon line {
+    @apply transition-opacity duration-75 ease-in-out;
+  }
+  
+  .menu-icon .close {
+    opacity: 0;
+  }
+  
+  .menu-icon.is-active .line {
+    @apply opacity-0;
+  }
+  
+  .menu-icon.is-active .close {
+    @apply opacity-100;
+  }
+  #main-content {
+    @apply pt-24; /* Add padding to account for fixed header */
+  }
+
+  /* Divider styling for the Hr between logo and nav */
+  .header-divider {
+    border: none;
+    border-top: 1px solid rgb(var(--color-border));
+    width: 100%;
+    max-width: none;
+    height: 0;
+    margin: 0.5rem 0;
+  }
+  @media (min-width: 640px) {
+    .header-divider {
+      border-top: none;
+      border-left: 1px solid rgb(var(--color-border));
+      width: 0;
+      height: 2.5rem;
+      align-self: stretch;
+      margin: 0 1rem;
+    }
+  }
+
+  /* Only show mobile menu when hamburger is active and on mobile */
+  @media (max-width: 639px) {
+    /* Default state: menu is hidden on mobile */
+    #menu-items {
+      display: none !important;
+    }
+    
+    /* When display-none class is removed (menu is active) */
+    #menu-items:not(.display-none) {
+      @apply absolute top-full right-0 mt-1 rounded-md shadow-lg z-50 py-2;
+      display: block !important;
+      width: auto;
+      min-width: 200px;
+      background-color: rgba(var(--color-fill), 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(var(--color-border), 0.2);
+    }
+    
+    /* Ensure menu items are styled correctly */
+    #menu-items li {
+      @apply w-full;
+    }
+    
+    #menu-items li a {
+      @apply block px-4 py-2 text-right;
+    }
+  }
+
+  /* Always show nav on desktop and reset all mobile-specific styles */
+  @media (min-width: 640px) {
+    #menu-items {
+      display: flex !important;
+      position: static !important;
+      background: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      margin-top: 0 !important;
+      padding: 0 !important;
+      backdrop-filter: none !important;
+      width: auto !important;
+      min-width: unset !important;
+    }
+    
+    #menu-items.display-none {
+      display: flex !important;
+    }
+    
+    /* Hide hamburger on desktop */
+    .hamburger-menu {
+      display: none !important;
+    }
+  }
+
+  /* ===== Logo Animation Styles ===== */
+  .site-logo {
+    @apply font-bold transition-all duration-300 ease-out;
+    position: relative;
+    z-index: 60;
+  }
+  
+  #hero-logo {
+    @apply text-3xl font-bold mb-4;
+    position: relative;
+    transform-origin: left center;
+    transition: opacity 0.3s ease, transform 0.3s ease, left 0.3s ease, top 0.3s ease;
+    z-index: 60;
+  }
+
+  #header-logo {
+    transition: opacity 0.3s ease;
+    z-index: 10;
+  }
+  
+  /* Default state for header logo - visible except on home page */
+  #header-logo {
+    opacity: 1;
+  }
+  
+  /* Home page specific - hide header logo initially */
+  .home-page #header-logo {
+    opacity: 0;
+  }
+
+  /* Position for hero section */
+  #hero {
+    position: relative;
+    padding-top: 1rem;
+    min-height: 150px;
+  }
+
+  /* When header is in shrunk state */
+  header#main-header.shrunk #header-logo {
+    @apply text-lg sm:text-xl;
+  }
+
+  /* ===== Footer Styles ===== */
+  footer {
+    @apply bg-skin-fill w-full !important;
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    position: relative;
+    z-index: 40;
+    width: 100vw !important;
+    left: 0;
+    right: 0;
+  }
+  
+  .footer-container {
+    @apply flex w-full flex-col items-center justify-between;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .footer-wrapper {
+    @apply relative w-full transition-all duration-300;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 5vw;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+  
+  @media (min-width: 640px) {
+    .footer-wrapper {
+      flex-direction: row-reverse;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+    }
+  }
+  
+  footer, 
+  footer.footer-container, 
+  footer .footer-wrapper {
+    max-width: 100% !important;
+  }
 }
 
 @media (max-width: 768px) {
@@ -196,19 +571,157 @@
     @apply outline-2 outline-offset-1 outline-skin-fill focus-visible:no-underline focus-visible:outline-dashed;
   }
   
+  /* Bio/Hero Section Link Styling */
+  #hero p a {
+    @apply text-skin-accent font-['GTAmerica-Medium'] relative;
+    text-decoration: none;
+    background-image: linear-gradient(transparent 92%, currentColor 8%);
+    background-repeat: no-repeat;
+    background-size: 0% 100%;
+    transition: background-size 0.3s ease-in-out;
+  }
+  
+  #hero p a:hover {
+    background-size: 100% 100%;
+  }
+  
   /* Project Card Styles */
   .project-card {
-    @apply my-6;
+    @apply rounded-md border border-skin-line p-3;
+    min-width: 220px;
+    max-width: 300px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
   
   .project-venue {
-    @apply font-['GTAmerica-Regular-Italic'] italic;
+    @apply font-['GTAmerica-Regular-Italic'] italic text-xs;
   }
   
   .project-tag {
-    @apply font-['GTAmerica-Bold'] font-bold;
+    @apply font-['GTAmerica-Bold'] font-bold text-xs;
   }
   
+  /* Horizontal scrolling projects grid */
+  .projects-grid-container {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    scrollbar-width: thin;
+  }
+  
+  .projects-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(220px, 300px);
+    gap: 1rem;
+    padding: 0.5rem 0;
+  }
+  
+  /* Project media and content styling */
+  .project-media {
+    margin: 0.5rem 0;
+    max-height: 150px;
+    overflow: hidden;
+    border-radius: 0.25rem;
+  }
+  
+  .project-description {
+    @apply text-sm p-2 bg-skin-card rounded;
+    word-break: break-word;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+    animation-duration: 0.15s;
+  }
+  
+  .project-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+  }
+  
+  .project-button {
+    @apply text-xs text-skin-accent font-['GTAmerica-Medium'] py-1 px-2 border border-skin-accent rounded cursor-pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+  }
+  
+  .project-button:hover {
+    @apply bg-skin-accent text-skin-inverted;
+  }
+  
+  /* Button specific styling */
+  .pdf-button {
+    @apply bg-skin-fill;
+  }
+  
+  .site-button {
+    @apply bg-skin-fill;
+  }
+  
+  .bib-button {
+    @apply bg-skin-fill;
+  }
+  
+  .desc-button {
+    @apply bg-skin-fill;
+    min-width: 80px; /* Make slightly wider for "Abstract" text */
+  }
+  
+  .desc-button.active {
+    @apply bg-skin-accent text-skin-inverted;
+  }
+  
+  .bib-content {
+    @apply mt-2 p-2 bg-skin-card text-xs overflow-auto max-h-32 rounded;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  /* Logo styling for all pages */
+  .site-logo {
+    @apply font-bold transition-all duration-300 ease-out;
+    position: relative;
+    z-index: 60;
+  }
+
+  /* Hero logo specific styling */
+  #hero-logo {
+    @apply text-3xl mb-4;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  /* Header logo specific styling */
+  #header-logo {
+    transition: opacity 0.3s ease;
+  }
+
   /* Mobile menu background - ONLY affects mobile view */
   @media (max-width: 640px) {
     #menu-items:not(.display-none) {
@@ -217,5 +730,201 @@
       backdrop-filter: blur(8px);
       border: 1px solid rgba(var(--color-border), 0.2);
     }
+  }
+
+  /* === Page Layout System === */
+  
+  /* Default main-content styling */
+  #main-content {
+    @apply pt-24; /* Padding for header */
+  }
+  
+  /* Home page specific layout */
+  .home-page #main-content,
+  #main-content.home-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    width: 100%;
+    box-sizing: border-box;
+    align-items: start;
+  }
+  
+  /* Post page specific layout */
+  .post-page #main-content,
+  #main-content.post-content {
+    @apply mx-auto flex flex-col items-center;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Column styling for home page */
+  .left-col,
+  .right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-width: 0;
+  }
+  
+  .left-col {
+    padding: 0 5vw 2.5rem 5vw;
+  }
+  
+  .right-col {
+    padding: 0 5vw 2.5rem 0;
+  }
+  
+  /* Responsive: stack columns on small screens */
+  @media (max-width: 900px) {
+    .home-page #main-content,
+    #main-content.home-content,
+    .two-col-main {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    
+    .left-col,
+    .right-col {
+      gap: 1.5rem;
+      padding: 0 2vw 2rem 2vw;
+    }
+  }
+  
+  /* Centered prose content for blog posts */
+  .post-content .prose {
+    @apply mx-auto;
+    width: 100%;
+    max-width: 65ch;
+  }
+  
+  /* Adjust sections padding */
+  #hero,
+  #selected-work,
+  #featured {
+    padding: 0;
+  }
+  
+  .all-posts-btn-wrapper {
+    margin-top: 2rem;
+    text-align: left;
+  }
+  
+  /* === Hero and Header Styles === */
+  
+  #hero-logo {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  
+  #hero {
+    position: relative;
+  }
+  
+  /* Ensure home page has two column layout */
+  .home-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    width: 100vw;
+    min-height: calc(100vh - 88px); /* Account for header height */
+    box-sizing: border-box;
+    align-items: start;
+  }
+  
+  /* Make responsive for mobile */
+  @media (max-width: 900px) {
+    .home-content {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+  
+  /* Main section heading styling */
+  .main-section-heading {
+    @apply text-2xl font-['GTAmerica-Medium'] mb-5 text-skin-accent pb-2;
+    position: relative;
+    display: inline-block;
+  }
+  
+  /* Add a subtle underline effect to main section headings */
+  .main-section-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: rgb(var(--color-accent));
+    opacity: 0.6;
+    border-radius: 1px;
+  }
+  
+  /* Subsection headings with improved styling */
+  .subsection-heading {
+    @apply text-lg font-['GTAmerica-Medium'] mb-3 text-skin-base;
+    position: relative;
+    display: inline-block;
+    padding-left: 0.75rem;
+    margin-top: 1.5rem; /* Add space above subsection headings */
+  }
+  
+  /* Add a vertical accent line before subsection headings */
+  .subsection-heading::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.2em;
+    height: 0.8em;
+    width: 3px;
+    background-color: rgb(var(--color-accent));
+    border-radius: 1px;
+  }
+  
+  .mt-6 {
+    margin-top: 1.5rem;
+  }
+  
+  /* Ensure proper stacking context for overlay */
+  :root {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Fix any potential z-index issues with header */
+  #main-header {
+    z-index: 100; /* High but lower than overlay */
+  }
+  
+  /* Ensure animations run smoothly */
+  .typing-text, .typing-cursor {
+    will-change: opacity, transform;
+  }
+  
+  /* Debug panel */
+  #react-debug {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 300px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 10px;
+    z-index: 9999;
+    display: none; /* Hide by default, enable with ?debug=true in URL */
+  }
+  
+  /* Debugging info styling */
+  .debug-info {
+    background-color: rgba(255, 240, 240, 0.7);
+    border: 1px solid #ffcccc;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border-radius: 0.25rem;
+    font-family: monospace;
+    font-size: 0.8rem;
   }
 }
