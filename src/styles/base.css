@@ -199,7 +199,7 @@
   .top-nav-wrap {
     @apply relative w-full transition-all duration-300;
     display: flex;
-    padding: 1.5rem 5vw;
+    padding: 1.5rem 5vw; /* Match the left column padding */
     width: 100%;
     max-width: 100%;
   }
@@ -215,7 +215,7 @@
     @apply py-3;
   }
   .logo {
-    @apply py-1 text-xl font-semibold sm:static sm:text-2xl transition-all duration-300;
+    @apply py-1 text-xl font-semibold text-left sm:text-2xl transition-all duration-300;
     position: static;
   }
   header#main-header.shrunk .logo {
@@ -228,9 +228,35 @@
     justify-content: center;
     cursor: pointer;
     z-index: 50;
+    transition: transform 0.2s ease;
   }
+
+  .hamburger-menu:active {
+    transform: scale(0.95);
+  }
+  
   .hamburger-menu svg {
     @apply h-6 w-6 scale-125 fill-skin-base;
+    transition: transform 0.2s ease;
+  }
+  
+  /* Hamburger icon animation - improved transitions */
+  .menu-icon line,
+  .menu-icon .close {
+    @apply transition-all duration-200 ease-in-out;
+    transform-origin: center;
+  }
+  
+  .menu-icon .close {
+    opacity: 0;
+  }
+  
+  .menu-icon.is-active .line {
+    @apply opacity-0;
+  }
+  
+  .menu-icon.is-active .close {
+    @apply opacity-100;
   }
   nav#nav-menu {
     @apply flex w-full flex-col items-center sm:ml-2 sm:flex-row sm:justify-end sm:space-x-4 sm:py-0;
@@ -310,129 +336,53 @@
     /* Default state: menu is hidden on mobile */
     #menu-items {
       display: none !important;
+      transform: translateY(-10px);
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
     }
     
     /* When display-none class is removed (menu is active) */
     #menu-items:not(.display-none) {
       @apply absolute top-full right-0 mt-1 rounded-md shadow-lg z-50 py-2;
       display: block !important;
+      transform: translateY(0);
+      opacity: 1;
       width: auto;
       min-width: 200px;
-      background-color: rgba(var(--color-fill), 0.95);
+      background-color: rgba(var(--color-fill), 0.98);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(var(--color-border), 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
     
-    /* Ensure menu items are styled correctly */
+    /* Ensure menu items are styled correctly with transitions */
     #menu-items li {
       @apply w-full;
+      opacity: 0;
+      transform: translateX(10px);
+      animation: menuItemFadeIn 0.3s forwards;
+    }
+    
+    #menu-items li:nth-child(1) { animation-delay: 0.05s; }
+    #menu-items li:nth-child(2) { animation-delay: 0.1s; }
+    #menu-items li:nth-child(3) { animation-delay: 0.15s; }
+    #menu-items li:nth-child(4) { animation-delay: 0.2s; }
+    
+    @keyframes menuItemFadeIn {
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
     
     #menu-items li a {
       @apply block px-4 py-2 text-right;
-    }
-  }
-
-  /* Always show nav on desktop and reset all mobile-specific styles */
-  @media (min-width: 640px) {
-    #menu-items {
-      display: flex !important;
-      position: static !important;
-      background: none !important;
-      box-shadow: none !important;
-      border: none !important;
-      margin-top: 0 !important;
-      padding: 0 !important;
-      backdrop-filter: none !important;
-      width: auto !important;
-      min-width: unset !important;
+      transition: background-color 0.15s ease, color 0.15s ease;
     }
     
-    #menu-items.display-none {
-      display: flex !important;
-    }
-    
-    /* Hide hamburger on desktop */
-    .hamburger-menu {
-      display: none !important;
-    }
-  }
-
-  /* Hamburger button styling */
-  .hamburger-menu {
-    @apply self-end p-2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 50;
-  }
-  
-  /* Hamburger icon animation */
-  .menu-icon line {
-    @apply transition-opacity duration-75 ease-in-out;
-  }
-  
-  .menu-icon .close {
-    opacity: 0;
-  }
-  
-  .menu-icon.is-active .line {
-    @apply opacity-0;
-  }
-  
-  .menu-icon.is-active .close {
-    @apply opacity-100;
-  }
-  #main-content {
-    @apply pt-24; /* Add padding to account for fixed header */
-  }
-
-  /* Divider styling for the Hr between logo and nav */
-  .header-divider {
-    border: none;
-    border-top: 1px solid rgb(var(--color-border));
-    width: 100%;
-    max-width: none;
-    height: 0;
-    margin: 0.5rem 0;
-  }
-  @media (min-width: 640px) {
-    .header-divider {
-      border-top: none;
-      border-left: 1px solid rgb(var(--color-border));
-      width: 0;
-      height: 2.5rem;
-      align-self: stretch;
-      margin: 0 1rem;
-    }
-  }
-
-  /* Only show mobile menu when hamburger is active and on mobile */
-  @media (max-width: 639px) {
-    /* Default state: menu is hidden on mobile */
-    #menu-items {
-      display: none !important;
-    }
-    
-    /* When display-none class is removed (menu is active) */
-    #menu-items:not(.display-none) {
-      @apply absolute top-full right-0 mt-1 rounded-md shadow-lg z-50 py-2;
-      display: block !important;
-      width: auto;
-      min-width: 200px;
-      background-color: rgba(var(--color-fill), 0.95);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(var(--color-border), 0.2);
-    }
-    
-    /* Ensure menu items are styled correctly */
-    #menu-items li {
-      @apply w-full;
-    }
-    
-    #menu-items li a {
-      @apply block px-4 py-2 text-right;
+    #menu-items li a:hover,
+    #menu-items li a:focus {
+      @apply bg-skin-card;
     }
   }
 
@@ -587,9 +537,9 @@
   
   /* Project Card Styles */
   .project-card {
-    @apply rounded-md border border-skin-line p-3;
-    min-width: 220px;
-    max-width: 300px;
+    @apply rounded-md border border-skin-line p-4;
+    min-width: 280px;
+    max-width: 400px;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -614,17 +564,29 @@
   .projects-grid {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(220px, 300px);
-    gap: 1rem;
-    padding: 0.5rem 0;
+    grid-auto-columns: minmax(320px, 320px);
+    gap: 1.25rem;
+    padding: 0.75rem 0;
   }
   
   /* Project media and content styling */
   .project-media {
-    margin: 0.5rem 0;
-    max-height: 150px;
-    overflow: hidden;
+    margin: 0.75rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 0.25rem;
+    min-height: 120px; /* Increased minimum height */
+    padding: 0.5rem 0;
+  }
+  
+  .project-image {
+    max-width: 100%;
+    height: auto;
+    max-height: 240px; /* Increased from 200px */
+    object-fit: contain;
+    margin: 0 auto;
+    display: block;
   }
   
   .project-description {
@@ -662,21 +624,20 @@
   }
   
   /* Button specific styling */
-  .pdf-button {
-    @apply bg-skin-fill;
-  }
-  
-  .site-button {
-    @apply bg-skin-fill;
-  }
-  
-  .bib-button {
-    @apply bg-skin-fill;
-  }
-  
+  .pdf-button,
+  .site-button,
+  .bib-button,
   .desc-button {
     @apply bg-skin-fill;
-    min-width: 80px; /* Make slightly wider for "Abstract" text */
+    min-width: 48px;
+    width: 48px !important; /* Added !important to ensure this isn't overridden */
+    max-width: 48px !important; /* Added max-width constraint */
+    text-align: center;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    justify-content: center;
+    overflow: hidden;
+    box-sizing: border-box;
   }
   
   .desc-button.active {
@@ -775,6 +736,18 @@
     padding: 0 5vw 2.5rem 0;
   }
   
+  /* Large screen padding constraint to match header */
+  @media (min-width: 1536px) {
+    .left-col {
+      padding-left: max(5vw, calc(50vw - 700px)); /* Match header on ultra-wide screens */
+      padding-right: 5vw;
+    }
+    
+    .right-col {
+      padding-right: max(5vw, calc(50vw - 700px));
+    }
+  }
+  
   /* Responsive: stack columns on small screens */
   @media (max-width: 900px) {
     .home-page #main-content,
@@ -787,7 +760,11 @@
     .left-col,
     .right-col {
       gap: 1.5rem;
-      padding: 0 2vw 2rem 2vw;
+      padding: 0 5vw 2rem 5vw; /* Updated to match header padding */
+    }
+    
+    .top-nav-wrap {
+      padding: 1.5rem 5vw; /* Ensure it's the same on mobile */
     }
   }
   
@@ -866,6 +843,13 @@
     display: inline-block;
     padding-left: 0.75rem;
     margin-top: 1.5rem; /* Add space above subsection headings */
+  }
+  
+  /* Section spacer - explicit vertical space between sections */
+  .section-spacer {
+    height: 1.2rem;
+    width: 100%;
+    display: block;
   }
   
   /* Add a vertical accent line before subsection headings */

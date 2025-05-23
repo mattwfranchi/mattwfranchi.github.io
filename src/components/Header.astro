@@ -113,107 +113,62 @@ const { activeNav } = Astro.props;
 </header>
 
 <script>
-  // Store a reference to the click handler to properly remove it
-  let navClickHandler;
-
-  function toggleNav() {
-    // Get elements
-    const menuBtn = document.querySelector(".hamburger-menu");
-    const menuIcon = document.querySelector(".menu-icon");
-    const menuItems = document.querySelector("#menu-items");
-
-    // Remove any existing event listener first to prevent duplicates
-    if (navClickHandler && menuBtn) {
-      menuBtn.removeEventListener("click", navClickHandler);
-    }
-
-    // Create the click handler
-    navClickHandler = () => {
-      const menuExpanded = menuBtn.getAttribute("aria-expanded") === "true";
-      
-      // Toggle menu icon state
-      menuIcon?.classList.toggle("is-active");
-      
-      // Update aria attributes
-      menuBtn.setAttribute("aria-expanded", menuExpanded ? "false" : "true");
-      menuBtn.setAttribute(
-        "aria-label",
-        menuExpanded ? "Open Menu" : "Close Menu"
-      );
-      
-      // Toggle menu visibility - only on mobile
-      if (window.innerWidth < 640) {
-        menuItems?.classList.toggle("display-none");
-      }
-    };
-
-    // Add the event listener
-    menuBtn?.addEventListener("click", navClickHandler);
+  // Mobile menu functionality
+  document.addEventListener('astro:page-load', () => {
+    const hamburgerBtn = document.querySelector('.hamburger-menu');
+    const menuItems = document.querySelector('#menu-items');
+    const menuLinks = menuItems?.querySelectorAll('a');
+    const menuIcon = document.querySelector('.menu-icon');
     
-    // Ensure correct initial state
-    if (menuBtn && menuItems) {
-      if (window.innerWidth < 640) {
-        // On mobile: Hide menu initially, set aria-expanded to false
-        menuItems.classList.add("display-none");
-        menuBtn.setAttribute("aria-expanded", "false");
-        menuIcon?.classList.remove("is-active");
-      } else {
-        // On desktop: Show menu, set aria-expanded to true
-        menuItems.classList.remove("display-none");
+    // Toggle menu function
+    const toggleMenu = () => {
+      menuItems?.classList.toggle('display-none');
+      menuIcon?.classList.toggle('is-active');
+      
+      // Update aria-expanded attribute
+      const isExpanded = menuItems?.classList.contains('display-none') === false;
+      hamburgerBtn?.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+      hamburgerBtn?.setAttribute('aria-label', isExpanded ? 'Close Menu' : 'Open Menu');
+    };
+    
+    // Add click event to hamburger button
+    hamburgerBtn?.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleMenu();
+    });
+    
+    // Close menu when clicking anywhere else on the page
+    document.addEventListener('click', e => {
+      const target = e.target as Node;
+      const isMenuOpen = menuItems?.classList.contains('display-none') === false;
+      
+      if (isMenuOpen && 
+          menuItems && 
+          !menuItems.contains(target) && 
+          hamburgerBtn && 
+          !hamburgerBtn.contains(target)) {
+        toggleMenu();
       }
-    }
-  }
-
-  // Handle sticky header animation
-  let ticking = false;
-  const SCROLL_THRESHOLD = 50;
-
-  function updateHeader() {
-    const header = document.getElementById('main-header');
-    if (window.scrollY > SCROLL_THRESHOLD) {
-      header?.classList.add('shrunk');
-    } else {
-      header?.classList.remove('shrunk');
-    }
-    ticking = false;
-  }
-
-  // Initialize on load and page transitions
-  function initHeader() {
-    toggleNav();
-    updateHeader();
-  }
-
-  // Check scroll position immediately on load
-  document.addEventListener('DOMContentLoaded', initHeader);
-
-  // Check scroll position after view transitions
-  document.addEventListener('astro:page-load', initHeader);
-
-  // Handle resize events to make sure the menu state is correct
-  window.addEventListener('resize', () => {
-    const menuItems = document.querySelector("#menu-items");
-    const menuBtn = document.querySelector(".hamburger-menu");
-    const menuIcon = document.querySelector(".menu-icon");
-
-    if (window.innerWidth >= 640 && menuItems) {
-      // On desktop: Always show menu regardless of previous state
-      menuItems.classList.remove("display-none");
-    } else if (window.innerWidth < 640 && menuItems && menuBtn) {
-      // On mobile: Hide menu unless expanded
-      const expanded = menuBtn.getAttribute("aria-expanded") === "true";
-      if (!expanded) {
-        menuItems.classList.add("display-none");
-        menuIcon?.classList.remove("is-active");
+    });
+    
+    // Close menu when a menu item is clicked
+    menuLinks?.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth < 640 && menuItems?.classList.contains('display-none') === false) {
+          toggleMenu();
+        }
+      });
+    });
+    
+    // Close menu when resizing to desktop view
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 640 && menuItems?.classList.contains('display-none') === false) {
+        menuItems?.classList.add('display-none');
+        menuIcon?.classList.remove('is-active');
+        hamburgerBtn?.setAttribute('aria-expanded', 'false');
+        hamburgerBtn?.setAttribute('aria-label', 'Open Menu');
       }
-    }
-  });
-
-  // Handle scroll events
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      window.requestAnimationFrame(updateHeader);
-      ticking = true;
-    }
+    });
   });
 </script>
+

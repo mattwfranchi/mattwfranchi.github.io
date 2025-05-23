@@ -48,7 +48,8 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
       
       const typingInterval = setInterval(() => {
         if (currentIndex < description.length) {
-          setAnimatedText(prev => prev + description.charAt(currentIndex));
+          // Fix for the missing first character - append to current text instead of replacing
+          setAnimatedText(description.substring(0, currentIndex + 1));
           currentIndex++;
         } else {
           clearInterval(typingInterval);
@@ -95,7 +96,7 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
           <img 
             src={data.image.src} 
             alt={title} 
-            className="w-full object-cover"
+            className="project-image"
             width={data.image.width}
             height={data.image.height}
             loading="lazy"
@@ -117,17 +118,17 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
       <div className="project-links">
         {pdf && (
           <a href={pdf} target="_blank" rel="noopener noreferrer" className="project-button pdf-button">
-            PDF
+            pdf
           </a>
         )}
         {site && (
           <a href={site} target="_blank" rel="noopener noreferrer" className="project-button site-button">
-            Site
+            href
           </a>
         )}
         {bib && (
           <button onClick={toggleBib} className="project-button bib-button">
-            BibTeX
+            cite
           </button>
         )}
         {description && (
@@ -136,7 +137,7 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
             className={`project-button desc-button ${showDescription ? 'active' : ''}`}
             aria-expanded={showDescription}
           >
-            {showDescription ? "Hide" : "Abstract"}
+            {showDescription ? "×" : "abs"}
           </button>
         )}
       </div>

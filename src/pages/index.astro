@@ -42,10 +42,10 @@ const socialCount = SOCIALS.filter(social => social.active).length;
 
 <Layout pageType="home">
   <Header />
-  <main id="main-content" class="home-content pt-24">
+  <main id="main-content" class="home-content pt-24"> 
     <div class="left-col">
       <section id="hero">
-        <h1 id="hero-logo" class="site-logo text-3xl font-bold mb-4">matt franchi</h1>
+        {false && (<h1 id="hero-logo" class="site-logo text-3xl font-bold mb-4">matt franchi</h1>)}
         {
           // only display if at least one social link is enabled
           socialCount > 0 && false && (
