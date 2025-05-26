@@ -53,7 +53,7 @@ const { activeNav } = Astro.props;
             <line x1="6" y1="6" x2="18" y2="18" class="close"></line>
           </svg>
         </button>
-        <ul id="menu-items" class="display-none sm:flex">
+        <ul id="menu-items">
           <li>
             <a href="/posts/" class={activeNav === "posts" ? "active" : ""}>
               WRITING
@@ -115,30 +115,67 @@ const { activeNav } = Astro.props;
   document.addEventListener('astro:page-load', () => {
     const hamburgerBtn = document.querySelector('.hamburger-menu');
     const menuItems = document.querySelector('#menu-items');
-    const menuLinks = menuItems?.querySelectorAll('a');
+    const menuLinks = menuItems?.querySelectorAll('a, button');
     const menuIcon = document.querySelector('.menu-icon');
     
-    // Toggle menu function
+    // Check if we're in mobile view
+    const isMobile = () => window.innerWidth < 640;
+    
+    // Toggle menu function (only for mobile)
     const toggleMenu = () => {
-      menuItems?.classList.toggle('display-none');
-      menuIcon?.classList.toggle('is-active');
+      if (!isMobile()) return;
       
-      // Update aria-expanded attribute
-      const isExpanded = menuItems?.classList.contains('display-none') === false;
-      hamburgerBtn?.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
-      hamburgerBtn?.setAttribute('aria-label', isExpanded ? 'Close Menu' : 'Open Menu');
+      const isCurrentlyOpen = menuItems?.classList.contains('show');
+      
+      if (isCurrentlyOpen) {
+        // Close menu
+        menuItems?.classList.remove('show');
+        menuIcon?.classList.remove('is-active');
+        hamburgerBtn?.setAttribute('aria-expanded', 'false');
+        hamburgerBtn?.setAttribute('aria-label', 'Open Menu');
+      } else {
+        // Open menu
+        menuItems?.classList.add('show');
+        menuIcon?.classList.add('is-active');
+        hamburgerBtn?.setAttribute('aria-expanded', 'true');
+        hamburgerBtn?.setAttribute('aria-label', 'Close Menu');
+      }
     };
+    
+    // Initialize menu state
+    const initializeMenu = () => {
+      if (isMobile()) {
+        // Mobile: start with menu closed
+        menuItems?.classList.remove('show');
+        menuIcon?.classList.remove('is-active');
+        hamburgerBtn?.setAttribute('aria-expanded', 'false');
+        hamburgerBtn?.setAttribute('aria-label', 'Open Menu');
+      } else {
+        // Desktop: ensure menu is accessible
+        menuItems?.classList.remove('show');
+        menuIcon?.classList.remove('is-active');
+        hamburgerBtn?.setAttribute('aria-expanded', 'false');
+        hamburgerBtn?.setAttribute('aria-label', 'Open Menu');
+      }
+    };
+    
+    // Initialize on load
+    initializeMenu();
     
     // Add click event to hamburger button
     hamburgerBtn?.addEventListener('click', e => {
       e.stopPropagation();
-      toggleMenu();
+      if (isMobile()) {
+        toggleMenu();
+      }
     });
     
-    // Close menu when clicking anywhere else on the page
+    // Close menu when clicking anywhere else (mobile only)
     document.addEventListener('click', e => {
+      if (!isMobile()) return;
+      
       const target = e.target as Node;
-      const isMenuOpen = menuItems?.classList.contains('display-none') === false;
+      const isMenuOpen = menuItems?.classList.contains('show');
       
       if (isMenuOpen && 
           menuItems && 
@@ -149,22 +186,25 @@ const { activeNav } = Astro.props;
       }
     });
     
-    // Close menu when a menu item is clicked
+    // Close menu when a menu item is clicked (mobile only)
     menuLinks?.forEach(link => {
       link.addEventListener('click', () => {
-        if (window.innerWidth < 640 && menuItems?.classList.contains('display-none') === false) {
+        if (isMobile() && menuItems?.classList.contains('show')) {
           toggleMenu();
         }
       });
     });
     
-    // Close menu when resizing to desktop view
+    // Handle resize - reinitialize menu state
     window.addEventListener('resize', () => {
-      if (window.innerWidth >= 640 && menuItems?.classList.contains('display-none') === false) {
-        menuItems?.classList.add('display-none');
-        menuIcon?.classList.remove('is-active');
-        hamburgerBtn?.setAttribute('aria-expanded', 'false');
-        hamburgerBtn?.setAttribute('aria-label', 'Open Menu');
+      initializeMenu();
+    });
+    
+    // Handle escape key to close menu (mobile only)
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && isMobile() && menuItems?.classList.contains('show')) {
+        toggleMenu();
+        hamburgerBtn?.focus();
       }
     });
   });
