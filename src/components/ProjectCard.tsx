@@ -35,7 +35,7 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
 
   const headerProps = {
     style: { viewTransitionName: slugifyStr(title) },
-    className: "text-base font-medium decoration-dashed hover:underline line-clamp-2",
+    className: "text-base font-medium line-clamp-2",
   };
 
   // Animation effect when description is shown
@@ -80,7 +80,7 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
       
       <a
         href={href}
-        className="inline-block text-skin-accent decoration-dashed underline-offset-4 focus-visible:no-underline focus-visible:underline-offset-0"
+        className="inline-block text-skin-base hover:text-skin-accent transition-colors duration-200 focus-visible:outline-dashed focus-visible:outline-2 focus-visible:outline-offset-2"
         target="_blank"
         rel="noopener noreferrer"
       >

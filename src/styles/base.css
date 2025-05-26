@@ -451,6 +451,22 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease;
+    transform: translateY(0);
+  }
+  
+  .project-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: rgb(var(--color-accent) / 0.3);
+  }
+  
+  .project-card:hover .project-image {
+    transform: scale(1.05);
+  }
+  
+  .project-card:hover .project-button {
+    transform: translateY(-2px);
   }
   
   .project-venue {
@@ -493,6 +509,7 @@
     object-fit: contain;
     margin: 0 auto;
     display: block;
+    transition: transform 0.3s ease;
   }
   
   .project-description {
@@ -522,10 +539,13 @@
     align-items: center;
     justify-content: center;
     min-width: 48px;
+    transform: translateY(0);
   }
   
   .project-button:hover {
     @apply bg-skin-accent text-skin-inverted;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--color-accent), 0.3);
   }
   
   .pdf-button,
@@ -759,11 +779,40 @@
     --scale: 0.5;
   }
   
+  /* Fix mobile padding issues */
+  .home-page #main-content,
+  #main-content.home-content {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0;
+  }
+  
+  .left-col,
+  .right-col {
+    padding: 0 1rem 1.5rem 1rem;
+    gap: 1rem;
+  }
+  
+  .top-nav-wrap {
+    padding: 1.5rem 1rem;
+  }
+  
+  .footer-wrapper {
+    padding: 1.5rem 1rem;
+  }
+  
   /* Mobile menu specific styles are already in components layer */
   
   /* Hide hamburger elements that should be visible on desktop */
   .hamburger-menu {
     display: flex;
+  }
+  
+  /* Projects grid adjustments for mobile */
+  .projects-grid {
+    grid-auto-columns: minmax(280px, 1fr);
+    gap: 1rem;
+    padding: 0.5rem 0;
   }
 }
 
@@ -826,17 +875,18 @@
   #main-content.home-content,
   .two-col-main {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1.5rem;
+    padding: 0;
   }
   
   .left-col,
   .right-col {
     gap: 1.5rem;
-    padding: 0 5vw 2rem 5vw;
+    padding: 0 2rem 2rem 2rem;
   }
   
   .top-nav-wrap {
-    padding: 1.5rem 5vw;
+    padding: 1.5rem 2rem;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -844,7 +894,7 @@
   
   .home-content {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1.5rem;
   }
 }
 
@@ -865,4 +915,24 @@
 .typing-text, 
 .typing-cursor {
   will-change: opacity, transform;
+}
+
+/* Project Card Title Styling */
+.project-card h2,
+.project-card h3 {
+  transition: color 0.2s ease;
+  text-decoration: none !important;
+}
+
+.project-card:hover h2,
+.project-card:hover h3 {
+  color: rgb(var(--color-accent));
+}
+
+.project-card a {
+  text-decoration: none !important;
+}
+
+.project-card a:hover {
+  text-decoration: none !important;
 }
