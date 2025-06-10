@@ -56,3 +56,44 @@ const { props } = Astro;
   }
 </style>
 
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Mobile header navigation toggle
+    const hamburgerMenu = document.querySelector('.hamburger-menu');
+    const menuIcon = document.querySelector('.menu-icon');
+    const menuItems = document.getElementById('menu-items');
+    
+    if (hamburgerMenu && menuItems) {
+      hamburgerMenu.addEventListener('click', function() {
+        menuItems.classList.toggle('show');
+        if (menuIcon) {
+          menuIcon.classList.toggle('is-active');
+        }
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener('click', function(event) {
+        if (menuItems.classList.contains('show') && 
+            !menuItems.contains(event.target) && 
+            !hamburgerMenu.contains(event.target)) {
+          menuItems.classList.remove('show');
+          if (menuIcon) {
+            menuIcon.classList.remove('is-active');
+          }
+        }
+      });
+      
+      // Close menu when clicking a menu item (for navigation links)
+      const menuLinks = menuItems.querySelectorAll('a');
+      menuLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          menuItems.classList.remove('show');
+          if (menuIcon) {
+            menuIcon.classList.remove('is-active');
+          }
+        });
+      });
+    }
+  });
+</script>
+

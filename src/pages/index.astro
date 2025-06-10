@@ -56,14 +56,13 @@ const socialCount = SOCIALS.filter(social => social.active).length;
           )
         }
         <p>
-          I am a third-year Computer Science PhD Candidate at Cornell University, based at the New York City campus, <a href="https://tech.cornell.edu">Cornell Tech</a>. Before that, I completed a Bachelor's Degree in Computer Science and General & Departmental Honors curricula at the Clemson University Honors College (during the pandemic, unfortunately). This summer, I am a research fellow at the <a href="https://www.designtrust.org/">Design Trust for Public Space</a>. In 2024, I was a research fellow at <a href="https://hayden.ai">Hayden AI Technologies</a>.  My research is supported by the Cornell Dean's Excellence Fellowship, the Siegel PiTech PhD Impact Fellowship, and the <a href="https://dli.tech.cornell.edu">Digital Life Initiative</a> Doctoral Fellowship. 
+          I am a Computer Science PhD Candidate at Cornell University, based at the New York City campus, <a href="https://tech.cornell.edu">Cornell Tech</a>. Before that, I completed a Bachelor's Degree in Computer Science and General & Departmental Honors curricula at the Clemson University Honors College (during the pandemic, unfortunately). This summer, I am a research fellow at the <a href="https://www.designtrust.org/">Design Trust for Public Space</a>. In 2024, I was a research fellow at <a href="https://hayden.ai">Hayden AI Technologies</a>.  My research is supported by the Cornell Dean's Excellence Fellowship, the Siegel PiTech PhD Impact Fellowship, and the <a href="https://dli.tech.cornell.edu">Digital Life Initiative</a> Doctoral Fellowship. 
           <br><br>
           My research interests include urban data science; computational social science, particularly in issues pertaining to societal inequality; fashion & design; and computer vision towards urban sensing. My research has been covered in the New York Times, The Economist, Gothamist, and other local NYC news outlets.
           <br><br>
           I play classical and neoclassical piano music, and write my own 'peaceful piano' compositions since 2020.
         </p>
       </section>
-      <Hr />
       <section id="featured">
         <h2 class="main-section-heading">Writing</h2>
         <ul>
@@ -75,7 +74,6 @@ const socialCount = SOCIALS.filter(social => social.active).length;
             />
           ))}
         </ul>
-        {recentPosts.length > 0 && <Hr />}
         <div class="all-posts-btn-wrapper">
           <LinkButton href="/posts/">
             All Posts
@@ -99,11 +97,18 @@ const socialCount = SOCIALS.filter(social => social.active).length;
         {paperProjects.length > 0 && (
           <>
             <h3 class="subsection-heading">Papers</h3>
-            <div class="projects-grid-container">
-              <div class="projects-grid">
-                {paperProjects.map(project => (
-                  <ProjectCard project={project} client:load />
-                ))}
+            <div class="projects-section-wrapper">
+              <div class="projects-grid-container" id="papers-grid-container">
+                <div class="projects-grid">
+                  {paperProjects.map(project => (
+                    <ProjectCard project={project} client:load />
+                  ))}
+                </div>
+              </div>
+              <div class="scroll-indicator" id="papers-scroll-indicator">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <path d="M9.29 6.71a.996.996 0 0 0 0 1.41L13.17 12l-3.88 3.88a.996.996 0 1 0 1.41 1.41l4.59-4.59a.996.996 0 0 0 0-1.41L10.7 6.7c-.38-.38-1.02-.38-1.41.01z"/>
+                </svg>
               </div>
             </div>
           </>
@@ -113,11 +118,18 @@ const socialCount = SOCIALS.filter(social => social.active).length;
         {otherProjects.length > 0 && (
           <>
             <h3 class="subsection-heading mt-6">Other Research</h3>
-            <div class="projects-grid-container">
-              <div class="projects-grid">
-                {otherProjects.map(project => (
-                  <ProjectCard project={project} client:load />
-                ))}
+            <div class="projects-section-wrapper">
+              <div class="projects-grid-container" id="other-grid-container">
+                <div class="projects-grid">
+                  {otherProjects.map(project => (
+                    <ProjectCard project={project} client:load />
+                  ))}
+                </div>
+              </div>
+              <div class="scroll-indicator" id="other-scroll-indicator">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <path d="M9.29 6.71a.996.996 0 0 0 0 1.41L13.17 12l-3.88 3.88a.996.996 0 1 0 1.41 1.41l4.59-4.59a.996.996 0 0 0 0-1.41L10.7 6.7c-.38-.38-1.02-.38-1.41.01z"/>
+                </svg>
               </div>
             </div>
           </>
@@ -209,6 +221,56 @@ const socialCount = SOCIALS.filter(social => social.active).length;
         });
       }
     });
+
+    // Scroll indicator functionality
+    const initScrollIndicators = () => {
+      const gridContainers = document.querySelectorAll('.projects-grid-container');
+      
+      gridContainers.forEach(container => {
+        const grid = container.querySelector('.projects-grid');
+        const wrapper = container.closest('.projects-section-wrapper');
+        const indicator = wrapper ? wrapper.querySelector('.scroll-indicator') : null;
+        
+        if (!grid || !indicator || !wrapper) return;
+        
+        const checkScroll = () => {
+          // Show indicator only if there's content to scroll to
+          if (grid.scrollWidth > container.clientWidth) {
+            // Check if we've scrolled to the end
+            const isEnd = Math.ceil(container.scrollLeft + container.clientWidth) >= grid.scrollWidth;
+            
+            if (!isEnd) {
+              indicator.classList.add('show');
+            } else {
+              indicator.classList.remove('show');
+            }
+          } else {
+            indicator.classList.remove('show');
+          }
+        };
+        
+        // Setup indicator click action
+        indicator.addEventListener('click', () => {
+          container.scrollBy({ 
+            left: 300, 
+            behavior: 'smooth' 
+          });
+        });
+        
+        // Add scroll event listener
+        container.addEventListener('scroll', checkScroll);
+        
+        // Check on load and resize
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        
+        // Show indicator with a slight delay for better UX
+        setTimeout(checkScroll, 500);
+      });
+    };
+    
+    // Initialize scroll indicators
+    initScrollIndicators();
 
     // Debug helper function
     window.debugReact = function(message) {

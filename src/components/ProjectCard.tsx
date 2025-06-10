@@ -73,14 +73,16 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
 
   return (
     <li className="project-card">
+      {/* Project header with venue and tag - now clearly at the top */}
       <div className="project-header">
         <span className="project-venue line-clamp-1">{venue}</span>{" "}
         {tag && <span className="project-tag">{tag}</span>}
       </div>
       
+      {/* Title link */}
       <a
         href={href}
-        className="inline-block text-skin-base hover:text-skin-accent transition-colors duration-200 focus-visible:outline-dashed focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="project-title-link"
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -91,7 +93,8 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
         )}
       </a>
 
-      <div className="project-media">
+      {/* Square media container */}
+      <div className="project-media-container">
         {data.image ? (
           <img 
             src={data.image.src} 
@@ -102,9 +105,9 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
             loading="lazy"
           />
         ) : youtubeId ? (
-          <div className="aspect-video">
+          <div className="project-video-container">
             <iframe
-              className="w-full h-full"
+              className="project-video"
               src={getYoutubeEmbedUrl(youtubeId)}
               title={title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -112,9 +115,12 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
               loading="lazy"
             ></iframe>
           </div>
-        ) : null}
+        ) : (
+          <div className="project-empty-media"></div>
+        )}
       </div>
 
+      {/* Action buttons */}
       <div className="project-links">
         {pdf && (
           <a href={pdf} target="_blank" rel="noopener noreferrer" className="project-button pdf-button">
@@ -142,7 +148,7 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
         )}
       </div>
       
-      {/* Inline description instead of overlay */}
+      {/* Inline description */}
       {showDescription && description && (
         <div 
           className="project-description-inline"
@@ -155,6 +161,7 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
         </div>
       )}
       
+      {/* BibTeX content */}
       {bib && showBib && (
         <div className="project-bib mt-2">
           <pre className="bib-content">{bib}</pre>
