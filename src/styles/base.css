@@ -908,7 +908,7 @@
   }
 
   /* hide the 'research' section heading */ 
-  #selected-work h2 {
+  #selected-work .main-section-heading {
     display: none;
   }
 }
@@ -934,7 +934,7 @@
   }
 
   /* hide the 'research' section heading */ 
-  #selected-work h2 {
+  #selected-work .main-section-heading {
     display: none;
   }
 }
