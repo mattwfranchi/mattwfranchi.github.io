@@ -73,6 +73,7 @@
     --scale: 1;
     --translateX: 0;
     --translateY: 0;
+    --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease;
   }
   
   html[data-theme="dark"] {
@@ -82,6 +83,7 @@
     --color-card: 52, 63, 96;
     --color-card-muted: 138, 51, 2;
     --color-border: 171, 75, 8;
+    --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease;
   }
   
   /* Theme Toggle Icons */
@@ -99,26 +101,32 @@
   body {
     @apply flex min-h-[100svh] flex-col bg-skin-fill font-mono text-skin-base selection:bg-skin-accent/70 selection:text-skin-inverted;
     overflow-x: hidden;
+    transition: var(--theme-transition);
   }
   
   section {
     @apply max-w-3xl px-0;
+    transition: var(--theme-transition);
   }
   
   a {
     @apply outline-2 outline-offset-1 outline-skin-fill focus-visible:no-underline focus-visible:outline-dashed;
+    transition: var(--theme-transition);
   }
   
   svg {
     @apply inline-block h-6 w-6 fill-skin-base group-hover:fill-skin-accent;
+    transition: var(--theme-transition);
   }
   
   svg.icon-tabler {
     @apply inline-block h-6 w-6 scale-125 fill-transparent stroke-current stroke-2 opacity-90 group-hover:fill-transparent sm:scale-110;
+    transition: var(--theme-transition);
   }
   
   /* Typography - Prose */
   .prose {
+    transition: var(--theme-transition);
     @apply prose-headings:!mb-3 prose-headings:!text-skin-base 
            prose-h3:italic prose-p:!text-skin-base 
            prose-a:!text-skin-base prose-a:!decoration-dashed 
@@ -215,8 +223,9 @@
   
   /* ===== Header Styles ===== */
   header#main-header {
-    @apply fixed top-0 left-0 right-0 z-50 bg-skin-fill transition-all duration-300;
+    @apply fixed top-0 left-0 right-0 z-50 bg-skin-fill;
     height: 88px;
+    transition: var(--theme-transition), height 0.3s ease;
   }
   
   header#main-header.shrunk {
@@ -574,7 +583,7 @@
   .project-button:hover {
     @apply bg-skin-accent text-skin-inverted;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(var(--color-accent), 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
   
   .project-description-inline {
