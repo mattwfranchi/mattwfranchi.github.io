@@ -98,9 +98,11 @@ const projects = defineCollection({
     z.object({
       title: z.string(),
       venue: z.string(),
+      href: z.string().url().optional(), // Main project link
       tag: z.string().optional(),
       pdf: z.string().url().optional(), // PDF link
       site: z.string().url().optional(), // Website link
+      code: z.string().url().optional(), // Code repository link
       bib: z.string().optional(), // BibTeX citation text
       category: z.enum(["paper", "not-paper"]).default("not-paper"), // New category field
       image: image().optional(),

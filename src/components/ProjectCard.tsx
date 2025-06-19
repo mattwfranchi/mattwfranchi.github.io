@@ -9,7 +9,7 @@ export interface Props {
 
 export default function ProjectCard({ project, secHeading = true }: Props) {
   const { data, slug } = project;
-  const { venue, title, tag, description, youtubeId, href, pdf, site, bib } = data;
+  const { venue, title, tag, description, youtubeId, href, pdf, site, code, bib } = data;
   
   // State for description visibility
   const [showDescription, setShowDescription] = useState(false);
@@ -130,6 +130,11 @@ export default function ProjectCard({ project, secHeading = true }: Props) {
         {site && (
           <a href={site} target="_blank" rel="noopener noreferrer" className="project-button site-button">
             href
+          </a>
+        )}
+        {code && (
+          <a href={code} target="_blank" rel="noopener noreferrer" className="project-button code-button">
+            code
           </a>
         )}
         {bib && (

@@ -74,8 +74,8 @@ const { props } = Astro;
       // Close menu when clicking outside
       document.addEventListener('click', function(event) {
         if (menuItems.classList.contains('show') && 
-            !menuItems.contains(event.target) && 
-            !hamburgerMenu.contains(event.target)) {
+            !menuItems.contains(event.target as Element) && 
+            !hamburgerMenu.contains(event.target as Element)) {
           menuItems.classList.remove('show');
           if (menuIcon) {
             menuIcon.classList.remove('is-active');

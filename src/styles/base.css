@@ -872,7 +872,7 @@
   }
   
   .top-nav-wrap {
-    padding: 1.5rem 2rem;
+    padding: 3rem 2rem;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -909,7 +909,7 @@
   }
 
   .top-nav-wrap {
-    padding: 1.5rem 5vw;
+    padding: 3rem 5vw;
   }
 
   #hero p {
@@ -935,7 +935,7 @@
   }
 
   .top-nav-wrap {
-    padding: 2rem 10rem;
+    padding: 3rem 10rem;
   }
 
   #hero p {

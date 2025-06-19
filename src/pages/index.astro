@@ -56,11 +56,11 @@ const socialCount = SOCIALS.filter(social => social.active).length;
           )
         }
         <p>
-          I am a Computer Science PhD Candidate at Cornell University, based at the New York City campus, <a href="https://tech.cornell.edu">Cornell Tech</a>. Before that, I completed a Bachelor's Degree in Computer Science and General & Departmental Honors curricula at the Clemson University Honors College (during the pandemic, unfortunately). This summer, I am a research fellow at the <a href="https://www.designtrust.org/">Design Trust for Public Space</a>. In 2024, I was a research fellow at <a href="https://hayden.ai">Hayden AI Technologies</a>.  My research is supported by the Cornell Dean's Excellence Fellowship, the Siegel PiTech PhD Impact Fellowship, and the <a href="https://dli.tech.cornell.edu">Digital Life Initiative</a> Doctoral Fellowship. 
+          I am a Computer Science PhD Candidate at Cornell University, based at the New York City campus, <a href="https://tech.cornell.edu">Cornell Tech</a>. Before that, I completed a Bachelor's Degree in Computer Science and General & Departmental Honors curricula at the Clemson University Honors College (during the pandemic, unfortunately). This summer, I am a research fellow at the <a href="https://www.designtrust.org/projects/untaped">Design Trust for Public Space</a>. In 2024, I was a research fellow at <a href="https://hayden.ai">Hayden AI Technologies</a>.  My research is supported by the <a href="https://tech.cornell.edu/urban-tech-hub">Cornell Tech Urban Tech Hub</a>, the Cornell Dean's Excellence Fellowship, the Siegel PiTech PhD Impact Fellowship, and the <a href="https://dli.tech.cornell.edu">Digital Life Initiative</a> Doctoral Fellowship. 
           <br><br>
-          My research interests include urban data science; computational social science, particularly in issues pertaining to societal inequality; fashion & design; and computer vision towards urban sensing. My research has been covered in the New York Times, The Economist, Gothamist, and other local NYC news outlets.
+          My dissertation will span the emerging data stream of <a target='_blank' href='https://arxiv.org/abs/2505.07085' class='font-bold'>dense street imagery</a> (DSI), presenting technical applications and approaches for insight extraction, modeling, and reconciliation; analyzing information flows and nascent norms in the DSI landscape with ethical frameworks like <a href="https://digitalcommons.law.uw.edu/wlr/vol79/iss1/10/" target="_blank" class="font-bold">contextual integrity</a>; and demonstrating DSI's potential for urban science and design, which includes juxtaposition and situation against existing urban science, human-centered design methods, design across scales, and urban planning. My research interests extend to urban data science, vision language models, mapping, computational social science (particularly in issues of societal inequality, climate, or public health), computer vision, and fashion & design. My research has been covered in the New York Times, The Economist, Gothamist, and other local NYC news outlets.
           <br><br>
-          I play classical and neoclassical piano music, and write my own 'peaceful piano' compositions since 2020.
+          I play, compose, and <a href="https://open.spotify.com/artist/2RIA9v5X55UGXGFqk4VIsZ" target="_blank" class="font-bold">record</a> classical and neoclassical piano music, pendulate between fiction and non-fiction books, hike while on vacation, write (immediately below), and model once or twice per year.
         </p>
       </section>
       <section id="featured">
@@ -273,7 +273,7 @@ const socialCount = SOCIALS.filter(social => social.active).length;
     initScrollIndicators();
 
     // Debug helper function
-    window.debugReact = function(message) {
+    (window as any).debugReact = function(message: string) {
       console.log(`[Debug] ${message}`);
       const debugElement = document.getElementById('react-debug');
       if (debugElement) {
