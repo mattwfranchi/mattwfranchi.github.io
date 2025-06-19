@@ -8,7 +8,7 @@ pubDatetime: 2025-03-24
 featured: true
 tags: ["publication", "urban science", "human-robot interaction"]
 pdf: "https://dl.acm.org/doi/full/10.1145/3706598.3714009"
-site: "https://robotability.cornell.edu"
+site: "https://robotability.cornell.edu/map"
 code: "https://github.com/IRL-CT/robotability-nyc"
 order: 2
 ---
