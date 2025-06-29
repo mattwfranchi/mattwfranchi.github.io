@@ -170,3 +170,32 @@ export const SOCIALS: SocialObjects = [
     active: true,
   }
 ];
+
+// Social media sharing configuration
+export const SOCIAL_SHARING = {
+  // Instagram configuration
+  instagram: {
+    username: "@mattfranchi",
+    storySharing: true,
+    deepLinking: true,
+  },
+  // Twitter/X configuration
+  twitter: {
+    username: "@mattwfranchi",
+    cardType: "summary_large_image",
+  },
+  // Default sharing settings
+  default: {
+    showNativeShare: true, // Show Safari share button
+    showCopyLink: true,
+    showInstagramStory: true,
+    showWebShare: true,
+  },
+  // OG image settings
+  ogImage: {
+    width: 1200,
+    height: 630,
+    format: "png",
+    quality: 90,
+  },
+} as const;

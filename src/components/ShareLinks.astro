@@ -2,7 +2,8 @@
 import LinkButton from "./LinkButton.astro";
 import socialIcons from "@assets/socialIcons";
 
-const URL = Astro.url;
+const URL = Astro.url.href;
+const title = Astro.props.title || "Check out this post";
 
 const shareLinks = [
   {
@@ -21,6 +22,11 @@ const shareLinks = [
     linkTitle: `Tweet this post`,
   },
   {
+    name: "LinkedIn",
+    href: "https://www.linkedin.com/sharing/share-offsite/?url=",
+    linkTitle: `Share this post on LinkedIn`,
+  },
+  {
     name: "Telegram",
     href: "https://t.me/share/url?url=",
     linkTitle: `Share this post via Telegram`,
@@ -31,11 +37,24 @@ const shareLinks = [
     linkTitle: `Share this post on Pinterest`,
   },
   {
+    name: "Reddit",
+    href: "https://reddit.com/submit?url=",
+    linkTitle: `Share this post on Reddit`,
+  },
+  {
     name: "Mail",
     href: "mailto:?subject=See%20this%20post&body=",
     linkTitle: `Share this post via email`,
   },
 ] as const;
+
+// Instagram Story sharing (deep link)
+const instagramStoryShare = {
+  name: "Instagram",
+  href: `instagram-stories://share?source_application=web&url=${encodeURIComponent(URL)}`,
+  linkTitle: `Share this post to Instagram Story`,
+  fallbackHref: "https://instagram.com",
+};
 ---
 
 <div class={`social-icons-share`}>
@@ -53,14 +72,135 @@ const shareLinks = [
         </LinkButton>
       ))
     }
+    
+    <!-- Instagram Story sharing with fallback -->
+    <LinkButton
+      href={instagramStoryShare.href}
+      className="link-button instagram-story"
+      title={instagramStoryShare.linkTitle}
+      data-fallback={instagramStoryShare.fallbackHref}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon-tabler" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M4 4m0 4a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v8a4 4 0 0 1 -4 4h-8a4 4 0 0 1 -4 -4z"></path>
+        <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"></path>
+        <path d="M16.5 7.5l0 .01"></path>
+      </svg>
+      <span class="sr-only">{instagramStoryShare.linkTitle}</span>
+    </LinkButton>
+
+    <!-- Native Web Share API button (Safari share button) -->
+    <button
+      class="link-button native-share-button"
+      title="Share via system"
+      onclick={`nativeShare('${title}', '${URL}')`}
+      style="display: none;"
+      id="native-share-button"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon-tabler" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="6" r="3"></circle>
+        <circle cx="18" cy="18" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+      </svg>
+      <span class="sr-only">Share via system</span>
+    </button>
+
+    <!-- Copy link button -->
+    <button
+      class="link-button copy-link-button"
+      title="Copy link to clipboard"
+      onclick={`copyToClipboard('${URL}')`}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon-tabler" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M8 4m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z"></path>
+        <path d="M16 16m0 2a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2v-8a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span class="sr-only">Copy link</span>
+    </button>
   </div>
 </div>
 
-<style>
-  .social-icons-share {
-    @apply flex flex-col flex-wrap items-center justify-center sm:items-start;
+<script>
+  // Handle Instagram Story sharing with fallback
+  document.addEventListener('DOMContentLoaded', function() {
+    const instagramButton = document.querySelector('.instagram-story') as HTMLAnchorElement;
+    if (instagramButton) {
+      instagramButton.addEventListener('click', function(e) {
+        const fallbackUrl = this.getAttribute('data-fallback');
+        
+        // Try to open Instagram app, fallback to web if not available
+        setTimeout(() => {
+          if (fallbackUrl) {
+            window.location.href = fallbackUrl;
+          }
+        }, 1000);
+      });
+    }
+
+    // Show native share button only if Web Share API is supported
+    const nativeShareButton = document.getElementById('native-share-button') as HTMLButtonElement;
+    if (nativeShareButton && 'share' in navigator) {
+      nativeShareButton.style.display = 'inline-flex';
+    }
+  });
+
+  // Native Web Share API function (Safari share button)
+  function nativeShare(title: string, url: string) {
+    if ('share' in navigator) {
+      navigator.share({
+        title: title,
+        url: url,
+      }).catch((error) => {
+        console.log('Error sharing:', error);
+        // Fallback to copy link
+        copyToClipboard(url);
+      });
+    } else {
+      // Fallback: copy URL to clipboard
+      copyToClipboard(url);
+    }
   }
-  .link-button {
-    @apply scale-90 p-2 hover:rotate-2 sm:p-1;
+
+  // Copy to clipboard function
+  function copyToClipboard(text: string) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        showCopySuccess();
+      });
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showCopySuccess();
+    }
   }
-</style>
+
+  // Show copy success feedback
+  function showCopySuccess() {
+    const button = document.querySelector('.copy-link-button') as HTMLButtonElement;
+    if (button) {
+      const originalHTML = button.innerHTML;
+      button.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon-tabler" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+          <path d="M5 12l5 5l10 -10"></path>
+        </svg>
+        <span class="sr-only">Copied!</span>
+      `;
+      button.style.background = '#10b981';
+      
+      setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.style.background = '';
+      }, 2000);
+    }
+  }
+</script>

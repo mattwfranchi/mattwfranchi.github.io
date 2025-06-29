@@ -1044,6 +1044,195 @@
   transform: translateY(-50%) scale(1.05);
 }
 
+/* ===== Post Content and Sharing Styles ===== */
+
+/* Post content layout */
+.post-content {
+  @apply max-w-4xl mx-auto;
+}
+
+.post-title {
+  @apply text-3xl mb-4 text-skin-base;
+  font-family: 'GTAmerica-Medium', sans-serif;
+}
+
+/* Back to Top and Share Links Container */
+.post-actions-container {
+  @apply flex flex-col items-center gap-6 mt-8 pt-6 border-t border-skin-line;
+}
+
+/* Back to Top Button */
+#back-to-top {
+  @apply flex items-center gap-2 px-4 py-2 rounded-lg bg-skin-card border border-skin-line hover:bg-skin-card-muted transition-all duration-200;
+  font-family: 'GTAmerica-Medium', sans-serif;
+  font-size: 0.875rem;
+}
+
+#back-to-top:hover {
+  @apply border-skin-accent;
+  transform: translateY(-1px);
+}
+
+#back-to-top svg {
+  @apply w-4 h-4;
+  transition: transform 0.2s ease;
+}
+
+#back-to-top:hover svg {
+  transform: translateY(-1px);
+}
+
+/* ShareLinks Component Styles */
+.social-icons-share {
+  @apply flex flex-col items-center gap-4 p-4 rounded-lg border border-skin-line;
+  min-width: 300px;
+}
+
+.social-icons-share .italic {
+  @apply text-sm font-medium text-skin-base mb-2;
+  font-family: 'GTAmerica-Medium', sans-serif;
+}
+
+.social-icons-share .text-center {
+  @apply flex flex-wrap justify-center gap-3;
+}
+
+/* Share Button Styles */
+.link-button {
+  @apply relative inline-flex items-center justify-center w-12 h-12 rounded-full border border-skin-line hover:scale-110 transition-all duration-200 shadow-sm hover:shadow-md;
+  color: var(--platform-color, #666);
+  overflow: hidden;
+  background: transparent;
+}
+
+.link-button:hover {
+  @apply border-skin-accent;
+  background: var(--platform-color, #f0f0f0);
+  color: white;
+}
+
+/* Instagram Story Button */
+.instagram-story {
+  @apply relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+.instagram-story::after {
+  content: "Story";
+  @apply absolute -top-1 -right-1 text-xs bg-white text-purple-600 px-1.5 py-0.5 rounded-full font-bold;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.instagram-story:hover::after {
+  @apply bg-purple-600 text-white;
+}
+
+/* Native Share Button */
+.native-share-button {
+  @apply bg-green-500 text-white rounded-full;
+  --platform-color: #10b981;
+}
+
+/* Copy Link Button */
+.copy-link-button {
+  @apply bg-gray-500 text-white rounded-full;
+  --platform-color: #6b7280;
+}
+
+/* Icon Styles */
+.social-icons-share .icon-tabler {
+  @apply w-6 h-6;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.link-button svg {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+/* Mobile adjustments for sharing */
+@media (max-width: 640px) {
+  .post-actions-container {
+    @apply flex-col gap-4;
+  }
+
+  .social-icons-share {
+    @apply w-full max-w-sm p-3;
+    min-width: auto;
+  }
+
+  .social-icons-share .text-center {
+    @apply gap-2;
+  }
+
+  .link-button {
+    @apply w-12 h-12 p-1;
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .social-icons-share .icon-tabler {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+  }
+
+  .link-button svg {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+  }
+
+  #back-to-top {
+    @apply w-full justify-center;
+  }
+}
+
+/* Extra small mobile adjustments */
+@media (max-width: 480px) {
+  .social-icons-share {
+    @apply p-2;
+  }
+
+  .social-icons-share .text-center {
+    @apply gap-1;
+  }
+
+  .link-button {
+    @apply w-11 h-11 p-1;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .social-icons-share .icon-tabler {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+  }
+
+  .link-button svg {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+  }
+
+  .instagram-story::after {
+    font-size: 8px;
+    padding: 2px 4px;
+  }
+}
+
 /* Mobile adjustments */
 @media (max-width: 639px) {
   /* ...existing code... */

@@ -15,6 +15,8 @@ export interface Props {
   modDatetime?: Date | null;
   scrollSmooth?: boolean;
   pageType?: "home" | "post" | "other";
+  tags?: string[];
+  section?: string;
 }
 
 const {
@@ -28,6 +30,8 @@ const {
   modDatetime,
   scrollSmooth = false,
   pageType = "other",
+  tags = [],
+  section,
 } = Astro.props;
 
 const socialImageURL = new URL(
@@ -37,7 +41,7 @@ const socialImageURL = new URL(
 
 const structuredData = {
   "@context": "https://schema.org",
-  "@type": "BlogPosting",
+  "@type": pageType === "post" ? "BlogPosting" : "WebPage",
   headline: `${title}`,
   image: `${socialImageURL}`,
   datePublished: `${pubDatetime?.toISOString()}`,
@@ -49,12 +53,19 @@ const structuredData = {
       url: `${profile}`,
     },
   ],
+  ...(tags.length > 0 && { keywords: tags.join(", ") }),
+  ...(section && { articleSection: section }),
+  publisher: {
+    "@type": "Organization",
+    name: SITE.title,
+    url: SITE.website,
+  },
 };
 ---
 
 <!doctype html>
 <html
-  lang=`${LOCALE.lang ?? "en"}`
+  lang={`${LOCALE.lang ?? "en"}`}
   class={`${scrollSmooth && "scroll-smooth"}`}
 >
   <head>
@@ -72,10 +83,16 @@ const structuredData = {
     <link rel="sitemap" href="/sitemap-index.xml" />
 
     <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={pageType === "post" ? "article" : "website"} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:image" content={socialImageURL} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={title} />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:locale" content={LOCALE.lang} />
 
     <!-- Article Published/Modified time -->
     {
@@ -95,12 +112,37 @@ const structuredData = {
       )
     }
 
+    <!-- Article tags -->
+    {
+      tags.map(tag => (
+        <meta property="article:tag" content={tag} />
+      ))
+    }
+
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content={canonicalURL} />
     <meta property="twitter:title" content={title} />
     <meta property="twitter:description" content={description} />
     <meta property="twitter:image" content={socialImageURL} />
+    <meta property="twitter:image:alt" content={title} />
+    <meta property="twitter:creator" content="@mattwfranchi" />
+    <meta property="twitter:site" content="@mattwfranchi" />
+
+    <!-- Instagram-specific meta tags -->
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:secure_url" content={socialImageURL} />
+    
+    <!-- Additional social media meta tags -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="msapplication-TileColor" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content={SITE.title} />
+    
+    <!-- LinkedIn specific -->
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <!-- Google JSON-LD Structured data -->
     <script
