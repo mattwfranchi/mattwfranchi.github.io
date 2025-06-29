@@ -148,10 +148,11 @@ const instagramStoryShare = {
       
       // Check if we're on iOS Safari (best support for Instagram Story sharing)
       const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+      console.log('iOS Safari detected:', isIOSSafari);
       
-      if (isIOSSafari && imageBlob) {
-        // On iOS Safari, try the Web Share API with files first
-        if (navigator.canShare && navigator.canShare({ files: [] })) {
+      // Try Web Share API with files first (works best on iOS Safari)
+      if (imageBlob && navigator.canShare && navigator.canShare({ files: [] })) {
+        try {
           const file = new File([imageBlob], `${title.replace(/[^a-z0-9]/gi, '_')}.png`, {
             type: 'image/png',
             lastModified: new Date().getTime(),
@@ -164,28 +165,27 @@ const instagramStoryShare = {
             files: [file],
           };
           
+          console.log('Testing if device can share files:', navigator.canShare(shareData));
+          
           if (navigator.canShare(shareData)) {
             console.log('Sharing with files via Web Share API');
             await navigator.share(shareData);
+            console.log('Web Share API with files successful');
             return;
+          } else {
+            console.log('Device cannot share files, trying other methods');
           }
+        } catch (fileShareError) {
+          console.log('File sharing failed:', fileShareError);
         }
       }
       
-      // Fallback: Try Instagram's deep link approach
+      // If we have an image, try Instagram deep link approach
       if (imageBlob) {
         await tryInstagramDeepLink(title, url, imageBlob);
       } else {
         // If no image, use regular Web Share API
-        if (navigator.share) {
-          await navigator.share({
-            title: title,
-            text: `Check out this post: ${title}`,
-            url: url,
-          });
-        } else {
-          copyToClipboard(url);
-        }
+        await fallbackToWebShareAPI(title, url);
       }
       
     } catch (error) {
@@ -198,6 +198,8 @@ const instagramStoryShare = {
   // Try Instagram deep link approach
   async function tryInstagramDeepLink(title: string, url: string, imageBlob: Blob) {
     try {
+      console.log('Trying Instagram deep link approach');
+      
       // Create a temporary download link for the image
       const imageUrl = URL.createObjectURL(imageBlob);
       
@@ -219,21 +221,41 @@ const instagramStoryShare = {
       
       // Try to open Instagram after a short delay
       setTimeout(() => {
-        window.location.href = instagramUrl;
+        console.log('Attempting to open Instagram deep link');
+        try {
+          window.location.href = instagramUrl;
+        } catch (deepLinkError) {
+          console.log('Instagram deep link failed, falling back to Web Share API');
+          // If deep link fails, immediately fall back to Web Share API
+          fallbackToWebShareAPI(title, url);
+        }
       }, 500);
       
     } catch (error) {
       console.error('Instagram deep link failed:', error);
       // Fallback to Web Share API
-      if (navigator.share) {
+      fallbackToWebShareAPI(title, url);
+    }
+  }
+  
+  // Fallback to Web Share API
+  async function fallbackToWebShareAPI(title: string, url: string) {
+    console.log('Falling back to Web Share API');
+    if (navigator.share) {
+      try {
         await navigator.share({
           title: title,
           text: `Check out this post: ${title}`,
           url: url,
         });
-      } else {
+        console.log('Web Share API successful');
+      } catch (shareError) {
+        console.error('Web Share API failed:', shareError);
         copyToClipboard(url);
       }
+    } else {
+      console.log('Web Share API not supported, copying to clipboard');
+      copyToClipboard(url);
     }
   }
 
@@ -295,39 +317,55 @@ const instagramStoryShare = {
 
   // Initialize event listeners when DOM is loaded
   document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing ShareLinks event listeners');
+    
     // Show native share button only if Web Share API is supported
     const nativeShareButton = document.getElementById('native-share-button') as HTMLButtonElement;
     if (nativeShareButton && 'share' in navigator) {
       nativeShareButton.style.display = 'inline-flex';
+      console.log('Native share button shown');
     }
 
     // Instagram Story button event listener
     const instagramButton = document.querySelector('.instagram-story') as HTMLButtonElement;
+    console.log('Instagram button found:', instagramButton);
     if (instagramButton) {
       instagramButton.addEventListener('click', function() {
+        console.log('Instagram button clicked!');
         const title = this.getAttribute('data-title') || '';
         const url = this.getAttribute('data-url') || '';
         const imageUrl = this.getAttribute('data-image-url') || '';
+        console.log('Instagram button data:', { title, url, imageUrl });
         shareToInstagramStory(title, url, imageUrl);
       });
+      console.log('Instagram button event listener attached');
+    } else {
+      console.log('Instagram button not found!');
     }
 
     // Native share button event listener
     if (nativeShareButton) {
       nativeShareButton.addEventListener('click', function() {
+        console.log('Native share button clicked!');
         const title = this.getAttribute('data-title') || '';
         const url = this.getAttribute('data-url') || '';
         nativeShare(title, url);
       });
+      console.log('Native share button event listener attached');
     }
 
     // Copy link button event listener
     const copyButton = document.querySelector('.copy-link-button') as HTMLButtonElement;
+    console.log('Copy button found:', copyButton);
     if (copyButton) {
       copyButton.addEventListener('click', function() {
+        console.log('Copy button clicked!');
         const url = this.getAttribute('data-url') || '';
         copyToClipboard(url);
       });
+      console.log('Copy button event listener attached');
+    } else {
+      console.log('Copy button not found!');
     }
   });
 </script>
