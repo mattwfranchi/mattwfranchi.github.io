@@ -4,6 +4,7 @@ import socialIcons from "@assets/socialIcons";
 
 const URL = Astro.url.href;
 const title = Astro.props.title || "Check out this post";
+const ogImageUrl = Astro.props.ogImageUrl || `${Astro.url.origin}/og.png`;
 
 const shareLinks = [
   {
@@ -73,12 +74,11 @@ const instagramStoryShare = {
       ))
     }
     
-    <!-- Instagram Story sharing with fallback -->
-    <LinkButton
-      href={instagramStoryShare.href}
-      className="link-button instagram-story"
-      title={instagramStoryShare.linkTitle}
-      data-fallback={instagramStoryShare.fallbackHref}
+    <!-- Instagram Story sharing with Web Share API -->
+    <button
+      class="link-button instagram-story"
+      title="Share to Instagram Story"
+      onclick={`shareToInstagramStory('${title}', '${URL}', '${ogImageUrl}')`}
     >
       <svg xmlns="http://www.w3.org/2000/svg" class="icon-tabler" stroke-linecap="round" stroke-linejoin="round">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -86,8 +86,8 @@ const instagramStoryShare = {
         <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"></path>
         <path d="M16.5 7.5l0 .01"></path>
       </svg>
-      <span class="sr-only">{instagramStoryShare.linkTitle}</span>
-    </LinkButton>
+      <span class="sr-only">Share to Instagram Story</span>
+    </button>
 
     <!-- Native Web Share API button (Safari share button) -->
     <button
@@ -125,23 +125,53 @@ const instagramStoryShare = {
 </div>
 
 <script>
-  // Handle Instagram Story sharing with fallback
-  document.addEventListener('DOMContentLoaded', function() {
-    const instagramButton = document.querySelector('.instagram-story') as HTMLAnchorElement;
-    if (instagramButton) {
-      instagramButton.addEventListener('click', function(e) {
-        const fallbackUrl = this.getAttribute('data-fallback');
-        
-        // Try to open Instagram app, fallback to web if not available
-        setTimeout(() => {
-          if (fallbackUrl) {
-            window.location.href = fallbackUrl;
-          }
-        }, 1000);
-      });
-    }
+  // Instagram Story sharing with Web Share API and files
+  async function shareToInstagramStory(title: string, url: string, imageUrl: string) {
+    try {
+      // Fetch the OG image and convert to blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // Create file array for sharing
+      const filesArray = [
+        new File([blob], `${title}.png`, {
+          type: 'image/png',
+          lastModified: new Date().getTime(),
+        }),
+      ];
+      
+      const shareData = {
+        title: title,
+        text: `Check out this post: ${title}`,
+        url: url,
+        files: filesArray,
+      };
 
-    // Show native share button only if Web Share API is supported
+      // Check if the device can share files
+      if (navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback to regular sharing without files
+        if (navigator.share) {
+          await navigator.share({
+            title: title,
+            text: `Check out this post: ${title}`,
+            url: url,
+          });
+        } else {
+          // Final fallback: copy URL to clipboard
+          copyToClipboard(url);
+        }
+      }
+    } catch (error) {
+      console.log('Error sharing to Instagram Story:', error);
+      // Fallback to copy link
+      copyToClipboard(url);
+    }
+  }
+
+  // Show native share button only if Web Share API is supported
+  document.addEventListener('DOMContentLoaded', function() {
     const nativeShareButton = document.getElementById('native-share-button') as HTMLButtonElement;
     if (nativeShareButton && 'share' in navigator) {
       nativeShareButton.style.display = 'inline-flex';
