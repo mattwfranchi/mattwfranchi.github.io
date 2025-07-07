@@ -15,11 +15,14 @@ body:
   - type: textarea
     id: description
     attributes:
-      label: "Description"
-      description: "Describe this photo collection"
+      label: "Description & Photos"
+      description: "Describe this photo collection and attach your photos below"
       placeholder: |
         What's the story behind these photos?
         Where and when were they taken?
+        
+        📸 **To add photos:** Drag and drop images into this text area or click the attach button below. 
+        The photos will be automatically processed and added to your album!
     validations:
       required: true
 
