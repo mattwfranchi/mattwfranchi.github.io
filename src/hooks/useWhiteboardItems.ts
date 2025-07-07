@@ -11,7 +11,11 @@ interface DragState {
   offset: { x: number; y: number } | null;
 }
 
-export const useWhiteboardItems = () => {
+interface WhiteboardItemsOptions {
+  onZoomToFit?: (cardElement: HTMLElement, expanded: boolean) => void;
+}
+
+export const useWhiteboardItems = (options: WhiteboardItemsOptions = {}) => {
   const [items, setItems] = useState<WhiteboardItem[]>([]);
   const [dragging, setDragging] = useState<string | null>(null);
   const dragState = useRef<DragState>({
@@ -129,6 +133,13 @@ export const useWhiteboardItems = () => {
   // Content-aware expand function that measures content height
   const handleExpand = useCallback((id: string, cardElement?: HTMLElement | null) => {
     console.log('handleExpand triggered for item:', id);
+    
+    // Check if we're on mobile
+    const isMobile = typeof window !== 'undefined' && (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+      window.innerWidth <= 768
+    );
+    
     setItems(prevItems =>
       prevItems.map(item => {
         if (item.id === id) {
@@ -150,6 +161,14 @@ export const useWhiteboardItems = () => {
             }
           }
           
+          // On mobile, if expanding and we have zoom function, auto-zoom to fit
+          if (isMobile && !isExpanded && options.onZoomToFit && cardElement) {
+            // Delay the zoom to allow the card to finish expanding first
+            setTimeout(() => {
+              options.onZoomToFit!(cardElement, true);
+            }, 100);
+          }
+          
           return {
             ...item,
             position: {
@@ -163,7 +182,7 @@ export const useWhiteboardItems = () => {
         return item;
       })
     );
-  }, []);
+  }, [options]);
 
   // New function to handle long press
   const handleLongPress = useCallback((id: string) => {

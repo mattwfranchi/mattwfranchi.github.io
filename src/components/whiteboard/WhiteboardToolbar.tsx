@@ -25,6 +25,12 @@ export const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
   // State to track if expanded menu is open (for mobile view)
   const [expanded, setExpanded] = React.useState(false);
 
+  // Check if we're on mobile to hide manual zoom controls
+  const isMobile = typeof window !== 'undefined' && (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+    window.innerWidth <= 768
+  );
+
   // Primary controls always visible - prioritize navigation on mobile
   const primaryControls = (
     <>
@@ -64,29 +70,33 @@ export const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
   // Secondary controls that collapse on mobile
   const secondaryControls = (
     <>
-      {/* Zoom controls moved to secondary on mobile */}
-      <button 
-        onClick={() => onZoomOut(true)}
-        className="p-2 text-cyan-400 hover:text-cyan-300 transition-colors disabled:opacity-50 disabled:hover:text-cyan-400 flex items-center justify-center"
-        disabled={scale <= minScale}
-        title="Zoom Out"
-      >
-        <ZoomOut className="w-5 h-5" strokeWidth={1.5} />
-      </button>
+      {/* Hide zoom controls on mobile since gestures are disabled */}
+      {!isMobile && (
+        <>
+          <button 
+            onClick={() => onZoomOut(true)}
+            className="p-2 text-cyan-400 hover:text-cyan-300 transition-colors disabled:opacity-50 disabled:hover:text-cyan-400 flex items-center justify-center"
+            disabled={scale <= minScale}
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-5 h-5" strokeWidth={1.5} />
+          </button>
+          
+          <button 
+            onClick={() => onZoomIn(true)}
+            className="p-2 text-cyan-400 hover:text-cyan-300 transition-colors disabled:opacity-50 disabled:hover:text-cyan-400 flex items-center justify-center"
+            disabled={scale >= 1.5}
+            title="Zoom In"
+          >
+            <ZoomIn className="w-5 h-5" strokeWidth={1.5} />
+          </button>
+        </>
+      )}
       
       {/* Only show percentage in expanded menu on mobile */}
       <span className="text-sm font-mono text-center text-cyan-400 font-bold sm:hidden">
         {Math.round(scale * 100)}%
       </span>
-      
-      <button 
-        onClick={() => onZoomIn(true)}
-        className="p-2 text-cyan-400 hover:text-cyan-300 transition-colors disabled:opacity-50 disabled:hover:text-cyan-400 flex items-center justify-center"
-        disabled={scale >= 1.5}
-        title="Zoom In"
-      >
-        <ZoomIn className="w-5 h-5" strokeWidth={1.5} />
-      </button>
       
       <button 
         onClick={onFilter}

@@ -16,6 +16,16 @@
   overflow: visible;
 }
 
+/* Disable browser touch gestures on mobile */
+@media (max-width: 768px) {
+  .transform-container {
+    touch-action: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+  }
+}
+
 /* Smooth transitions only on desktop */
 .whiteboard-container.is-transitioning,
 .transform-container.is-transitioning {

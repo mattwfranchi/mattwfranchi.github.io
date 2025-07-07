@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { WhiteboardProps, WhiteboardItem, PhotoData } from '../types/whiteboard';
+import type { WhiteboardProps, WhiteboardItem, PhotoData, Transform } from '../types/whiteboard';
 import { WhiteboardContainer } from './whiteboard/WhiteboardContainer';
 import { WhiteboardContent } from './whiteboard/WhiteboardContent';
 import { WhiteboardToolbar } from './whiteboard/WhiteboardToolbar';
@@ -35,6 +35,52 @@ export default function WhiteboardLayout({
   }, []);
 
   const {
+    transform,
+    isTransitioning,
+    updateTransform,
+    handleWheel,
+    handleZoomIn,
+    handleZoomOut,
+    centerView,
+  } = useWhiteboardView();
+
+  // Create zoom-to-fit function for mobile card expansion
+  const handleZoomToFit = useCallback((cardElement: HTMLElement, expanded: boolean) => {
+    if (!expanded) return; // Only zoom when expanding
+    
+    // Get the card's current dimensions
+    const cardRect = cardElement.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate what scale would fit the card with some padding
+    const padding = 40; // 40px padding around the card
+    const requiredWidth = cardRect.width + padding * 2;
+    const requiredHeight = cardRect.height + padding * 2;
+    
+    const scaleX = viewportWidth / requiredWidth;
+    const scaleY = viewportHeight / requiredHeight;
+    
+    // Use the smaller scale to ensure the card fits in both dimensions
+    const targetScale = Math.min(scaleX, scaleY, transform.scale); // Don't zoom in, only out
+    
+    // Only zoom if we need to zoom out
+    if (targetScale < transform.scale) {
+      console.log('Auto-zooming to fit expanded card:', { 
+        currentScale: transform.scale, 
+        targetScale,
+        cardSize: { width: cardRect.width, height: cardRect.height }
+      });
+      
+      // Use the existing zoom functionality to smoothly zoom out
+      updateTransform((prev: Transform) => ({
+        ...prev,
+        scale: targetScale
+      }), true);
+    }
+  }, [transform.scale, updateTransform]);
+
+  const {
     items,
     setItems,
     dragging,
@@ -44,17 +90,15 @@ export default function WhiteboardLayout({
 
     handleExpand,
     handleLongPress,
-  } = useWhiteboardItems();
+  } = useWhiteboardItems({
+    onZoomToFit: handleZoomToFit
+  });
 
-  const {
-    transform,
-    isTransitioning,
-    updateTransform,
-    handleWheel,
-    handleZoomIn,
-    handleZoomOut,
-    centerView,
-  } = useWhiteboardView();
+  // Check if we're on mobile to disable manual gestures
+  const isMobile = typeof window !== 'undefined' && (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+    window.innerWidth <= 768
+  );
 
   const {
     handleGestureStart,
@@ -162,24 +206,25 @@ export default function WhiteboardLayout({
             "--translateY": `${transform.y}px`,
             "--scale": transform.scale,
           } as React.CSSProperties}
-          onWheel={handleWheel}
-          onMouseDown={handleGestureStart}
-          onMouseMove={handleGestureMove}
-          onMouseUp={handleGestureEnd}
-          onMouseLeave={handleGestureEnd}
-          onTouchStart={handleGestureStart}
-          onTouchMove={handleGestureMove}
-          onTouchEnd={handleGestureEnd}
+          // Disable manual gestures on mobile, keep them on desktop
+          {...(!isMobile && {
+            onWheel: handleWheel,
+            onMouseDown: handleGestureStart,
+            onMouseMove: handleGestureMove,
+            onMouseUp: handleGestureEnd,
+            onMouseLeave: handleGestureEnd,
+            onTouchStart: handleGestureStart,
+            onTouchMove: handleGestureMove,
+            onTouchEnd: handleGestureEnd,
+          })}
         >
           <WhiteboardContent
             items={filteredItems}
             focusedCardId={focusedCardId}
             draggingId={dragging}
-            resizingId={null}
             onDragStart={onDragStart}
             onDragEnd={handleDragEnd}
             onExpand={handleExpand}
-
             onLongPress={handleLongPress}
             photosByAlbum={photosByAlbum}
           />
