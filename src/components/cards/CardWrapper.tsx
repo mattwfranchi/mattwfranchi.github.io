@@ -1,17 +1,16 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import type { CSSProperties } from 'react';
-import { Move, Maximize2, Minimize2, CornerRightDown } from 'lucide-react';
+import { Maximize2, Minimize2 } from 'lucide-react';
 import '../../styles/photog.css';
 
 interface CardWrapperProps {
   id: string;
   onDragStart: (id: string, event: React.MouseEvent) => void;
   onDragEnd: () => void;
-  onResize: (id: string, event: React.MouseEvent) => void;
-  onExpand: (id: string) => void;
+  onExpand: (id: string, cardElement?: HTMLElement | null) => void;
   onLongPress: (id: string) => void;
   children: React.ReactNode;
-  item: { position: { x: number; y: number; width: number; height: number; z: number } };
+  item: { position: { x: number; y: number; width: number; height: number; z: number; expanded?: boolean; rotation?: number } };
 }
 
 // Animation type definitions
@@ -36,7 +35,6 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
   id,
   onDragStart,
   onDragEnd,
-  onResize,
   onExpand,
   onLongPress,
   children,
@@ -45,9 +43,11 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const [longPressTimeout, setLongPressTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isInteracting, setIsInteracting] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+
+  // Use the actual item's expanded state instead of local state
+  const isExpanded = item.position.expanded || false;
 
   // Generate consistent animation properties based on card ID
   const animationProperties = useMemo(() => {
@@ -143,23 +143,13 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
     // Set transitioning state to true
     setIsTransitioning(true);
     
-    // Toggle expanded state
-    setIsExpanded(!isExpanded);
-    
-    // Call the parent's onExpand handler
-    onExpand(id);
+    // Call the parent's onExpand handler with card element for content measurement
+    onExpand(id, cardRef.current);
     
     // Remove transitioning state after animation completes
     setTimeout(() => {
       setIsTransitioning(false);
     }, 300); // Match the CSS transition duration (300ms)
-  };
-
-  const handleResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsInteracting(true); // Set interaction state to true for resize
-    onResize(id, e);
   };
 
   // Add a handler for window mouse up to ensure we reset the state
@@ -219,7 +209,7 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
       style={cardStyle}
-      className={`draggable-area ${!isVisible ? 'paused-animation' : ''}`}
+      className={`draggable-area ${!isVisible ? 'paused-animation' : ''} ${isInteracting ? 'is-interacting' : ''}`}
     >
       <div 
         className={`
@@ -236,7 +226,8 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
           {children}
         </div>
         
-        <div className="absolute top-2 right-2 flex items-center space-x-2 z-10">
+        {/* Auto-resize button - always visible and properly synced */}
+        <div className="absolute top-2 right-2 flex items-center space-x-2 z-50">
           <button
             onClick={handleExpandButtonClick}
             className="w-6 h-6 rounded-sm bg-gray-900/70 border border-cyan-500/30 
@@ -260,21 +251,7 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
           </button>
         </div>
 
-        <div
-          className="absolute bottom-2 right-2 w-6 h-6 cursor-se-resize z-10 
-                     flex items-center justify-center group"
-          onMouseDown={handleResizeMouseDown}
-        >
-          <div className="w-4 h-4 rounded-sm bg-gray-900/70 border border-cyan-500/30 
-                         group-hover:bg-cyan-900/30 transition-all duration-200 
-                         flex items-center justify-center etched-button">
-            <CornerRightDown 
-              size={12} 
-              className="text-cyan-500/90 group-hover:text-cyan-400 
-                         transform group-hover:scale-110 transition-all duration-200" 
-            />
-          </div>
-        </div>
+        {/* Removed the drag-to-resize handle completely */}
       </div>
     </div>
   );

@@ -57,11 +57,11 @@ export interface WhiteboardContentProps {
   items: WhiteboardItem[];
   focusedCardId?: string | null;
   draggingId: string | null;  // Allow null
-  resizingId: string | null;  // Allow null
+
   onDragStart: (id: string, event: React.MouseEvent) => void;
   onDragEnd: (id: string) => void;
-  onExpand: (id: string) => void;
-  onResize: any; // Update this with proper type if needed
+  onExpand: (id: string, cardElement?: HTMLElement | null) => void;
+
   photosByAlbum: Record<string, PhotoData[]>;
   onLongPress: (id: string) => void; // Add this line to fix the error
 }

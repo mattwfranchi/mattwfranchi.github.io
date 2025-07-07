@@ -10,9 +10,9 @@ interface AlbumCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onR
   isDragging: boolean;
   isResizing: boolean;
   onDragStart: (id: string, event: React.MouseEvent) => void;
-  onExpand: (id: string) => void;
+  onExpand: (id: string, cardElement?: HTMLElement | null) => void;
   onDragEnd: () => void;
-  onResize: (id: string, event: React.MouseEvent) => void;
+
   onLongPress: (id: string) => void; // Add the onLongPress prop
   photos: PhotoData[];
   isFocused: boolean;
@@ -26,7 +26,7 @@ export function AlbumCard({
   onDragStart,
   onExpand,
   onDragEnd,
-  onResize,
+
   onLongPress, // Add the onLongPress prop
   photos = [],
   isFocused,
@@ -52,14 +52,14 @@ export function AlbumCard({
       id={id}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onResize={(id, e) => onResize(id, e)}
-      onExpand={(id) => onExpand(id)}
+
+      onExpand={(id, cardElement) => onExpand(id, cardElement)}
       onLongPress={(id) => onLongPress(id)} // Pass the onLongPress prop
     >
       <div
         {...rest}
         className={`relative w-full h-full bg-gray-900/90 backdrop-blur-sm 
-                      rounded-lg border border-cyan-500/30 overflow-hidden ${isFocused ? 'focused-card' : ''}`}
+                      rounded-lg border border-cyan-500/30 overflow-visible ${isFocused ? 'focused-card' : ''}`}
         style={{
           ...(rest.style || {}),
           boxShadow: isFocused ? '0 0 20px 10px rgba(0, 0, 0, 0.8)' : undefined

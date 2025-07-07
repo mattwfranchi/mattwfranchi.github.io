@@ -38,10 +38,10 @@ export default function WhiteboardLayout({
     items,
     setItems,
     dragging,
-    resizing,
+
     handleDragStart,
     handleDragEnd,
-    handleResizeStart,
+
     handleExpand,
     handleLongPress,
   } = useWhiteboardItems();
@@ -175,11 +175,11 @@ export default function WhiteboardLayout({
             items={filteredItems}
             focusedCardId={focusedCardId}
             draggingId={dragging}
-            resizingId={resizing}
+            resizingId={null}
             onDragStart={onDragStart}
             onDragEnd={handleDragEnd}
             onExpand={handleExpand}
-            onResize={handleResizeStart}
+
             onLongPress={handleLongPress}
             photosByAlbum={photosByAlbum}
           />

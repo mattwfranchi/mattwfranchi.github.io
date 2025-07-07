@@ -20,4 +20,3 @@ order: 1
 - Public transportation as late as possible 
 - Setting up an eno hammock 
 - Sensually overdressed 
-<!-- Add any additional content or notes about the snip here -->

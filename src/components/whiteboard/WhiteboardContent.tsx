@@ -8,11 +8,11 @@ export const WhiteboardContent = React.memo(function WhiteboardContent({
   items,
   focusedCardId,
   draggingId,
-  resizingId,
+
   onDragStart,
   onDragEnd,
   onExpand,
-  onResize,
+
   onLongPress, // New prop
   photosByAlbum,
 }: WhiteboardContentProps) {
@@ -38,11 +38,11 @@ export const WhiteboardContent = React.memo(function WhiteboardContent({
           item,
           id: item.id,
           isDragging: item.id === draggingId,
-          isResizing: item.id === resizingId,
+          isResizing: false, // Removed resize functionality
           onDragStart,
           onDragEnd: () => onDragEnd(item.id),
-          onExpand: () => onExpand(item.id),
-          onResize,
+          onExpand: (id: string, cardElement?: HTMLElement | null) => onExpand(id, cardElement),
+
           onLongPress: () => onLongPress(item.id), // Pass the new prop
           isFocused,
           // Use the cleaned albumId to look up photos

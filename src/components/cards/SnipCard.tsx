@@ -9,9 +9,9 @@ interface SnipCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onRe
   isDragging: boolean;
   isResizing: boolean;
   onDragStart: (id: string, event: React.MouseEvent) => void;
-  onExpand: (id: string) => void;
+  onExpand: (id: string, cardElement?: HTMLElement | null) => void;
   onDragEnd: () => void;
-  onResize: (id: string, event: React.MouseEvent) => void;
+
   onLongPress: (id: string) => void
   isFocused: boolean;
 }
@@ -24,7 +24,7 @@ export function SnipCard({
   onDragStart,
   onExpand,
   onDragEnd,
-  onResize,
+
   onLongPress,
   isFocused,
   ...rest
@@ -37,14 +37,14 @@ export function SnipCard({
       id={id}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onResize={(id, e) => onResize(id, e)}
+
       onLongPress={(id) => onLongPress(id)}
-      onExpand={(id) => onExpand(id)}
+      onExpand={(id, cardElement) => onExpand(id, cardElement)}
     >
       <div
         {...rest}
         className={`relative w-full h-full bg-gray-900/90 backdrop-blur-sm 
-                   rounded-lg border border-cyan-500/30 overflow-hidden p-4 ${isFocused ? 'focused-card' : ''}`}
+                   rounded-lg border border-cyan-500/30 overflow-visible p-4 ${isFocused ? 'focused-card' : ''}`}
         style={{
           ...(rest.style || {}),
           boxShadow: isFocused ? '0 0 20px 10px rgba(0, 0, 0, 0.8)' : undefined

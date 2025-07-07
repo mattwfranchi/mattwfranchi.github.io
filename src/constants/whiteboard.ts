@@ -9,6 +9,6 @@ export const STICKY_NOTE = {
   HEIGHT: 320,  // in pixels
   MIN_WIDTH: 120,
   MIN_HEIGHT: 120,
-  MAX_WIDTH: 360,
-  MAX_HEIGHT: 360
+  MAX_WIDTH: 500,  // Increased for wider content
+  MAX_HEIGHT: 800  // Increased significantly for long text content
 } as const;
