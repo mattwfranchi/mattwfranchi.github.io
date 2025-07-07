@@ -210,6 +210,7 @@ const CardWrapper: React.FC<CardWrapperProps> = ({
       onMouseLeave={handleMouseLeave}
       style={cardStyle}
       className={`draggable-area ${!isVisible ? 'paused-animation' : ''} ${isInteracting ? 'is-interacting' : ''}`}
+      data-item-id={id}
     >
       <div 
         className={`

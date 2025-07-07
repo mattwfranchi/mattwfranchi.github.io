@@ -48,13 +48,22 @@ export default function WhiteboardLayout({
   const handleZoomToFit = useCallback((cardElement: HTMLElement, expanded: boolean) => {
     if (!expanded) return; // Only zoom when expanding
     
-    // Get the card's current dimensions
+    // Get the draggable-area element that contains the card position info
+    const draggableArea = cardElement.closest('.draggable-area') as HTMLElement;
+    if (!draggableArea) return;
+    
+    // Read the card's position from CSS variables set by CardWrapper
+    const computedStyle = getComputedStyle(draggableArea);
+    const cardX = parseFloat(computedStyle.getPropertyValue('--item-x')) || 0;
+    const cardY = parseFloat(computedStyle.getPropertyValue('--item-y')) || 0;
+    
+    // Get the card's dimensions after expansion
     const cardRect = cardElement.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
-    // Calculate what scale would fit the card with some padding
-    const padding = 40; // 40px padding around the card
+    // Calculate what scale would fit the card with padding
+    const padding = 60; // More padding for better mobile viewing
     const requiredWidth = cardRect.width + padding * 2;
     const requiredHeight = cardRect.height + padding * 2;
     
@@ -64,21 +73,29 @@ export default function WhiteboardLayout({
     // Use the smaller scale to ensure the card fits in both dimensions
     const targetScale = Math.min(scaleX, scaleY, transform.scale); // Don't zoom in, only out
     
-    // Only zoom if we need to zoom out
+    // Only proceed if we need to zoom out
     if (targetScale < transform.scale) {
-      console.log('Auto-zooming to fit expanded card:', { 
-        currentScale: transform.scale, 
+      // Calculate transform to center the card at the new scale
+      // In whiteboard coordinates, to center a card at position (cardX, cardY),
+      // we need transform: x = -cardX * scale, y = -cardY * scale
+      const newTransform: Transform = {
+        x: -cardX * targetScale,
+        y: -cardY * targetScale,
+        scale: targetScale
+      };
+      
+      console.log('Auto-zooming and centering expanded card:', {
+        cardPosition: { x: cardX, y: cardY },
+        currentTransform: transform,
         targetScale,
+        newTransform,
         cardSize: { width: cardRect.width, height: cardRect.height }
       });
       
-      // Use the existing zoom functionality to smoothly zoom out
-      updateTransform((prev: Transform) => ({
-        ...prev,
-        scale: targetScale
-      }), true);
+      // Apply the centered zoom transform
+      updateTransform(newTransform, true);
     }
-  }, [transform.scale, updateTransform]);
+  }, [transform, updateTransform]);
 
   const {
     items,
