@@ -97,6 +97,15 @@ export function PlaylistCard({
           </span>
         </div>
         
+        {/* Add playlist body content if available */}
+        {playlist.body && playlist.body.trim() && (
+          <div className="mb-4 p-3 bg-gray-800/50 rounded border border-cyan-500/20">
+            <div className="text-sm text-cyan-300/90 whitespace-pre-wrap break-words">
+              {playlist.body}
+            </div>
+          </div>
+        )}
+        
         {embedCode}
       </div>
     </CardWrapper>

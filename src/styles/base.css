@@ -351,7 +351,7 @@
   }
   
   nav#nav-menu a.active {
-    @apply underline decoration-wavy decoration-2 underline-offset-4;
+    @apply text-skin-accent;
   }
   
   nav#nav-menu a.active svg {
@@ -638,7 +638,7 @@
     position: absolute;
     left: 0;
     top: 0.2em;
-    height: 0.8em;
+    height: 1.2em;
     width: 3px;
     background-color: rgb(var(--color-accent));
     border-radius: 1px;

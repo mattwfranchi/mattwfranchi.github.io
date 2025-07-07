@@ -96,6 +96,16 @@ export function AlbumCard({
           <p className="text-sm text-gray-300/90">
             {album.data.description}
           </p>
+          
+          {/* Add album body content if available */}
+          {album.body && album.body.trim() && (
+            <div className="mt-3 p-3 bg-gray-800/50 rounded border border-cyan-500/20">
+              <div className="text-sm text-cyan-300/90 whitespace-pre-wrap break-words">
+                {album.body}
+              </div>
+            </div>
+          )}
+          
           <div className="flex flex-wrap gap-2 mt-3">
             {album.data.tags.map(tag => (
               <span
