@@ -166,7 +166,7 @@ export const useWhiteboardItems = (options: WhiteboardItemsOptions = {}) => {
             // Delay the zoom to allow the card to finish expanding first
             setTimeout(() => {
               options.onZoomToFit!(cardElement, true);
-            }, 350); // Increased delay to ensure expansion animation completes
+            }, 400); // Slightly longer delay for the smoother animation
           }
           
           return {

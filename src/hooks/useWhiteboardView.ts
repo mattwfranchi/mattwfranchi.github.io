@@ -30,7 +30,7 @@ export function useWhiteboardView() {
         }
         transitionTimeoutRef.current = setTimeout(() => {
           setIsTransitioning(false);
-        }, 300);
+        }, 800); // Longer duration for smoother auto-zoom animations
       }
       
       setTransform(prevTransform => {
