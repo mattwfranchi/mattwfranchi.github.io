@@ -13,20 +13,31 @@ const { activeNav } = Astro.props;
   <a id="skip-to-content" href="#main-content">Skip to content</a>
   <div class="nav-container">
     <div class="top-nav-wrap">
-      <a href="/" class="logo site-logo whitespace-nowrap" id="header-logo">
-        {
-          LOGO_IMAGE.enable ? (
-            <img
-              src={`/assets/${LOGO_IMAGE.svg ? "logo.svg" : "logo.png"}`}
-              alt={SITE.title}
-              width={LOGO_IMAGE.width}
-              height={LOGO_IMAGE.height}
-            />
-          ) : (
-            "matt franchi"
-          ) 
-        }
-      </a>
+      <div class="left-nav-section">
+        <a href="/" class="logo site-logo whitespace-nowrap" id="header-logo">
+          {
+            LOGO_IMAGE.enable ? (
+              <img
+                src={`/assets/${LOGO_IMAGE.svg ? "logo.svg" : "logo.png"}`}
+                alt={SITE.title}
+                width={LOGO_IMAGE.width}
+                height={LOGO_IMAGE.height}
+              />
+            ) : (
+              "matt franchi"
+            ) 
+          }
+        </a>
+        <a href="/brain/" class="brain-link" title="Brain - Visual Workspace">
+          <img 
+            src="/assets/brain.png" 
+            alt="Brain" 
+            width="32" 
+            height="32"
+            class="brain-icon"
+          />
+        </a>
+      </div>
       <nav id="nav-menu">
         <button
           class="hamburger-menu focus-outline"
@@ -109,6 +120,56 @@ const { activeNav } = Astro.props;
     </div>
   </div>
 </header>
+
+<style>
+  .left-nav-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .brain-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+  }
+  
+  .brain-link:hover {
+    opacity: 1;
+    transform: scale(1.05);
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+  
+  .brain-icon {
+    display: block;
+    filter: brightness(0.9);
+    transition: filter 0.2s ease;
+  }
+  
+  .brain-link:hover .brain-icon {
+    filter: brightness(1.1);
+  }
+  
+  /* Mobile responsiveness */
+  @media (max-width: 640px) {
+    .left-nav-section {
+      gap: 0.75rem;
+    }
+    
+    .brain-link {
+      padding: 0.375rem;
+    }
+    
+    .brain-icon {
+      width: 28px;
+      height: 28px;
+    }
+  }
+</style>
 
 <script>
   // Mobile menu functionality
@@ -204,7 +265,7 @@ const { activeNav } = Astro.props;
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && isMobile() && menuItems?.classList.contains('show')) {
         toggleMenu();
-        hamburgerBtn?.focus();
+        (hamburgerBtn as HTMLElement)?.focus();
       }
     });
   });
