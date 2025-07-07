@@ -30,7 +30,7 @@ export function useWhiteboardView() {
         }
         transitionTimeoutRef.current = setTimeout(() => {
           setIsTransitioning(false);
-        }, 800); // Longer duration for smoother auto-zoom animations
+        }, 1300); // Long enough to handle mobile card navigation (1200ms) + buffer
       }
       
       setTransform(prevTransform => {
