@@ -161,22 +161,12 @@ export const useWhiteboardItems = (options: WhiteboardItemsOptions = {}) => {
             }
           }
           
-          // On mobile, if expanding and we have zoom function, auto-zoom to fit
+          // If expanding and we have zoom function, auto-zoom to fit (mobile devices)
           if (isMobile && !isExpanded && options.onZoomToFit && cardElement) {
-            // Add mobile animation class for smooth auto-zoom
-            const container = document.querySelector('.transform-container');
-            if (container) {
-              container.classList.add('mobile-card-navigation');
-              // Remove the class after animation completes
-              setTimeout(() => {
-                container.classList.remove('mobile-card-navigation');
-              }, 1300); // Match our mobile animation duration + buffer
-            }
-            
             // Delay the zoom to allow the card to finish expanding first
             setTimeout(() => {
               options.onZoomToFit!(cardElement, true);
-            }, 400); // Slightly longer delay for the smoother animation
+            }, 400); // Delay for the smooth animation
           }
           
           return {

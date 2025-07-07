@@ -26,14 +26,9 @@
   }
 }
 
-/* Smooth transitions for zoom and pan */
+/* Buttery smooth transitions for zoom and pan on all platforms */
 .whiteboard-container.is-transitioning,
 .transform-container.is-transitioning {
-  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-/* Extra slow, buttery smooth animation for mobile card navigation */
-.transform-container.mobile-card-navigation.is-transitioning {
   transition: transform 1.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -162,7 +157,7 @@
   /* Remove aggressive containment and visibility properties that clip in production */
   overflow: visible;
   will-change: none;
-  transition: transform 0.15s ease;
+  /* Use same smooth timing for mobile when transitioning */
 }
 
 .mobile-optimized .whiteboard-content {

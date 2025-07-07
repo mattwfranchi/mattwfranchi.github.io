@@ -15,12 +15,6 @@ export function useCardFocus(
 ): UseCardFocusResult {
   const [currentIndex, setCurrentIndex] = useState(0);
   const FIXED_ZOOM = 1.5; // 150% zoom when focusing
-  
-  // Check if we're on mobile for slower animations
-  const isMobile = typeof window !== 'undefined' && (
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-    window.innerWidth <= 768
-  );
 
   const focusOnCard = useCallback((index: number) => {
     if (items.length === 0) return;
@@ -42,19 +36,7 @@ export function useCardFocus(
       scale: FIXED_ZOOM
     };
 
-    // On mobile, add a CSS class for slower card navigation animation
-    if (isMobile) {
-      const container = document.querySelector('.transform-container');
-      if (container) {
-        container.classList.add('mobile-card-navigation');
-        // Remove the class after animation completes
-        setTimeout(() => {
-          container.classList.remove('mobile-card-navigation');
-        }, 1300); // Match our mobile animation duration + buffer
-      }
-    }
-
-    // Always apply the transform - let the updateTransform function handle optimization
+    // Apply the transform with smooth animation on all platforms
     updateTransform(newTransform, true);
   }, [items, updateTransform]); // Removed currentTransform dependency to prevent recreating function
 
