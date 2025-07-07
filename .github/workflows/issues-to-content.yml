@@ -2,11 +2,13 @@ name: Convert Issues to Content
 
 on:
   issues:
-    types: [labeled, opened]
+    types: [labeled]
 
 permissions:
   contents: write
   issues: write
+  actions: write
+  pages: write
 
 jobs:
   convert-issue:
@@ -154,9 +156,30 @@ jobs:
                execSync(`git commit -m "Add ${contentType.slice(0, -1)}: ${title} (from issue #${issue.number})"`);
              }
              
-             execSync('git push');
-            
-            // Close the issue
+                          execSync('git push');
+             
+             // Trigger site rebuild
+             console.log('Triggering site rebuild...');
+             await github.rest.actions.createWorkflowDispatch({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               workflow_id: 'deploy.yml', // or 'astro.yml' or whatever your build workflow is called
+               ref: 'main'
+             }).catch(async (error) => {
+               console.warn('Failed to trigger deploy.yml, trying pages-build-deployment...');
+               // Fallback: trigger Pages rebuild via API
+               try {
+                 await github.rest.pages.requestPagesBuild({
+                   owner: context.repo.owner,
+                   repo: context.repo.repo
+                 });
+                 console.log('Triggered Pages rebuild successfully');
+               } catch (pagesError) {
+                 console.error('Failed to trigger Pages rebuild:', pagesError);
+               }
+             });
+             
+             // Close the issue
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
