@@ -3,21 +3,14 @@ description: "Add a new snip to your brain"
 title: "[SNIP] "
 labels: ["snip"]
 body:
-  - type: input
-    id: title
-    attributes:
-      label: "Snip Title"
-      description: "What's this snip about?"
-      placeholder: "Enter a descriptive title..."
-    validations:
-      required: true
-  
   - type: textarea
     id: content
     attributes:
       label: "Content"
-      description: "Your snip content (markdown supported)"
+      description: "Your snip content (the issue title above becomes your snip title)"
       placeholder: |
+        💡 The issue title above becomes your snip title
+        
         Enter your snip content here...
         
         You can use markdown formatting:

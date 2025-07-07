@@ -3,25 +3,18 @@ description: "Add a new photo album to your brain"
 title: "[ALBUM] "
 labels: ["album"]
 body:
-  - type: input
-    id: title
-    attributes:
-      label: "Album Title"
-      description: "What's this album about?"
-      placeholder: "Enter album name..."
-    validations:
-      required: true
-  
   - type: textarea
     id: description
     attributes:
       label: "Description & Photos"
-      description: "Describe this photo collection and attach your photos below"
+      description: "Describe the album and attach photos (the issue title above becomes your album name)"
       placeholder: |
+        📸 The issue title above becomes your album name
+        
         What's the story behind these photos?
         Where and when were they taken?
         
-        📸 **To add photos:** Drag and drop images into this text area or click the attach button below. 
+        **To add photos:** Drag and drop images into this text area or click the attach button below. 
         The photos will be automatically processed and added to your album!
     validations:
       required: true

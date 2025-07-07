@@ -3,21 +3,14 @@ description: "Add a new playlist to your brain"
 title: "[PLAYLIST] "
 labels: ["playlist"]
 body:
-  - type: input
-    id: title
-    attributes:
-      label: "Playlist Title"
-      description: "What's this playlist called?"
-      placeholder: "Enter playlist name..."
-    validations:
-      required: true
-  
   - type: textarea
     id: description
     attributes:
       label: "Description"
-      description: "Describe the vibe, theme, or story of this playlist"
+      description: "Describe the playlist (the issue title above becomes your playlist name)"
       placeholder: |
+        🎵 The issue title above becomes your playlist name
+        
         What's the mood? When do you listen to this?
         What's the story behind these songs?
     validations:
