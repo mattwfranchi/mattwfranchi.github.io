@@ -4,17 +4,47 @@ on:
   issues:
     types: [labeled, opened]
 
+permissions:
+  contents: write
+  issues: write
+
 jobs:
   convert-issue:
-    if: contains(github.event.issue.labels.*.name, 'snip') || contains(github.event.issue.labels.*.name, 'playlist') || contains(github.event.issue.labels.*.name, 'album')
     runs-on: ubuntu-latest
     steps:
+      - name: Debug Issue Event
+        run: |
+          echo "Issue labels: ${{ toJson(github.event.issue.labels) }}"
+          echo "Issue title: ${{ github.event.issue.title }}"
+          echo "Event action: ${{ github.event.action }}"
+          
+      - name: Check if content issue
+        id: check
+        run: |
+          labels='${{ toJson(github.event.issue.labels.*.name) }}'
+          echo "Labels array: $labels"
+          
+          if echo "$labels" | grep -q '"snip"'; then
+            echo "is_content=true" >> $GITHUB_OUTPUT
+            echo "content_type=snips" >> $GITHUB_OUTPUT
+          elif echo "$labels" | grep -q '"playlist"'; then
+            echo "is_content=true" >> $GITHUB_OUTPUT
+            echo "content_type=playlists" >> $GITHUB_OUTPUT
+          elif echo "$labels" | grep -q '"album"'; then
+            echo "is_content=true" >> $GITHUB_OUTPUT
+            echo "content_type=photos" >> $GITHUB_OUTPUT
+          else
+            echo "is_content=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout repository
+        if: steps.check.outputs.is_content == 'true'
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Convert Issue to Content
+        if: steps.check.outputs.is_content == 'true'
         uses: actions/github-script@v6
         with:
           script: |
@@ -30,16 +60,9 @@ jobs:
             // Clean up title (remove prefixes like [SNIP], [PLAYLIST], [ALBUM])
             title = title.replace(/^\[.*?\]\s*/, '').trim();
             
-            // Determine content type
-            let contentType = null;
-            if (labels.includes('snip')) contentType = 'snips';
-            else if (labels.includes('playlist')) contentType = 'playlists';
-            else if (labels.includes('album')) contentType = 'albums';
-            
-            if (!contentType) {
-              console.log('No valid content type label found');
-              return;
-            }
+                         // Get content type from previous step
+             const contentType = '${{ steps.check.outputs.content_type }}';
+             console.log(`Processing ${contentType} content`);
             
             // Create slug from title
             const slug = title.toLowerCase()
@@ -57,7 +80,7 @@ jobs:
                frontmatter += `description: "${title}"\nsource: "GitHub Issue"\nsourceUrl: "${issue.html_url}"\n`;
              } else if (contentType === 'playlists') {
                frontmatter += `description: "${body.split('\n')[0] || title}"\nplatform: "spotify"\nplaylistUrl: ""\nplaylistId: ""\nmood: []\n`;
-                          } else if (contentType === 'albums') {
+                          } else if (contentType === 'photos') {
                frontmatter += `description: "${body.split('\n')[0] || title}"\nalbumArt: ""\n`;
              }
              
@@ -67,7 +90,7 @@ jobs:
              const fileName = `${slug}.md`;
              let filePath;
              
-             if (contentType === 'albums') {
+             if (contentType === 'photos') {
                // For albums, create a directory and handle image attachments
                const albumDir = `src/content/photos/${slug}`;
                filePath = `${albumDir}/${fileName}`;
@@ -121,7 +144,7 @@ jobs:
              execSync('git config user.name "GitHub Action"');
              execSync('git config user.email "action@github.com"');
              
-             if (contentType === 'albums') {
+             if (contentType === 'photos') {
                // For albums, add the entire directory
                execSync(`git add "src/content/photos/${slug}/"`);
                execSync(`git commit -m "Add album: ${title} with photos (from issue #${issue.number})"`);
@@ -141,10 +164,11 @@ jobs:
               state: 'closed'
             });
             
-            // Add comment
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue.number,
-              body: `✅ Created ${contentType.slice(0, -1)}: \`${filePath}\``
-            }); 
+                         // Add comment
+             const itemType = contentType === 'photos' ? 'album' : contentType.slice(0, -1);
+             await github.rest.issues.createComment({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               issue_number: issue.number,
+               body: `✅ Created ${itemType}: \`${filePath}\``
+             }); 
