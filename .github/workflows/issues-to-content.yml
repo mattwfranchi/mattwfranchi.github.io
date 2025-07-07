@@ -1,0 +1,96 @@
+name: Convert Issues to Content
+
+on:
+  issues:
+    types: [labeled, opened]
+
+jobs:
+  convert-issue:
+    if: contains(github.event.issue.labels.*.name, 'snip') || contains(github.event.issue.labels.*.name, 'playlist') || contains(github.event.issue.labels.*.name, 'album')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Convert Issue to Content
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Get issue details
+            const issue = context.payload.issue;
+            let title = issue.title;
+            const body = issue.body || '';
+            const labels = issue.labels.map(label => label.name);
+            
+            // Clean up title (remove prefixes like [SNIP], [PLAYLIST], [ALBUM])
+            title = title.replace(/^\[.*?\]\s*/, '').trim();
+            
+            // Determine content type
+            let contentType = null;
+            if (labels.includes('snip')) contentType = 'snips';
+            else if (labels.includes('playlist')) contentType = 'playlists';
+            else if (labels.includes('album')) contentType = 'albums';
+            
+            if (!contentType) {
+              console.log('No valid content type label found');
+              return;
+            }
+            
+            // Create slug from title
+            const slug = title.toLowerCase()
+              .replace(/[^\w\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .replace(/-+/g, '-')
+              .trim();
+            
+                         // Create frontmatter
+             const now = new Date().toISOString();
+             let frontmatter = `---\ntitle: "${title}"\npubDatetime: ${now}\nfeatured: false\ndraft: false\ntags: []\n`;
+
+             // Add content-specific fields
+             if (contentType === 'snips') {
+               frontmatter += `description: "${title}"\nsource: "GitHub Issue"\nsourceUrl: "${issue.html_url}"\n`;
+             } else if (contentType === 'playlists') {
+               frontmatter += `description: "${body.split('\n')[0] || title}"\nplatform: "spotify"\nplaylistUrl: ""\nplaylistId: ""\nmood: []\n`;
+             } else if (contentType === 'albums') {
+               frontmatter += `description: "${body.split('\n')[0] || title}"\nalbumArt: ""\n`;
+             }
+             
+             frontmatter += `---\n\n${body}\n`;
+
+            // Create file path
+            const fileName = `${slug}.md`;
+            const filePath = `src/content/${contentType}/${fileName}`;
+            
+                         // Write file
+             await fs.promises.mkdir(path.dirname(filePath), {recursive: true});
+             await fs.promises.writeFile(filePath, frontmatter);
+            
+            // Commit file
+            const { execSync } = require('child_process');
+            execSync('git config user.name "GitHub Action"');
+            execSync('git config user.email "action@github.com"');
+            execSync(`git add "${filePath}"`);
+            execSync(`git commit -m "Add ${contentType.slice(0, -1)}: ${title} (from issue #${issue.number})"`);
+            execSync('git push');
+            
+            // Close the issue
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              state: 'closed'
+            });
+            
+            // Add comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: `✅ Created ${contentType.slice(0, -1)}: \`${filePath}\``
+            }); 

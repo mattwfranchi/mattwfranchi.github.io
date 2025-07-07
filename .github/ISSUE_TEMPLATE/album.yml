@@ -1,0 +1,52 @@
+name: "📸 New Album"
+description: "Add a new photo album to your brain"
+title: "[ALBUM] "
+labels: ["album"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: "Album Title"
+      description: "What's this album about?"
+      placeholder: "Enter album name..."
+    validations:
+      required: true
+  
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: "Describe this photo collection"
+      placeholder: |
+        What's the story behind these photos?
+        Where and when were they taken?
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: "Location (optional)"
+      description: "Where were these photos taken?"
+      placeholder: "New York, Paris, Home, etc."
+
+  - type: input
+    id: date_range
+    attributes:
+      label: "Date/Period (optional)"
+      description: "When were these photos taken?"
+      placeholder: "January 2025, Summer 2024, etc."
+
+  - type: input
+    id: camera_info
+    attributes:
+      label: "Camera/Equipment (optional)"
+      description: "What did you use to take these photos?"
+      placeholder: "iPhone 15, Canon R5, Film camera, etc."
+
+  - type: input
+    id: tags
+    attributes:
+      label: "Tags (optional)"
+      description: "Comma-separated tags"
+      placeholder: "travel, street, portrait, nature" 

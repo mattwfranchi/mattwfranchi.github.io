@@ -1,0 +1,45 @@
+name: "🎵 New Playlist"
+description: "Add a new playlist to your brain"
+title: "[PLAYLIST] "
+labels: ["playlist"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: "Playlist Title"
+      description: "What's this playlist called?"
+      placeholder: "Enter playlist name..."
+    validations:
+      required: true
+  
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: "Describe the vibe, theme, or story of this playlist"
+      placeholder: |
+        What's the mood? When do you listen to this?
+        What's the story behind these songs?
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: "Platform"
+      description: "Where can people find this playlist?"
+      placeholder: "Spotify, Apple Music, YouTube, etc."
+
+  - type: input
+    id: playlist_url
+    attributes:
+      label: "Playlist URL (optional)"
+      description: "Link to the playlist"
+      placeholder: "https://open.spotify.com/playlist/..."
+
+  - type: input
+    id: mood
+    attributes:
+      label: "Mood/Tags (optional)"
+      description: "Comma-separated moods or genres"
+      placeholder: "chill, indie, study, road-trip" 
