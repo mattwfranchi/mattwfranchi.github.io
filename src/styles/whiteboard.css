@@ -50,8 +50,8 @@
   position: relative;
   width: 100%;
   height: 100%;
-  /* Ensure content can overflow if needed */
-  overflow: visible;
+  /* Content should be contained within the card */
+  overflow: hidden;
 }
 
 .draggable-area:active {
@@ -134,8 +134,8 @@
   transition: none !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   will-change: auto !important;
-  /* Remove strict containment that clips content in production */
-  overflow: visible !important;
+  /* Content should be contained within the card boundaries */
+  overflow: hidden !important;
 }
 
 .mobile-optimized .transform-container,
