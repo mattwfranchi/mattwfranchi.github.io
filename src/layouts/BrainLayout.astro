@@ -186,7 +186,7 @@ const layoutRenderStart = Date.now();
 </style>
 
 <script>
-  import { initializeWindowDimensions } from '../utils/initializeWindowDimensions';
+  import { initializeMobileOptimizations } from '../utils/mobileOptimizations';
   
   // Performance configuration
   const performanceConfig = {
@@ -320,7 +320,7 @@ const layoutRenderStart = Date.now();
       navMenu?.classList.toggle('open');
     });
 
-    initializeWindowDimensions();
+    initializeMobileOptimizations();
     
     // Log layout render time
     const layoutRenderTime = Date.now() - layoutRenderStart;

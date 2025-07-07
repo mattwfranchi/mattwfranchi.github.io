@@ -1,5 +1,5 @@
 import type { Point } from '../types/whiteboard';
-import { WINDOW_DIMENSIONS, SCALES } from '../constants/whiteboard';
+import { SCALES } from '../constants/whiteboard';
 
 export function clampScale(
   scale: number,
@@ -10,9 +10,9 @@ export function clampScale(
 }
 
 export function calculateMinimumScale(viewportWidth: number, viewportHeight: number): number {
-  const scaleX = viewportWidth / WINDOW_DIMENSIONS.WIDTH;
-  const scaleY = viewportHeight / WINDOW_DIMENSIONS.HEIGHT;
-  return Math.max(scaleX, scaleY);
+  // For an infinite whiteboard, we use a much smaller minimum scale
+  // to allow users to zoom out and see more content
+  return SCALES.MIN;
 }
 
 export function calculateBoundaries(
@@ -25,16 +25,15 @@ export function calculateBoundaries(
   minY: number;
   maxY: number;
 } {
-  const scaledWidth = WINDOW_DIMENSIONS.WIDTH * scale;
-  const scaledHeight = WINDOW_DIMENSIONS.HEIGHT * scale;
-  const maxOffsetX = Math.max(0, (scaledWidth - viewportWidth) / 2);
-  const maxOffsetY = Math.max(0, (scaledHeight - viewportHeight) / 2);
+  // For infinite whiteboard, provide very generous boundaries
+  // Allow panning far beyond viewport in all directions
+  const maxOffset = Math.max(viewportWidth, viewportHeight) * 5;
   
   return {
-    minX: -maxOffsetX,
-    maxX: maxOffsetX,
-    minY: -maxOffsetY,
-    maxY: maxOffsetY
+    minX: -maxOffset,
+    maxX: maxOffset,
+    minY: -maxOffset,
+    maxY: maxOffset
   };
 }
 
@@ -44,9 +43,7 @@ export function clampOffset(
   viewportWidth: number,
   viewportHeight: number
 ): Point {
-  // Either remove the clamp entirely:
+  // For an infinite whiteboard, we don't clamp offsets
+  // Users can pan freely in any direction
   return offset;
-
-  // Or if you want bounding, replace references to WINDOW_DIMENSIONS
-  // with the same ROOM_DIMENSIONS used in your useWhiteboardView.
 }

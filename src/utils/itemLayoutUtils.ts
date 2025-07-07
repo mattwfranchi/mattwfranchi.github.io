@@ -1,5 +1,5 @@
 import type { WhiteboardItem, Position } from '../types/whiteboard';
-import { WINDOW_DIMENSIONS, STICKY_NOTE } from '../constants/whiteboard';
+import { STICKY_NOTE } from '../constants/whiteboard';
 
 export function calculateInitialLayout(
   items: WhiteboardItem[],
@@ -13,13 +13,9 @@ export function calculateInitialLayout(
   const gridWidth = columns * spacing;
   const gridHeight = Math.ceil(items.length / columns) * spacing;
   
-  // Position the items relative to the center of the transform-container
-  // The transform-container uses translate(-50%, -50%) and then translate3d(x, y, 0)
-  // So (0,0) is the center of the container
-  const containerWidth = WINDOW_DIMENSIONS.WIDTH;
-  const containerHeight = WINDOW_DIMENSIONS.HEIGHT;
+  // Position the items relative to the center of the whiteboard
+  // The whiteboard uses a center-based coordinate system where (0,0) is the center
   
-  // Use half of the container dimensions to ensure positions are relative to center
   // For a centered grid, we start at negative half grid width/height
   const startX = -gridWidth / 2 + (spacing / 2);
   const startY = -gridHeight / 2 + (spacing / 2);

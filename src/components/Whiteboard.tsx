@@ -9,12 +9,9 @@ import { useWhiteboardView } from '../hooks/useWhiteboardView';
 import { useWhiteboardGestures } from '../hooks/useWhiteboardGestures';
 import { useWhiteboardFilter } from '../hooks/useWhiteboardFilter';
 import { useCardFocus } from '../hooks/useCardFocus';
-import backgroundImage from '../assets/vista.jpg';
-import { WINDOW_DIMENSIONS, STICKY_NOTE, SCALES } from '../constants/whiteboard';
-import WindowBackground from './WindowBackground';
+import { STICKY_NOTE, SCALES } from '../constants/whiteboard';
 import { calculateInitialLayout } from '../utils/itemLayoutUtils';
 import ErrorBoundary from './ErrorBoundary';
-import { performanceLogger } from '../utils/performance';
 
 // Debug flag to control logging
 const DEBUG = false;
@@ -24,47 +21,16 @@ export default function WhiteboardLayout({
   photosByAlbum,
   playlists,
   snips,
-  backgroundImage,
 }: WhiteboardProps) {
-  // Consolidate performance monitoring into a single effect
+  // Simplified performance monitoring
   useEffect(() => {
     if (DEBUG) {
-      performanceLogger.start();
-      performanceLogger.mark('whiteboard_mount_start');
-
-      // Single performance observer for all monitoring
-      const observer = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        entries.forEach(entry => {
-          // Log only significant performance issues
-          if (entry.duration > 100) {
-            console.warn(`[Performance] Long task: ${entry.duration.toFixed(2)}ms`, {
-              name: entry.name,
-              startTime: entry.startTime
-            });
-          }
-        });
-      });
-
-      observer.observe({ entryTypes: ['longtask', 'measure'] });
-
-      // Log initial mount data
       console.log('[Mount] Data sizes:', {
         albums: albums.length,
         photos: Object.values(photosByAlbum).flat().length,
         playlists: playlists.length,
         snips: snips.length
       });
-
-      return () => {
-        observer.disconnect();
-        performanceLogger.mark('whiteboard_mount_end');
-        performanceLogger.measure(
-          'whiteboard_mount_duration',
-          'whiteboard_mount_start',
-          'whiteboard_mount_end'
-        );
-      };
     }
   }, []);
 
@@ -75,9 +41,9 @@ export default function WhiteboardLayout({
     resizing,
     handleDragStart,
     handleDragEnd,
-    handleResizeStart, // realtime drag-to-resize handler
-    handleExpand,      // click-to-toggle expand handler
-    handleLongPress,   // long press handler
+    handleResizeStart,
+    handleExpand,
+    handleLongPress,
   } = useWhiteboardItems();
 
   const {
@@ -100,12 +66,8 @@ export default function WhiteboardLayout({
   const { filter, toggleFilter, filterItems } = useWhiteboardFilter();
   const [showGrid, setShowGrid] = useState(true);
 
-  // Add performance tracking to initializeItems
+  // Simplified item initialization
   const initializeItems = useCallback(() => {
-    if (DEBUG) {
-      performanceLogger.mark('initialize_items_start');
-    }
-    
     const initialItems: WhiteboardItem[] = [
       ...albums.map(album => ({
         id: `album-${album.slug}`,
@@ -148,23 +110,8 @@ export default function WhiteboardLayout({
       })),
     ];
 
-    if (DEBUG) {
-      performanceLogger.mark('calculate_layout_start');
-    }
-    
     const layoutedItems = calculateInitialLayout(initialItems);
-    
-    if (DEBUG) {
-      performanceLogger.mark('calculate_layout_end');
-      performanceLogger.measure('layout_calculation', 'calculate_layout_start', 'calculate_layout_end');
-    }
-
     setItems(layoutedItems);
-    
-    if (DEBUG) {
-      performanceLogger.mark('initialize_items_end');
-      performanceLogger.measure('items_initialization', 'initialize_items_start', 'initialize_items_end');
-    }
   }, [albums, snips, playlists, setItems]);
 
   useEffect(() => {
@@ -183,61 +130,31 @@ export default function WhiteboardLayout({
   const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(filteredItems, transform, updateTransform);
   const focusedCardId = filteredItems.length ? filteredItems[currentIndex].id : undefined;
 
-  // Optimize mobile initialization
+  // Simplified mobile initialization
   const initializeMobileView = useCallback(() => {
-    if (window.innerWidth < 768) {
-      requestAnimationFrame(() => {
-        updateTransform({ x: 0, y: 0, scale: 0.2 }, false);
-      });
-    }
+    requestAnimationFrame(() => {
+      updateTransform({ x: 0, y: 0, scale: 0.3 }, false);
+    });
   }, [updateTransform]);
 
   useEffect(() => {
     initializeMobileView();
   }, [initializeMobileView]);
 
-  // Separate the delayed focus into its own effect
+  // Auto-focus on first item once on initial load only
   useEffect(() => {
-    if (window.innerWidth < 768 && items.length > 0) {
+    if (items.length > 0) {
       const timer = setTimeout(() => {
         focusOnCard(0);
-      }, 2000);
+      }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [items.length, focusOnCard]); // Only depend on items.length changing
-
-  // Add memory monitoring with warning thresholds - DISABLED by default now
-  useEffect(() => {
-    if (!DEBUG) return;
-    
-    const memoryCheck = () => {
-      if ('memory' in performance) {
-        // @ts-ignore - performance.memory is Chrome-specific
-        const { usedJSHeapSize, jsHeapSizeLimit } = performance.memory;
-        const usedMemoryMB = Math.round(usedJSHeapSize / 1024 / 1024);
-        const totalMemoryMB = Math.round(jsHeapSizeLimit / 1024 / 1024);
-        const memoryUsagePercent = (usedMemoryMB / totalMemoryMB) * 100;
-
-        console.log(`[Memory] Usage: ${usedMemoryMB}MB / ${totalMemoryMB}MB (${memoryUsagePercent.toFixed(1)}%)`);
-
-        // Warning thresholds
-        if (memoryUsagePercent > 80) {
-          console.warn('[Memory] Warning: High memory usage detected');
-        }
-        if (memoryUsagePercent > 90) {
-          console.error('[Memory] Critical: Memory usage extremely high');
-        }
-      }
-    };
-
-    const interval = setInterval(memoryCheck, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [items.length]); // Removed focusOnCard from dependencies to prevent re-triggering
 
   return (
     <ErrorBoundary>
-      <div className="fixed inset-0">
-        <WindowBackground transform={transform} isTransitioning={isTransitioning} />
+      {/* Simple clean background without window */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-800 to-slate-900">
         <div
           className={`transform-container ${isTransitioning ? 'is-transitioning' : ''}`}
           style={{
@@ -263,7 +180,7 @@ export default function WhiteboardLayout({
             onDragEnd={handleDragEnd}
             onExpand={handleExpand}
             onResize={handleResizeStart}
-            onLongPress={handleLongPress} // Pass the new prop
+            onLongPress={handleLongPress}
             photosByAlbum={photosByAlbum}
           />
         </div>
@@ -281,4 +198,4 @@ export default function WhiteboardLayout({
       </div>
     </ErrorBoundary>
   );
-}
+};

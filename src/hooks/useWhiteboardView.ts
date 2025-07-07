@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Transform } from '../types/whiteboard';
-import { WINDOW_DIMENSIONS, SCALES, ROOM_DIMENSIONS } from '../constants/whiteboard';
-import { clampScale, clampOffset } from '../utils/whiteboardUtils';
+import { SCALES } from '../constants/whiteboard';
+import { clampScale } from '../utils/whiteboardUtils';
 import { useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
-import { throttle } from '../utils/initializeWindowDimensions';
+import { throttle } from '../utils/mobileOptimizations';
 
 // In our coordinate system, (0,0) is the center of the container
 function computeInitialTransform(): Transform {
@@ -38,14 +38,13 @@ export function useWhiteboardView() {
           ? (transformUpdate as (prev: Transform) => Transform)(prevTransform)
           : transformUpdate;
           
-        // Add bounds checking for pan limits
-        const scaleFactor = newTransform.scale;
-        const windowWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--window-width'));
-        const windowHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--window-height'));
+        // Simplified bounds checking based on viewport
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
         
-        // Allow panning within a certain boundary around the window
-        const maxPanX = windowWidth * 0.75;
-        const maxPanY = windowHeight * 0.75;
+        // Allow generous panning for the infinite whiteboard feel
+        const maxPanX = viewportWidth * 2;
+        const maxPanY = viewportHeight * 2;
         
         return {
           x: Math.max(-maxPanX, Math.min(maxPanX, newTransform.x)),
@@ -112,7 +111,7 @@ export function useWhiteboardView() {
       const newX = transform.x - e.deltaX * panSpeed;
       const newY = transform.y - e.deltaY * panSpeed;
       
-      effectiveUpdateTransform(prev => ({
+      effectiveUpdateTransform((prev: Transform) => ({
         ...prev,
         x: newX,
         y: newY
@@ -143,7 +142,7 @@ export function useWhiteboardView() {
     
     // Handle window resize to maintain centered view
     const handleResize = () => {
-      effectiveUpdateTransform(prev => ({
+      effectiveUpdateTransform((prev: Transform) => ({
         ...prev,
         x: 0,
         y: 0

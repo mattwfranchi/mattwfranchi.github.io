@@ -519,8 +519,8 @@ export function optimizeImageLoading() {
   return imgObserver;
 }
 
-// Optimize window background rendering
-export function optimizeWindowBackground() {
+// Optimize whiteboard rendering during interactions
+export function optimizeWhiteboardRendering() {
   // Throttle expensive repaints when scrolling/zooming
   let isScrolling = false;
   let scrollTimer: number | null = null;
@@ -544,22 +544,17 @@ export function optimizeWindowBackground() {
   window.addEventListener('wheel', handleScroll, { passive: true });
   window.addEventListener('touchmove', handleScroll, { passive: true });
   
-  // Add CSS rule for scroll optimization
+  // Add CSS rule for scroll optimization - simplified for whiteboard
   const style = document.createElement('style');
   style.textContent = `
-    .is-scrolling .cozy-room,
-    .is-scrolling .window-background::after {
+    .is-scrolling .sticky-note {
       will-change: transform;
       pointer-events: none;
     }
     
-    .is-scrolling.perf-low .cozy-room,
-    .is-scrolling.perf-minimal .cozy-room {
-      display: none;
-    }
-    
-    .is-scrolling .window-sill {
-      transition: none !important;
+    .is-scrolling.perf-low .sticky-note,
+    .is-scrolling.perf-minimal .sticky-note {
+      animation-play-state: paused !important;
     }
   `;
   document.head.appendChild(style);
@@ -665,7 +660,7 @@ export function initializeAppPerformance() {
   initializePerformanceMonitoring();
   performanceLogger.getGPUInfo();
   optimizeImageLoading();
-  optimizeWindowBackground();
+  optimizeWhiteboardRendering();
   
   // Set initial quality based on device memory if available
   if (typeof navigator !== 'undefined') {

@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { WhiteboardItem, Transform } from '../types/whiteboard';
-import { WINDOW_DIMENSIONS } from '../constants/whiteboard';
 
 interface UseCardFocusResult {
   currentIndex: number;
@@ -28,15 +27,6 @@ export function useCardFocus(
     const cardCenterX = card.position.x;
     const cardCenterY = card.position.y;
 
-    //console.group('Card Focus Calculation');
-    //console.log('Card Position:', {
-    //  x: card.position.x,
-    //  y: card.position.y,
-    //  width: card.position.width,
-    //  height: card.position.height
-    //});
-    //console.log('Current Transform:', currentTransform);
-
     // In the transform-based system, to center the card,
     // we simply need to move the container's center to the card's position
     // by applying the negative of the card's position
@@ -46,24 +36,9 @@ export function useCardFocus(
       scale: FIXED_ZOOM
     };
 
-    //console.log('New Transform:', newTransform);
-    //console.log('Final Camera Position:', {
-    //  x: newTransform.x / newTransform.scale,
-    //  y: newTransform.y / newTransform.scale
-    //});
-    //console.groupEnd();
-
-    if (
-      Math.abs(currentTransform.x - newTransform.x) < 0.1 &&
-      Math.abs(currentTransform.y - newTransform.y) < 0.1 &&
-      Math.abs(currentTransform.scale - newTransform.scale) < 0.1
-    ) {
-      //console.log('Skipping transform - no significant change');
-      return;
-    }
-
+    // Always apply the transform - let the updateTransform function handle optimization
     updateTransform(newTransform, true);
-  }, [items, updateTransform, currentTransform]);
+  }, [items, updateTransform]); // Removed currentTransform dependency to prevent recreating function
 
   const onFocusPrev = useCallback(() => {
     focusOnCard(currentIndex - 1);

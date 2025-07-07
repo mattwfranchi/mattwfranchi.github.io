@@ -1,4 +1,4 @@
-/* Mobile-first whiteboard with performance optimizations */
+/* Simplified whiteboard with no window - mobile-first performance */
 
 /* Main whiteboard container - simplified transforms */
 .whiteboard-container,
@@ -6,9 +6,9 @@
   position: fixed;
   top: 50%;
   left: 50%;
-  width: var(--window-width);
-  height: var(--window-height);
-  /* Simplified transform without 3D for mobile compatibility */
+  width: 100vw;
+  height: 100vh;
+  /* Simplified 2D transform for mobile compatibility */
   transform: translate(-50%, -50%) translate(var(--translateX, 0), var(--translateY, 0)) scale(var(--scale, 1));
   transform-origin: center center;
   z-index: 1;
