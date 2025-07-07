@@ -16,10 +16,18 @@ description:
 # Spring's Best, 2025
 It's mid-June, I'm at the beach, and I'm mentally preparing my sinuses for my first trip to London. This spring was unprecedentedly nomadic; I spent time in New York, Osaka, Nagoya, the Japanese countryside, Yokohama, Tokyo, Brussels, Antwerp, Amsterdam, and Charleston. It was important for me that each trip had defining music. I'll present a rough chronology. Also, I use Apple Music now; past me would jeer at current me for that decision. The audio quality is that much better, but yes, indeed, the user experience is that much worse. 
 
+## Bladee, *Icedancer* (2018)
+<iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="450" style="width:100%;max-width:660px;overflow:hidden;background:transparent;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/us/album/icedancer/1448107672"></iframe>
+
+
+## Smerz, *Okey* (2016)
+<iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="450" style="width:100%;max-width:660px;overflow:hidden;background:transparent;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/us/album/okey/1260176217"></iframe>
+
 
 ## PinkPantheress, *Fancy That* (2025)
 <iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="450" style="width:100%;max-width:660px;overflow:hidden;background:transparent;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/us/album/fancy-that/1806614239"></iframe>
 
+*Stateside*
 
 ## 2hollis, *star* (2025)
 <iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="450" style="width:100%;max-width:660px;overflow:hidden;background:transparent;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/us/album/star/1803726233"></iframe>
@@ -40,12 +48,6 @@ The Bjork album I never got in to ended up having some wonderful cuts, including
 ## Lasgo, *Something* (2011)
 <iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="150" style="width:100%;max-width:660px;overflow:hidden;background:transparent;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/us/album/something/567721789?i=567721793"></iframe>
 
-
-## Smerz, *Okey* (2016)
-<iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="450" style="width:100%;max-width:660px;overflow:hidden;background:transparent;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/us/album/okey/1260176217"></iframe>
-
-## Bladee, *Icedancer* (2018)
-<iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="450" style="width:100%;max-width:660px;overflow:hidden;background:transparent;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/us/album/icedancer/1448107672"></iframe>
 
 ## Allison Goldfrapp, *Reverberotic* (2025)
 <iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="450" style="width:100%;max-width:660px;overflow:hidden;background:transparent;" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation" src="https://embed.music.apple.com/us/album/reverberotic-single/1813382991"></iframe>

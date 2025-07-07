@@ -1,4 +1,6 @@
-/* Main whiteboard container */
+/* Mobile-first whiteboard with performance optimizations */
+
+/* Main whiteboard container - simplified transforms */
 .whiteboard-container,
 .transform-container {
   position: fixed;
@@ -6,15 +8,17 @@
   left: 50%;
   width: var(--window-width);
   height: var(--window-height);
-  transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
+  /* Simplified transform without 3D for mobile compatibility */
+  transform: translate(-50%, -50%) translate(var(--translateX, 0), var(--translateY, 0)) scale(var(--scale, 1));
   transform-origin: center center;
   z-index: 1;
   contain: size;
 }
 
+/* Smooth transitions only on desktop */
 .whiteboard-container.is-transitioning,
 .transform-container.is-transitioning {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .whiteboard-content {
@@ -25,11 +29,12 @@
   z-index: 3;
 }
 
-/* Sticky note positioning */
+/* Sticky note positioning - mobile optimized */
 .draggable-area {
   position: absolute;
   transform-origin: center center;
-  transform: translate(-50%, -50%) translate3d(var(--item-x, 0px), var(--item-y, 0px), 0) rotate(var(--item-rotation, 0deg));
+  /* Simplified 2D transform for better mobile performance */
+  transform: translate(-50%, -50%) translate(var(--item-x, 0px), var(--item-y, 0px)) rotate(var(--item-rotation, 0deg));
   z-index: var(--item-z, 1);
   width: var(--item-width, 280px);
   height: var(--item-height, 320px);
@@ -47,7 +52,7 @@
   cursor: grabbing;
 }
 
-/* Sticky Note Styles */
+/* Simplified Sticky Note Styles - no complex 3D effects */
 .sticky-note {
   position: relative;
   padding: 1rem;
@@ -57,20 +62,19 @@
   justify-content: center;
   align-items: center;
   border-radius: 4px;
-  box-shadow: 
-    0 4px 6px rgba(0, 0, 0, 0.1),
-    0 8px 12px rgba(0, 0, 0, 0.1),
-    0 -1px 2px rgba(255, 255, 255, 0.1);
-  transform-style: preserve-3d;
-  transform-origin: top center;
-  animation: flutter-in-wind var(--flutter-duration, 8s) ease-in-out infinite;
-  will-change: transform;
-  backface-visibility: hidden;
-  perspective: 1000px;
-  transition: 
-    width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Simple flat shadow for all devices */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background-color: #fff68f; /* Default sticky note color */
+  /* Remove complex 3D properties */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Desktop-only subtle animations */
+@media (min-width: 769px) and (prefers-reduced-motion: no-preference) {
+  .sticky-note:not(.mobile-optimized):not(.is-interacting) {
+    /* Very subtle float animation for desktop only */
+    animation: gentle-float 4s ease-in-out infinite;
+  }
 }
 
 /* Card content wrapper */
@@ -82,159 +86,55 @@
   flex-direction: column;
   justify-content: center;
   z-index: 1;
-  transform-style: preserve-3d;
 }
 
-/* Flutter Animations */
-@keyframes flutter-in-wind {
+/* Gentle desktop-only animation */
+@keyframes gentle-float {
   0%, 100% {
-    transform: rotateX(0deg) rotateY(0deg) translateZ(0);
-    box-shadow: 
-      0 4px 6px rgba(0, 0, 0, 0.1),
-      0 8px 12px rgba(0, 0, 0, 0.1);
-  }
-  25% {
-    transform: rotateX(15deg) rotateY(-3deg) translateZ(5px);
-    box-shadow: 
-      0 14px 16px rgba(0, 0, 0, 0.15),
-      0 18px 22px rgba(0, 0, 0, 0.1);
+    transform: translateY(0px);
   }
   50% {
-    transform: rotateX(25deg) rotateY(3deg) translateZ(10px);
-    box-shadow: 
-      0 18px 20px rgba(0, 0, 0, 0.18),
-      0 22px 26px rgba(0, 0, 0, 0.12);
-  }
-  75% {
-    transform: rotateX(10deg) rotateY(-2deg) translateZ(7px);
-    box-shadow: 
-      0 12px 14px rgba(0, 0, 0, 0.12),
-      0 16px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
   }
 }
 
-@keyframes flutter-intense {
-  0%, 100% {
-    transform: rotateX(0deg) translateZ(0);
-  }
-  50% {
-    transform: rotateX(30deg) translateZ(15px);
-  }
-}
-
-@keyframes flutter-gentle {
-  0%, 100% {
-    transform: rotateX(0deg) translateZ(0);
-  }
-  50% {
-    transform: rotateX(15deg) translateZ(8px);
-  }
-}
-
-@keyframes flutter-subtle {
-  0%, 100% {
-    transform: rotateX(0deg) translateZ(0);
-  }
-  50% {
-    transform: rotateX(8deg) translateZ(4px);
-  }
-}
-
-/* Sticky note modifications */
+/* Interaction states */
 .sticky-note.is-resized {
   width: 150%;
   height: 150%;
-  animation-play-state: paused;
   z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .sticky-note.is-interacting {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  /* Pause any animations during interaction */
   animation-play-state: paused !important;
-  transition: 
-    width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 
-    0 4px 6px rgba(0, 0, 0, 0.1),
-    0 8px 12px rgba(0, 0, 0, 0.1),
-    0 -1px 2px rgba(255, 255, 255, 0.1);
 }
 
 .sticky-note.is-transitioning-size {
   animation-play-state: paused !important;
 }
 
-/* Performance optimization classes - used by the performance.ts utils */
-.paused-animation {
-  animation-play-state: paused !important;
-  transition: none !important;
-}
-
-.simplified-animation {
-  animation: none !important;
-  transform: none !important;
-  transform-style: flat !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Performance mode classes - these match the ones in performance.ts */
-.perf-medium .sticky-note {
-  animation-duration: calc(var(--flutter-duration, 8s) * 1.5) !important;
-}
-
-.perf-low .sticky-note {
-  animation-duration: calc(var(--flutter-duration, 8s) * 2) !important;
-}
-
-.simplify-effects .sticky-note {
-  transform-style: flat !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-}
-
-.disable-animations .sticky-note {
-  animation: none !important;
-  transform: none !important;
-}
-
-/* Pause animations during transitions to improve performance */
-.is-transitioning .sticky-note {
-  animation-play-state: paused !important;
-}
-
-/* Mobile optimizations */
+/* Mobile optimizations - completely disable complex effects */
 .mobile-optimized .sticky-note {
-  /* Disable 3D transforms on mobile for better performance */
-  transform-style: flat;
-  backface-visibility: visible;
-  perspective: none;
-  will-change: auto;
-  /* Disable animations on mobile */
+  /* Completely flat rendering for mobile */
+  transform: none !important;
   animation: none !important;
-}
-
-.mobile-optimized .transform-container,
-.mobile-optimized .whiteboard-container {
-  /* Split the translate3d into separate transforms for better mobile performance */
-  transform: translate(-50%, -50%) translateX(var(--translateX, 0)) translateY(var(--translateY, 0)) scale(var(--scale, 1));
-  contain: size;
-}
-
-.mobile-optimized .whiteboard-content {
-  /* Remove will-change which can be memory-intensive on mobile */
-  will-change: auto;
-  contain: size;
-}
-
-/* Enhanced Mobile Optimizations */
-.mobile-optimized .transform-container,
-.mobile-optimized .whiteboard-container {
-  /* More aggressive performance optimizations */
+  transition: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  will-change: auto !important;
   contain: strict;
-  content-visibility: auto;
-  will-change: none;
-  /* Eliminate 3D effects completely */
+}
+
+.mobile-optimized .transform-container,
+.mobile-optimized .whiteboard-container {
+  /* Simplified transforms for mobile */
   transform: translate(-50%, -50%) translate(var(--translateX, 0), var(--translateY, 0)) scale(var(--scale, 1));
-  /* Simpler transition */
-  transition: transform 0.2s ease;
+  contain: strict;
+  content-visibility: auto;
+  will-change: none;
+  transition: transform 0.15s ease;
 }
 
 .mobile-optimized .whiteboard-content {
@@ -243,63 +143,61 @@
   will-change: none;
 }
 
-.mobile-optimized .sticky-note {
-  /* Completely eliminate 3D transforms */
-  transform: none !important;
-  transform-style: flat !important;
-  backface-visibility: visible !important;
-  perspective: none !important;
-  will-change: none !important;
-  
-  /* Disable all animations */
-  animation: none !important;
-  transition: none !important;
-  
-  /* Simplify rendering with flat colors */
-  background: #fffbe6 !important;
-  box-shadow: none !important;
-}
-
-/* Make draggable area render more efficiently */
 .mobile-optimized .draggable-area {
   contain: strict;
   will-change: none;
-  /* Simplify transform */
   transform: translate(-50%, -50%) translate(var(--item-x, 0px), var(--item-y, 0px)) rotate(var(--item-rotation, 0deg)) !important;
 }
 
-/* Apply GPU memory optimization for off-screen content */
-@media (max-width: 768px) {
-  .draggable-area:not(:focus-within):not(:hover) {
-    content-visibility: auto;
-  }
-  
-  /* Reduce sticky note complexity even more on very small screens */
-  @media (max-width: 480px) {
-    .mobile-optimized .sticky-note {
-      border: 1px solid #ddd !important;
-    }
-  }
+/* Performance mode classes */
+.perf-low .sticky-note,
+.perf-minimal .sticky-note {
+  /* Disable all animations and effects in low performance mode */
+  animation: none !important;
+  transform: none !important;
+  transition: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  background: #fff68f !important;
+  border: 1px solid #ddd !important;
 }
 
-/* Enhanced etched content styling */
+.perf-medium .sticky-note {
+  /* Reduced animations for medium performance */
+  animation-duration: 8s !important;
+  animation-timing-function: ease-in-out !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Remove complex 3D effects completely when not supported */
+.disable-animations .sticky-note,
+.simplify-effects .sticky-note {
+  animation: none !important;
+  transform: none !important;
+  transform-style: flat !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Pause animations during scrolling/zooming for performance */
+.is-transitioning .sticky-note,
+.is-scrolling .sticky-note {
+  animation-play-state: paused !important;
+}
+
+/* Enhanced etched content styling - simplified for mobile */
 .sticky-note.etched-content {
-  box-shadow: 
-    0 4px 6px rgba(0, 0, 0, 0.12),
-    0 8px 12px rgba(0, 0, 0, 0.15),
-    inset 0 1px 3px rgba(255, 255, 255, 0.3),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+  /* Simple border instead of complex shadows */
   border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Target all inner elements to remove backgrounds */
+/* Force container backgrounds to be transparent */
 .sticky-note.etched-content * {
   background-color: transparent !important;
   border-color: rgba(0, 0, 0, 0.2) !important;
   box-shadow: none !important;
 }
 
-/* Force container backgrounds to be transparent */
+/* Remove complex background patterns */
 .sticky-note.etched-content .rounded-lg,
 .sticky-note.etched-content .bg-gray-900,
 .sticky-note.etched-content .bg-gray-800,
@@ -311,21 +209,12 @@
   box-shadow: none !important;
 }
 
-/* Remove any padding that might be causing separation */
-.sticky-note.etched-content .p-2,
-.sticky-note.etched-content .p-3,
-.sticky-note.etched-content .p-4 {
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Change text colors for the etched look */
+/* Simplified text styling */
 .etched-text {
   color: rgba(0, 0, 0, 0.8);
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+  text-shadow: none; /* Remove text shadows for better mobile performance */
 }
 
-/* Override text colors that were previously light on dark backgrounds */
 .etched-text .text-white,
 .etched-text .text-gray-100,
 .etched-text .text-gray-200,
@@ -335,31 +224,26 @@
 .etched-text .text-cyan-200,
 .etched-text [class*="text-"] {
   color: rgba(0, 0, 0, 0.8) !important;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+  text-shadow: none !important;
 }
 
 .etched-text h1, .etched-text h2, .etched-text h3 {
   color: rgba(0, 0, 0, 0.9) !important;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+  text-shadow: none !important;
 }
 
-.etched-text p, .etched-text span {
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
-}
-
-/* Style buttons to look etched into the note */
+/* Simplified button styling */
 .etched-button {
   background-color: rgba(0, 0, 0, 0.1) !important;
   border: 1px solid rgba(0, 0, 0, 0.15) !important;
-  box-shadow: 
-    inset 0 1px 1px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: none !important;
 }
 
 .etched-button svg {
   color: rgba(0, 0, 0, 0.7) !important;
 }
 
-/* Remove indentation for card content to create truly flat etched appearance */
+/* Remove complex decorations */
 .sticky-note.etched-content .rounded-lg,
 .sticky-note.etched-content div[class*="rounded"],
 .sticky-note.etched-content div[class*="p-"] {
@@ -368,29 +252,36 @@
   border-radius: 0 !important;
 }
 
-/* Add subtle lines to show structure without using backgrounds */
+/* Add simple structural lines */
 .sticky-note.etched-content .rounded-lg,
 .sticky-note.etched-content div[class*="rounded"] {
   border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
   margin-bottom: 0.5rem;
 }
 
-/* Transitions pause */
-.isTransitioning .sticky-note {
-  animation-play-state: paused;
-}
-
-/* Media queries for responsive design and performance optimization */
-@media (max-width: 1200px) {
-  .sticky-note:not(.is-interacting):not(:hover) {
-    animation-duration: calc(var(--flutter-duration, 8s) * 1.5) !important;
+/* Ultra-aggressive mobile optimization for very small screens */
+@media (max-width: 480px) {
+  .mobile-optimized .sticky-note {
+    /* Completely remove any visual complexity */
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    padding: 0.5rem !important;
+  }
+  
+  .mobile-optimized .draggable-area {
+    /* Reduce size on very small screens */
+    width: calc(var(--item-width, 280px) * 0.8) !important;
+    height: calc(var(--item-height, 320px) * 0.8) !important;
   }
 }
 
-@media (prefers-reduced-motion), (max-width: 768px) {
-  .sticky-note:not(.is-interacting):not(:hover) {
-    animation-duration: calc(var(--flutter-duration, 8s) * 2) !important;
-    transform-style: flat !important;
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .sticky-note {
+    animation: none !important;
+    transition: none !important;
   }
 }
 

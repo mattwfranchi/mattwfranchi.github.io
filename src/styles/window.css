@@ -1,4 +1,4 @@
-/* Fixed window.css with performance optimizations */
+/* Mobile-first window styling with performance optimizations */
 :root {
   --window-width: 3000px;
   --window-height: 2400px;
@@ -16,189 +16,88 @@
   --sill-oak-dark: #9e6b4a;
 }
 
-/* Base Styles */
+/* Base Styles - mobile optimized */
 .window-background {
   position: fixed;
   top: 50%;
   left: 50%;
   width: var(--window-width);
   height: var(--window-height);
-  contain: size layout; /* Add containment to minimize repaints */
+  contain: size layout;
   transform-origin: center center;
-  /* Use the same transform pattern as transform-container */
-  transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
-  overflow: visible !important; /* Override the hidden overflow */
-  z-index: 1; /* Above room walls */
+  /* Simplified 2D transform for mobile compatibility */
+  transform: translate(-50%, -50%) translate(var(--translateX, 0), var(--translateY, 0)) scale(var(--scale, 1));
+  overflow: visible !important;
+  z-index: 1;
 }
 
 .window-background.is-transitioning {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform; /* Optimize transform performance */
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
-/* Performance-optimized simplified background when offscreen */
-.window-background.simplified {
+/* Simplified background for mobile and low-power devices */
+.window-background.simplified,
+.mobile-optimized .window-background {
   background-color: var(--wall-color);
   contain: strict;
   content-visibility: auto;
 }
 
-/* Wall background with performance containment */
+/* Simplified wall background - remove complex patterns */
 .window-background::before {
   content: '';
   position: absolute;
   inset: 0;
   background: var(--wall-color);
-  background-image: 
-    repeating-linear-gradient(
-      45deg,
-      rgba(255,255,255,0.03) 0px,
-      rgba(255,255,255,0.03) 1px,
-      transparent 1px,
-      transparent 2px
-    );
+  /* Simple gradient instead of complex patterns */
+  background-image: linear-gradient(45deg, rgba(255,255,255,0.02) 0%, transparent 100%);
   z-index: 1;
-  box-shadow:
-    inset 0 0 150px rgba(0,0,0,0.6),
-    inset 0 0 100px rgba(0,0,0,0.3);
-  /* Use containment for better performance */
+  /* Simplified shadow */
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
   contain: paint;
 }
 
-/* Optimized nature scene with containment */
+/* Mobile optimization - remove all complex effects */
+.mobile-optimized .window-background::before {
+  background-image: none;
+  box-shadow: none;
+  background: var(--wall-color);
+}
+
+/* Simplified nature scene */
 .nature-scene {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  contain: size paint; /* Add containment */
+  contain: size paint;
   transform: translateZ(0);
   background-image: url('../assets/vista.jpg');
-  background-size: cover; /* Keep this consistent */
+  background-size: cover;
   background-position: center;
   z-index: 0;
-  filter: brightness(0.9) contrast(1.1);
-  /* Use will-change only during transitions */
-}
-
-/* Quality-based performance optimizations - maintain consistent background-size */
-.quality-medium .nature-scene {
-  filter: brightness(0.9) contrast(1.05); /* Slightly reduced contrast */
-  image-rendering: auto; /* Default rendering for medium quality */
-  background-size: cover; /* Keep consistent with high quality */
-}
-
-.quality-low .nature-scene {
-  filter: brightness(0.9); /* Remove contrast enhancement */
-  image-rendering: auto; /* Changed from optimizeSpeed to auto for consistency */
-  background-size: cover; /* Keep consistent with other quality levels */
-}
-
-/* Mobile optimizations */
-.mobile-optimized .window-background {
-  backface-visibility: visible;
-  -webkit-backface-visibility: visible;
-  perspective: none;
-  -webkit-perspective: none;
-  /* Split the translate3d for better mobile performance */
-  transform: translate(-50%, -50%) translateX(var(--translateX, 0)) translateY(var(--translateY, 0)) scale(var(--scale, 1));
-}
-
-/* Enhanced Mobile Optimizations */
-.mobile-optimized .window-background {
-  /* Eliminate 3D transforms */
-  transform: translate(-50%, -50%) translate(var(--translateX, 0), var(--translateY, 0)) scale(var(--scale, 1));
-  contain: strict;
-  content-visibility: auto;
-  will-change: none;
-}
-
-/* Simplified panes for performance */
-.window-panes.simplified {
-  display: block;
-  contain: strict;
-}
-
-/* Use extremely simplified background for mobile */
-.mobile-optimized .window-background::before {
-  box-shadow: none;
-}
-
-.mobile-optimized .window-frame {
-  box-shadow: none;
-  /* Remove complex borders */
-  border: 2px solid #444;
-}
-
-/* Completely remove visual decorations that strain mobile GPUs */
-.mobile-optimized .window-frame::before,
-.mobile-optimized .window-frame::after,
-.mobile-optimized .window-frame-overlay,
-.mobile-optimized .pane::before,
-.mobile-optimized .pane::after,
-.mobile-optimized .pane-glass::before {
-  display: none;
-}
-
-/* Apply adaptive complexity based on device memory */
-@media (max-width: 480px), (prefers-reduced-motion: reduce) {
-  .mobile-optimized .window-background, 
-  .mobile-optimized .transform-container {
-    /* Smoother rendering for low-memory devices */
-    background-attachment: scroll;
-    background-size: cover;
-    
-    /* Better memory management */
-    contain: layout style paint;
-  }
-}
-
-/* Optimize mobile scene rendering */
-.mobile-optimized .nature-scene {
-  /* Remove transform but keep hardware acceleration */
-  transform: translateZ(0);
-  /* Reduce memory usage with these optimizations */
-  will-change: auto;
-  content-visibility: auto;
-  /* Use a simplified filter for better performance */
+  /* Remove expensive filters on mobile */
   filter: brightness(0.9);
-  /* Prevent costly repaints */
-  backface-visibility: hidden;
-  /* Use a more efficient background rendering */
-  background-attachment: scroll;
-  /* Ensure consistent background size */
-  background-size: cover;
-  /* Ensure image quality doesn't degrade */
+}
+
+/* Mobile optimization - disable filters completely */
+.mobile-optimized .nature-scene,
+.perf-low .nature-scene {
+  filter: none;
   image-rendering: auto;
+  background-size: cover;
+  content-visibility: auto;
 }
 
-/* Optimize small screen rendering without completely hiding elements */
-@media (max-width: 480px) {
-  .mobile-optimized .nature-scene {
-    filter: none; /* Remove all filters on very small screens */
-    background-size: cover; /* Keep consistent sizing */
-    /* Further optimize with aggressive content visibility */
-    content-visibility: auto;
-  }
+/* Medium quality optimizations */
+.perf-medium .nature-scene {
+  filter: brightness(0.9);
+  image-rendering: auto;
+  background-size: cover;
 }
 
-/* Performance optimizations for low quality mode */
-.quality-low .window-frame {
-  box-shadow: 0 0 20px rgba(0,0,0,0.3); /* Simpler shadow */
-  border: var(--window-frame-border) solid #3d2412;
-  /* Remove complex gradients */
-  background-image: none;
-  background-color: #3d2412;
-}
-
-.quality-low .window-frame::before,
-.quality-low .window-frame::after,
-.quality-low .window-overlay,
-.quality-low .window-frame-overlay {
-  display: none; /* Remove decorative elements in low quality mode */
-}
-
-/* Rest of CSS remains the same */
+/* Simplified mobile window frame */
 .window-frame {
   position: relative;
   width: 100%;
@@ -209,34 +108,42 @@
   background: transparent;
   z-index: 2;
   transform-origin: center;
-  
-  background-image: 
-    repeating-linear-gradient(
-      90deg,
-      rgba(61, 36, 18, 0.8) 0px,
-      rgba(81, 46, 24, 0.8) 2px,
-      rgba(61, 36, 18, 0.8) 4px
-    );
-  
-  box-shadow: 0 0 40px rgba(0,0,0,0.4);
+  /* Simple background pattern */
+  background-image: linear-gradient(90deg, rgba(61, 36, 18, 0.8) 0%, rgba(81, 46, 24, 0.8) 100%);
+  /* Simplified shadow */
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
 }
 
-/* Use content visibility for window decorative elements */
-.window-frame::before,
-.window-frame::after,
-.window-overlay,
-.window-frame-overlay {
-  content-visibility: auto;
+/* Mobile optimization - remove complex styling */
+.mobile-optimized .window-frame,
+.perf-low .window-frame {
+  box-shadow: none;
+  border: 2px solid #444;
+  background-image: none;
+  background-color: #3d2412;
 }
 
+/* Simplified inner frame */
 .window-frame::before {
   content: '';
   position: absolute;
   inset: 0;
   border: var(--window-frame-inner-border) solid #8B4513;
   border-radius: 8px;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+  /* Simplified shadow */
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
   z-index: 2;
+}
+
+/* Remove decorative elements on mobile */
+.mobile-optimized .window-frame::before,
+.mobile-optimized .window-frame::after,
+.mobile-optimized .window-frame-overlay,
+.perf-low .window-frame::before,
+.perf-low .window-frame::after,
+.perf-low .window-overlay,
+.perf-low .window-frame-overlay {
+  display: none;
 }
 
 .window-frame::after {
@@ -255,6 +162,7 @@
   z-index: 2;
 }
 
+/* Simplified panes */
 .pane-container {
   position: relative;
   width: 100%;
@@ -275,25 +183,27 @@
   z-index: 2;
 }
 
+/* Simplified panes for mobile */
+.mobile-optimized .window-panes.simplified {
+  display: block;
+  contain: strict;
+}
+
+/* Cross panes - simplified */
 .crosspane-vertical,
 .crosspane-horizontal {
   position: absolute;
   background: #3d2412;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  box-shadow: 0 0 5px rgba(0,0,0,0.2);
   z-index: 3;
-  
-  background-image: 
-    repeating-linear-gradient(
-      90deg,
-      rgba(61, 36, 18, 0.9) 0px,
-      rgba(81, 46, 24, 0.9) 2px,
-      rgba(61, 36, 18, 0.9) 4px
-    );
+  background-image: linear-gradient(90deg, rgba(61, 36, 18, 0.9) 0%, rgba(81, 46, 24, 0.9) 100%);
 }
 
-/* Remove background image in low quality mode */
-.quality-low .crosspane-vertical,
-.quality-low .crosspane-horizontal {
+/* Remove complex styling on mobile */
+.mobile-optimized .crosspane-vertical,
+.mobile-optimized .crosspane-horizontal,
+.perf-low .crosspane-vertical,
+.perf-low .crosspane-horizontal {
   background-image: none;
   background-color: #3d2412;
   box-shadow: none;
@@ -315,6 +225,7 @@
   transform: translateY(-50%);
 }
 
+/* Simplified individual panes */
 .pane {
   position: relative;
   background: rgba(255,255,255,0.05);
@@ -323,16 +234,21 @@
   z-index: 2;
 }
 
-/* Optimize pane appearance in low quality */
-.quality-low .pane,
-.quality-low .pane-glass {
+/* Remove complex pane effects on mobile */
+.mobile-optimized .pane,
+.mobile-optimized .pane-glass,
+.perf-low .pane,
+.perf-low .pane-glass {
   background: rgba(255,255,255,0.05);
   border-radius: 4px;
 }
 
-.quality-low .pane::before,
-.quality-low .pane::after,
-.quality-low .pane-glass::before {
+.mobile-optimized .pane::before,
+.mobile-optimized .pane::after,
+.mobile-optimized .pane-glass::before,
+.perf-low .pane::before,
+.perf-low .pane::after,
+.perf-low .pane-glass::before {
   display: none;
 }
 
@@ -340,15 +256,9 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: 
-    linear-gradient(
-      135deg,
-      rgba(255,255,255,0.12) 0%,
-      rgba(255,255,255,0.03) 50%,
-      rgba(255,255,255,0.12) 100%
-    );
-  border: 1px solid rgba(255,255,255,0.15);
-  box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: inset 0 0 5px rgba(255,255,255,0.05);
 }
 
 .pane-glass {
@@ -356,18 +266,14 @@
   inset: 0;
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.05);
 }
 
 .pane-glass::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255,255,255,0.1) 0%,
-    transparent 100%
-  );
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
   z-index: 2;
 }
 
@@ -375,12 +281,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: 
-    radial-gradient(
-      circle at 30% 20%,
-      rgba(255,255,255,0.08) 0%,
-      transparent 60%
-    );
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.05) 0%, transparent 60%);
 }
 
 .top-left { top: 0; left: 0; }
@@ -395,86 +296,85 @@
   z-index: 2;
 }
 
-/* Add these styles at the end of your existing window.css file */
-
-/* Cozy rectangular room styling */
+/* Simplified room styling for better mobile performance */
 .cozy-room {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 8000px; /* Reduced size for better performance */
-  height: 6000px;
+  width: 6000px; /* Reduced size for mobile */
+  height: 4500px;
   transform-origin: center center;
-  transform: translate(-50%, -50%) translate3d(var(--translateX, 0), var(--translateY, 0), 0) scale(var(--scale, 1));
+  transform: translate(-50%, -50%) translate(var(--translateX, 0), var(--translateY, 0)) scale(var(--scale, 1));
   pointer-events: none;
-  z-index: -2; /* Behind window */
-  perspective: 1000px;
-  contain: layout paint; /* Add containment for better performance */
-  will-change: transform; /* Optimize transform performance */
+  z-index: -2;
+  contain: layout paint;
+  will-change: transform;
 }
 
-/* Reduce room detail in reduced-quality mode */
-.cozy-room.reduced-quality {
-  width: 5000px;
-  height: 4000px;
+/* Hide room completely on mobile for performance */
+.mobile-optimized .cozy-room {
+  display: none;
 }
 
-/* Room walls - positioned to create a corner */
+/* Further reduce room size in reduced-quality mode */
+.perf-low .cozy-room,
+.perf-medium .cozy-room {
+  width: 4000px;
+  height: 3000px;
+}
+
+/* Simplified room walls */
 .room-wall {
   position: absolute;
-  background-color: var(--room-wall-color); /* Navy blue */
-  contain: layout paint; /* Add containment */
+  background-color: var(--room-wall-color);
+  contain: layout paint;
 }
 
-/* Left wall (side wall) */
+/* Left wall - simplified */
 .wall-left {
   top: 0;
   left: 0;
   width: 50%;
   height: 100%;
-  background: var(--room-wall-color); /* Navy blue */
-  /* Use simple gradient instead of complex 3D transforms */
-  background-image: 
-    linear-gradient(
-      to right,
-      rgba(20, 30, 60, 1) 0%,
-      rgba(35, 49, 86, 1) 100%
-    );
-  /* Remove costly repeating pattern for better performance */
-  box-shadow: inset 0 0 100px rgba(0,0,0,0.4); /* Simplified shadow */
+  background: var(--room-wall-color);
+  background-image: linear-gradient(to right, rgba(20, 30, 60, 1) 0%, rgba(35, 49, 86, 1) 100%);
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.2);
 }
 
-/* Back wall (behind the window) */
+/* Back wall - simplified */
 .wall-back {
   top: 0;
   right: 0; 
   width: 50%;
   height: 100%;
-  background: var(--room-wall-color); /* Navy blue */
-  background-image: 
-    linear-gradient(
-      to left,
-      rgba(20, 30, 60, 0.9) 0%,
-      rgba(35, 49, 86, 1) 100%
-    );
-  box-shadow: inset 0 0 100px rgba(0,0,0,0.4); /* Simplified shadow */
+  background: var(--room-wall-color);
+  background-image: linear-gradient(to left, rgba(20, 30, 60, 0.9) 0%, rgba(35, 49, 86, 1) 100%);
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.2);
 }
 
-/* Floor */
+/* Remove room wall effects in low quality mode */
+.perf-low .room-wall,
+.perf-medium .room-wall {
+  background-image: none;
+  background-color: var(--room-wall-color);
+  box-shadow: none;
+}
+
+/* Simplified floor */
 .room-floor {
   position: absolute;
   bottom: -10%;
   left: 0;
   width: 100%;
   height: 10%;
-  background: var(--room-wall-dark); /* Darker blue for floor */
+  background: var(--room-wall-dark);
   transform-origin: top center;
   transform: rotateX(90deg);
   z-index: 1;
   contain: paint;
 }
 
-/* Oak window sill - positioned relative to the window */
+/* Simplified window sill */
 .window-sill {
   position: absolute;
   bottom: -60px;
@@ -482,10 +382,15 @@
   width: 100%;
   height: 60px;
   z-index: 3;
-  contain: layout paint; /* Add containment */
+  contain: layout paint;
 }
 
-/* Simplified sill for lower performance modes */
+/* Mobile sill optimization */
+.mobile-optimized .window-sill {
+  height: 30px;
+  bottom: -15px;
+}
+
 .window-sill.simplified {
   height: 40px;
   bottom: -40px;
@@ -497,12 +402,8 @@
   left: 0;
   width: 100%;
   height: 30px;
-  background: linear-gradient(
-    to bottom,
-    var(--sill-oak-mid) 0%, /* Oak color */
-    var(--sill-oak-light) 100%
-  );
-  box-shadow: inset 0 2px 5px rgba(255,255,255,0.2);
+  background: linear-gradient(to bottom, var(--sill-oak-mid) 0%, var(--sill-oak-light) 100%);
+  box-shadow: inset 0 1px 3px rgba(255,255,255,0.1);
 }
 
 .sill-front {
@@ -511,23 +412,21 @@
   left: 0;
   width: 100%;
   height: 30px;
-  background: linear-gradient(
-    to bottom,
-    var(--sill-oak-dark) 0%,
-    #8f5c3b 100%
-  );
-  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+  background: linear-gradient(to bottom, var(--sill-oak-dark) 0%, #8f5c3b 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-/* Simplified styles for low quality mode */
-.simplified .sill-top,
-.simplified .sill-front {
-  height: 20px;
+/* Simplified sill for mobile and low quality */
+.mobile-optimized .sill-top,
+.mobile-optimized .sill-front,
+.perf-low .sill-top,
+.perf-low .sill-front {
+  height: 15px;
   background: var(--sill-oak-mid);
   box-shadow: none;
 }
 
-/* Add a subtle light effect from the window to the room */
+/* Remove ambient lighting effects on mobile */
 .window-background::after {
   content: '';
   position: absolute;
@@ -535,12 +434,18 @@
   left: 0;
   right: 0;
   bottom: 0;
-  box-shadow: 0 0 200px 100px rgba(173, 216, 230, 0.15); /* Subtle blue light */
+  box-shadow: 0 0 100px 50px rgba(173, 216, 230, 0.1);
   pointer-events: none;
   z-index: -1;
 }
 
-/* Ambient wall lighting */
+/* Hide lighting effects on mobile and low quality */
+.mobile-optimized .window-background::after,
+.perf-low .window-background::after {
+  display: none;
+}
+
+/* Ambient wall lighting - desktop only */
 .cozy-room::before {
   content: '';
   position: absolute;
@@ -548,99 +453,28 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(
-    ellipse at 50% 50%,
-    rgba(40, 60, 100, 0.2) 0%,
-    rgba(20, 30, 60, 0.9) 100%
-  );
+  background: radial-gradient(ellipse at 50% 50%, rgba(40, 60, 100, 0.2) 0%, rgba(20, 30, 60, 0.9) 100%);
   pointer-events: none;
   z-index: 0;
 }
 
-/* Quality adjustments for room elements */
-.quality-low .room-wall,
-.quality-medium .room-wall {
-  background-image: none;
-  background-color: var(--room-wall-color);
-  box-shadow: none;
+/* High quality specific enhancements - only applied when needed */
+.perf-high .nature-scene {
+  will-change: transform;
+  filter: brightness(0.9) contrast(1.1);
 }
 
-.quality-low .window-sill {
-  height: 40px;
-  bottom: -40px;
-}
-
-.quality-low .sill-top,
-.quality-low .sill-front {
-  height: 20px;
-  background: #b47e56;
-  box-shadow: none;
-}
-
-/* Mobile optimizations */
+/* Mobile-specific ultra-minimal styling */
 @media (max-width: 480px) {
-  .cozy-room {
-    display: none; /* Hide room on small screens for performance */
-  }
-
   .window-sill {
-    height: 30px;
-    bottom: -15px;
+    height: 20px;
+    bottom: -10px;
   }
 
   .sill-top, .sill-front {
-    height: 15px;
+    height: 10px;
     box-shadow: none;
   }
-}
-
-/* Remove 3D transforms in low quality mode for the entire scene */
-.quality-low .wall-left,
-.quality-low .wall-back {
-  transform: none;
-}
-
-/* Remove overlay in low quality */
-.quality-low .window-background::after {
-  display: none;
-}
-
-/* High quality specific enhancements - only applied when needed */
-.quality-high .nature-scene {
-  will-change: transform; /* Only use will-change in high quality */
-}
-
-/* Add these optimizations at the end of the file */
-
-/* Performance optimization for window elements */
-:root {
-  --enable-gpu: 1;
-  --enable-animations: 1;
-  --enable-3d-effects: 1;
-}
-
-/* Set performance variables based on performance mode */
-.perf-medium {
-  --enable-animations: 0.5;
-  --enable-3d-effects: 0.5;
-}
-
-.perf-low, .perf-minimal {
-  --enable-animations: 0;
-  --enable-3d-effects: 0;
-}
-
-/* GPU optimization - only use for elements that need it */
-.window-frame, .nature-scene {
-  /* Use hardware acceleration only when needed */
-  transform: translate3d(0, 0, calc(var(--enable-gpu) * 0.001px));
-}
-
-/* Reduce DOM size for room elements in low power mode */
-.perf-low .room-wall, 
-.perf-minimal .room-wall {
-  background-image: none !important;
-  box-shadow: none !important;
 }
 
 /* Skip animations during scrolling/zooming */
@@ -653,37 +487,16 @@
 
 /* Optimize window positioning for smoother scrolling */
 .window-background {
-  /* Improve scroll performance */
   content-visibility: auto;
   contain-intrinsic-size: 1000px;
 }
 
-/* Only apply expensive effects in high quality mode */
-.quality-high .window-background::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  box-shadow: 0 0 200px 100px rgba(173, 216, 230, 0.15);
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* Skip ambient wall lighting in medium and low quality modes */
-.quality-high .cozy-room::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse at 50% 50%,
-    rgba(40, 60, 100, 0.2) 0%,
-    rgba(20, 30, 60, 0.9) 100%
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Reduce room detail even more in reduced-quality mode */
-.reduced-quality .room-wall {
-  opacity: 0.9;
-  transition: none;
+/* Apply aggressive simplification for very low-end devices */
+.simplified-background .window-background,
+.simplified-background .nature-scene,
+.simplified-background .window-frame {
+  background: var(--wall-color) !important;
+  box-shadow: none !important;
+  border: 1px solid #444 !important;
+  filter: none !important;
 }

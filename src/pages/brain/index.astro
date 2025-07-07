@@ -9,7 +9,7 @@ import type { PhotoData } from '../../types/whiteboard';
 // Start performance timing for data fetching
 console.time('brain-page-data-fetch');
 
-// Organize data fetching - using existing parallel fetch pattern
+// Simplified data fetching with mobile performance in mind
 const [albums, photos, snips, playlists, backgroundPhoto] = await Promise.all([
   getCollection("albums"),
   getCollection("photos"),
@@ -21,40 +21,36 @@ const [albums, photos, snips, playlists, backgroundPhoto] = await Promise.all([
 console.timeEnd('brain-page-data-fetch');
 console.time('brain-page-data-processing');
 
-// Filter out draft items - preserve existing logic
+// Filter out draft items efficiently
 const publishedAlbums = albums.filter(album => !album.data.draft);
 const publishedSnips = snips.filter(snip => !snip.data.draft);
 const publishedPlaylists = playlists.filter(playlist => !playlist.data.draft);
-const publishedPhotos = photos.filter(photo => !photo.data.draft);
+// Photos don't have draft property, so use all photos
+const publishedPhotos = photos;
 
-// Enhanced photo grouping function with performance optimizations
-function groupPhotosByAlbum(photos: CollectionEntry<"photos">[]) {
-  // Pre-allocate memory for the result object
+// Simplified and faster photo grouping function
+function groupPhotosByAlbum(photos: CollectionEntry<"photos">[]): Record<string, PhotoData[]> {
   const result: Record<string, PhotoData[]> = {};
   
-  // Process photos more efficiently in chunks
-  const chunkSize = 50;
-  for (let i = 0; i < photos.length; i += chunkSize) {
-    const chunk = photos.slice(i, i + chunkSize);
+  // Simple loop without unnecessary chunking
+  for (const photo of photos) {
+    const albumId = photo.data.albumId;
     
-    // Process each photo in this chunk
-    chunk.forEach(photo => {
-      const albumId = photo.data.albumId;
-      if (!result[albumId]) {
-        result[albumId] = [];
-      }
-      
-      // Transform to match PhotoData interface - keep your existing structure
-      result[albumId].push({
-        id: photo.id,
-        slug: photo.slug,
-        data: {
-          albumId: photo.data.albumId,
-          caption: photo.data.caption,
-          photo: photo.data.photo
-        },
-        optimizedPhoto: photo.data.photo // Using the optimized photo from the data
-      });
+    // Initialize array if needed
+    if (!result[albumId]) {
+      result[albumId] = [];
+    }
+    
+    // Transform to PhotoData interface with minimal processing
+    result[albumId].push({
+      id: photo.id,
+      slug: photo.slug,
+      data: {
+        albumId,
+        caption: photo.data.caption || '',
+        photo: photo.data.photo
+      },
+      optimizedPhoto: photo.data.photo
     });
   }
   
@@ -67,36 +63,74 @@ console.timeEnd('brain-page-data-processing');
 ---
 
 <script>
-// Load performance utilities if available
-try {
-  const { initializeAppPerformance } = await import('../../utils/performance');
+// Apply mobile-level performance optimizations for all devices
+document.addEventListener('DOMContentLoaded', () => {
+  // Apply aggressive optimizations for all devices
+  document.documentElement.classList.add('mobile-optimized', 'reduce-motion', 'perf-low');
   
-  // Initialize performance monitoring when the page loads
-  document.addEventListener('DOMContentLoaded', () => {
-    console.time('brain-page-client-init');
+  // Disable heavy animations and effects for all devices
+  document.documentElement.style.setProperty('--enable-animations', '0');
+  document.documentElement.style.setProperty('--enable-3d-effects', '0');
+  
+  // Add content visibility optimizations
+  document.documentElement.style.setProperty('content-visibility', 'auto');
+  
+  // Force simplified background for all devices
+  document.documentElement.classList.add('simplified-background');
+  
+  // Reduced motion preference
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('reduce-motion');
+  }
+  
+  // Viewport-based optimizations
+  if ('IntersectionObserver' in window) {
+    // Add intersection observer for lazy loading
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-viewport');
+        } else {
+          entry.target.classList.remove('in-viewport');
+        }
+      });
+    }, {
+      root: null,
+      rootMargin: '50px',
+      threshold: 0.1
+    });
     
-    if (typeof initializeAppPerformance === 'function') {
-      initializeAppPerformance();
-    }
-    
-    // Set reduced motion preference based on user's system settings
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.documentElement.classList.add('reduce-motion');
-    }
-    
-    // Mark when the page becomes interactive
-    performance.mark('brain-page-interactive');
-    console.timeEnd('brain-page-client-init');
-  });
-} catch (e) {
-  console.log('Performance utilities not loaded');
-}
+    // Store observer in a way that React components can access it
+    // @ts-ignore - Custom property for our app
+    window.brainLazyObserver = observer;
+  }
+  
+  // Memory optimization
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      // Force garbage collection if available
+      if (window.gc) {
+        window.gc();
+      }
+    });
+  }
+  
+  // Performance mark
+  performance.mark('brain-page-interactive');
+  
+  console.log('Mobile-level performance optimizations applied to all devices');
+});
 </script>
 
 <BrainLayout title={`Brain | ${SITE.title}`}>
-  <!-- Add a loading indicator that shows until React hydrates -->
-  <div id="brain-loading" class="fixed inset-0 flex items-center justify-center bg-gray-900 z-50 transition-opacity duration-500">
-    <div class="text-white text-xl">Loading your brain space...</div>
+  <!-- Mobile-optimized loading indicator -->
+  <div id="brain-loading" class="fixed inset-0 flex items-center justify-center z-50 transition-opacity duration-300" 
+       style="background: linear-gradient(135deg, #1a2440 0%, #233156 100%);">
+    <div class="text-center">
+      <div class="text-white text-xl mb-4">Loading your brain space...</div>
+      <!-- Simple loading animation that works on all devices -->
+      <div class="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+    </div>
   </div>
   
   <BrainPage
@@ -109,25 +143,63 @@ try {
 </BrainLayout>
 
 <style>
-  /* Loading transition styles */
+  /* Performance-optimized loading styles */
   #brain-loading {
-    transition: opacity 0.5s ease-out;
+    transition: opacity 0.3s ease-out;
+    content-visibility: auto;
   }
   
-  /* Scrollbar optimization */
-  .overflow-auto {
+  /* Simplified loading animation for mobile */
+  @media (max-width: 768px) {
+    #brain-loading {
+      background: #1a2440 !important;
+      transition: none;
+    }
+    
+    .animate-spin {
+      animation-duration: 1s;
+    }
+  }
+  
+  /* Content visibility optimizations */
+  .mobile-optimized .overflow-auto {
     scrollbar-width: none;
     -ms-overflow-style: none;
     overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    content-visibility: auto;
+    contain-intrinsic-size: 300px;
   }
   
-  .overflow-auto::-webkit-scrollbar {
+  .mobile-optimized .overflow-auto::-webkit-scrollbar {
     display: none;
   }
   
-  /* Animation speed control for reduced motion preference */
-  :global(.reduce-motion) .sticky-note {
-    animation-duration: calc(var(--flutter-duration, 8s) * 2) !important;
+  /* Viewport-based optimizations */
+  .in-viewport {
+    content-visibility: visible;
+  }
+  
+  .out-of-viewport {
+    content-visibility: auto;
+    contain-intrinsic-size: 320px 280px;
+  }
+  
+  /* Performance mode specific optimizations */
+  .perf-low * {
+    animation-duration: 0s !important;
+    transition-duration: 0.1s !important;
+  }
+  
+  .perf-medium * {
+    animation-duration: calc(var(--original-duration, 1s) * 0.5) !important;
+    transition-duration: calc(var(--original-duration, 0.3s) * 0.5) !important;
+  }
+  
+  /* Reduced motion for accessibility */
+  .reduce-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 </style>
