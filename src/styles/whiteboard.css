@@ -85,7 +85,8 @@
   border-radius: 4px;
   /* Simple flat shadow for all devices */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  background-color: #fff68f; /* Default sticky note color */
+  /* Default sticky note color will be overridden by component */
+  background-color: #fff68f; 
   /* Remove complex 3D properties */
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -141,9 +142,9 @@
   animation-play-state: paused !important;
 }
 
-/* Mobile optimizations - completely disable complex effects */
+/* Mobile optimizations - disable complex effects but preserve colors */
 .mobile-optimized .sticky-note {
-  /* Completely flat rendering for mobile */
+  /* Simplified rendering for mobile - keep post-it colors */
   transform: none !important;
   animation: none !important;
   transition: none !important;
@@ -151,6 +152,7 @@
   will-change: auto !important;
   /* Content should be contained within the card boundaries */
   overflow: hidden !important;
+  /* Don't override background - preserve component colors */
 }
 
 .mobile-optimized .transform-container,
@@ -184,8 +186,8 @@
   transform: none !important;
   transition: none !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-  background: #fff68f !important;
-  border: 1px solid #ddd !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  /* Don't override background - preserve post-it colors */
 }
 
 .perf-medium .sticky-note {
@@ -295,15 +297,15 @@
   margin-bottom: 0.5rem;
 }
 
-/* Ultra-aggressive mobile optimization for very small screens */
+/* Mobile optimization for very small screens - preserve colors */
 @media (max-width: 480px) {
   .mobile-optimized .sticky-note {
-    /* Completely remove any visual complexity */
-    background: #fff !important;
-    border: 1px solid #ccc !important;
-    border-radius: 2px !important;
-    box-shadow: none !important;
+    /* Preserve post-it colors but simplify other visual complexity */
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
     padding: 0.5rem !important;
+    /* Don't override background - let component colors show through */
   }
   
   .mobile-optimized .draggable-area {
