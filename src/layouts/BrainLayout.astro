@@ -117,6 +117,13 @@ const layoutRenderStart = Date.now();
         transparent 1px
       );
     background-size: 20px 20px;
+    /* Ensure proper overflow handling in production */
+    overflow: visible;
+  }
+  
+  html {
+    /* Ensure the root element allows overflow for expanded cards */
+    overflow: visible;
   }
 
   .sidebar-button {

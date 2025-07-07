@@ -59,7 +59,7 @@ export function AlbumCard({
       <div
         {...rest}
         className={`relative w-full h-full bg-gray-900/90 backdrop-blur-sm 
-                      rounded-lg border border-cyan-500/30 overflow-visible ${isFocused ? 'focused-card' : ''}`}
+n                      rounded-lg border border-cyan-500/30 overflow-visible ${isFocused ? 'focused-card' : ''}`}
         style={{
           ...(rest.style || {}),
           boxShadow: isFocused ? '0 0 20px 10px rgba(0, 0, 0, 0.8)' : undefined

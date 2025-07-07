@@ -12,7 +12,8 @@
   transform: translate(-50%, -50%) translate(var(--translateX, 0), var(--translateY, 0)) scale(var(--scale, 1));
   transform-origin: center center;
   z-index: 1;
-  contain: size;
+  /* Remove aggressive containment that clips content in production */
+  overflow: visible;
 }
 
 /* Smooth transitions only on desktop */
@@ -25,7 +26,8 @@
   position: relative;
   width: 100%;
   height: 100%;
-  contain: size;
+  /* Remove size containment that can clip expanded content */
+  overflow: visible;
   z-index: 3;
 }
 
@@ -132,27 +134,29 @@
   transition: none !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   will-change: auto !important;
-  contain: strict;
+  /* Remove strict containment that clips content in production */
+  overflow: visible !important;
 }
 
 .mobile-optimized .transform-container,
 .mobile-optimized .whiteboard-container {
   /* Simplified transforms for mobile */
   transform: translate(-50%, -50%) translate(var(--translateX, 0), var(--translateY, 0)) scale(var(--scale, 1));
-  contain: strict;
-  content-visibility: auto;
+  /* Remove aggressive containment and visibility properties that clip in production */
+  overflow: visible;
   will-change: none;
   transition: transform 0.15s ease;
 }
 
 .mobile-optimized .whiteboard-content {
-  contain: strict;
-  content-visibility: auto;
+  /* Remove aggressive containment that clips content in production */
+  overflow: visible;
   will-change: none;
 }
 
 .mobile-optimized .draggable-area {
-  contain: strict;
+  /* Remove strict containment that clips expanded cards in production */
+  overflow: visible;
   will-change: none;
   transform: translate(-50%, -50%) translate(var(--item-x, 0px), var(--item-y, 0px)) rotate(var(--item-rotation, 0deg)) !important;
 }
