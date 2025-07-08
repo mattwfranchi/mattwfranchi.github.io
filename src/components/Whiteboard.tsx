@@ -47,15 +47,6 @@ export default function WhiteboardLayout({
   const handleZoomToFit = useCallback((cardElement: HTMLElement, expanded: boolean) => {
     if (!expanded) return; // Only zoom when expanding
     
-    // Get the draggable-area element that contains the card position info
-    const draggableArea = cardElement.closest('.draggable-area') as HTMLElement;
-    if (!draggableArea) return;
-    
-    // Read the card's position from CSS variables set by CardWrapper
-    const computedStyle = getComputedStyle(draggableArea);
-    const cardX = parseFloat(computedStyle.getPropertyValue('--item-x')) || 0;
-    const cardY = parseFloat(computedStyle.getPropertyValue('--item-y')) || 0;
-    
     // Get the card's dimensions after expansion
     const cardRect = cardElement.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
@@ -72,26 +63,24 @@ export default function WhiteboardLayout({
     // Use the smaller scale to ensure the card fits in both dimensions
     const targetScale = Math.min(scaleX, scaleY, transform.scale);
     
-    // Only proceed if we need to zoom out
+    // Only proceed if we need to zoom out (don't zoom in)
     if (targetScale < transform.scale) {
-      // Calculate transform to center the card at the new scale
-      // In whiteboard coordinates, to center a card at position (cardX, cardY),
-      // we need transform: x = -cardX * scale, y = -cardY * scale
+      // IMPORTANT: Only zoom out, don't recenter the camera
+      // This preserves the user's current view and navigation context
       const newTransform: Transform = {
-        x: -cardX * targetScale,
-        y: -cardY * targetScale,
+        x: transform.x,
+        y: transform.y,
         scale: targetScale
       };
       
-      console.log('Auto-zooming and centering expanded card:', {
-        cardPosition: { x: cardX, y: cardY },
+      console.log('Auto-zooming out to fit expanded card:', {
         currentTransform: transform,
         targetScale,
         newTransform,
         cardSize: { width: cardRect.width, height: cardRect.height }
       });
       
-      // Apply the centered zoom transform
+      // Apply just the zoom, preserving current camera position
       updateTransform(newTransform, true);
     }
   }, [transform, updateTransform]);
