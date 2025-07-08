@@ -224,12 +224,12 @@
   /* ===== Header Styles ===== */
   header#main-header {
     @apply fixed top-0 left-0 right-0 z-50 bg-skin-fill;
-    height: 88px;
+    height: 112px;
     transition: var(--theme-transition), height 0.3s ease;
   }
   
   header#main-header.shrunk {
-    height: 64px;
+    height: 88px;
   }
   
   .nav-container {
@@ -241,7 +241,7 @@
   .top-nav-wrap {
     @apply relative w-full transition-all duration-300;
     display: flex;
-    padding: 1.5rem 5vw;
+    padding: 2rem 5vw;
     width: 100%;
     max-width: 100%;
     flex-direction: row;
@@ -386,9 +386,6 @@
   }
   
   /* ===== Main Content ===== */
-  #main-content {
-    padding-top: 8rem;
-  }
   
   /* ===== Footer Styles ===== */
   footer {
@@ -656,7 +653,7 @@
   #menu-items {
     display: none;
     position: absolute;
-    top: 88px;
+    top: 112px;
     right: 0;
     left: auto;
     width: 200px;
@@ -676,7 +673,7 @@
   }
   
   header#main-header.shrunk #menu-items {
-    top: 64px; /* Match the height of shrunk header */
+    top: 88px; /* Match the height of shrunk header */
   }
   
   #menu-items.show {
@@ -749,7 +746,7 @@
   }
   
   .top-nav-wrap {
-    padding: 1.5rem 1rem;
+    padding: 2rem 1rem;
   }
   
   .footer-wrapper {
