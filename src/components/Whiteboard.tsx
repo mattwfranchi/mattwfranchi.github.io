@@ -111,7 +111,15 @@ export default function WhiteboardLayout({
     onZoomToFit: handleZoomToFit
   });
 
-  // Check if we're on mobile to disable manual gestures
+  const { filter, toggleFilter, filterItems } = useWhiteboardFilter();
+  const [showGrid, setShowGrid] = useState(true);
+
+  // Use the focus hook on visible (filtered) items
+  const filteredItems = filterItems(items);
+  const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(filteredItems, transform, updateTransform);
+  const focusedCardId = filteredItems.length ? filteredItems[currentIndex].id : undefined;
+
+  // Check if we're on mobile
   const isMobile = typeof window !== 'undefined' && (
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
     window.innerWidth <= 768
@@ -123,9 +131,6 @@ export default function WhiteboardLayout({
     handleGestureEnd,
     isDragging: isPanning,
   } = useWhiteboardGestures(updateTransform);
-
-  const { filter, toggleFilter, filterItems } = useWhiteboardFilter();
-  const [showGrid, setShowGrid] = useState(true);
 
   // Simplified item initialization
   const initializeItems = useCallback(() => {
@@ -186,31 +191,35 @@ export default function WhiteboardLayout({
     [handleDragStart]
   );
 
-  // Use the focus hook on visible (filtered) items
-  const filteredItems = filterItems(items);
-  const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(filteredItems, transform, updateTransform);
-  const focusedCardId = filteredItems.length ? filteredItems[currentIndex].id : undefined;
-
-  // Simplified mobile initialization
-  const initializeMobileView = useCallback(() => {
-    requestAnimationFrame(() => {
-      updateTransform({ x: 0, y: 0, scale: 0.3 }, false);
-    });
-  }, [updateTransform]);
+  // Initialize view based on device type
+  const initializeView = useCallback(() => {
+    if (isMobile) {
+      // On mobile, start with a lower scale and no offset
+      // We'll let the auto-focus handle proper centering
+      requestAnimationFrame(() => {
+        updateTransform({ x: 0, y: 0, scale: 0.5 }, false);
+      });
+    } else {
+      // On desktop, use the default centered view
+      requestAnimationFrame(() => {
+        updateTransform({ x: 0, y: 0, scale: 0.3 }, false);
+      });
+    }
+  }, [updateTransform, isMobile]);
 
   useEffect(() => {
-    initializeMobileView();
-  }, [initializeMobileView]);
+    initializeView();
+  }, [initializeView]);
 
-  // Auto-focus on first item once on initial load only
+  // Auto-focus on first item - ensure proper timing
   useEffect(() => {
-    if (items.length > 0) {
+    if (items.length > 0 && filteredItems.length > 0) {
       const timer = setTimeout(() => {
         focusOnCard(0);
-      }, 1000);
+      }, isMobile ? 500 : 1000); // Faster on mobile for better UX
       return () => clearTimeout(timer);
     }
-  }, [items.length]); // Removed focusOnCard from dependencies to prevent re-triggering
+  }, [items.length, filteredItems.length, focusOnCard, isMobile]);
 
   return (
     <ErrorBoundary>
