@@ -33,6 +33,9 @@ export default function WhiteboardLayout({
     }
   }, []);
 
+  // Track if we've already done the initial auto-focus
+  const hasAutoFocusedRef = useRef(false);
+
   const {
     transform,
     isTransitioning,
@@ -46,6 +49,15 @@ export default function WhiteboardLayout({
   // Create zoom-to-fit function for mobile card expansion
   const handleZoomToFit = useCallback((cardElement: HTMLElement, expanded: boolean) => {
     if (!expanded) return; // Only zoom when expanding
+    
+    // Get the draggable-area element that contains the card position info
+    const draggableArea = cardElement.closest('.draggable-area') as HTMLElement;
+    if (!draggableArea) return;
+    
+    // Read the card's position from CSS variables set by CardWrapper
+    const computedStyle = getComputedStyle(draggableArea);
+    const cardX = parseFloat(computedStyle.getPropertyValue('--item-x')) || 0;
+    const cardY = parseFloat(computedStyle.getPropertyValue('--item-y')) || 0;
     
     // Get the card's dimensions after expansion
     const cardRect = cardElement.getBoundingClientRect();
@@ -63,24 +75,26 @@ export default function WhiteboardLayout({
     // Use the smaller scale to ensure the card fits in both dimensions
     const targetScale = Math.min(scaleX, scaleY, transform.scale);
     
-    // Only proceed if we need to zoom out (don't zoom in)
+    // Only proceed if we need to zoom out
     if (targetScale < transform.scale) {
-      // IMPORTANT: Only zoom out, don't recenter the camera
-      // This preserves the user's current view and navigation context
+      // Calculate transform to center the card at the new scale
+      // In whiteboard coordinates, to center a card at position (cardX, cardY),
+      // we need transform: x = -cardX * scale, y = -cardY * scale
       const newTransform: Transform = {
-        x: transform.x,
-        y: transform.y,
+        x: -cardX * targetScale,
+        y: -cardY * targetScale,
         scale: targetScale
       };
       
-      console.log('Auto-zooming out to fit expanded card:', {
+      console.log('Auto-zooming and centering expanded card:', {
+        cardPosition: { x: cardX, y: cardY },
         currentTransform: transform,
         targetScale,
         newTransform,
         cardSize: { width: cardRect.width, height: cardRect.height }
       });
       
-      // Apply just the zoom, preserving current camera position
+      // Apply the centered zoom transform
       updateTransform(newTransform, true);
     }
   }, [transform, updateTransform]);
@@ -102,9 +116,6 @@ export default function WhiteboardLayout({
   // Use the focus hook on all items (no filtering)
   const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(items, transform, updateTransform);
   const focusedCardId = items.length ? items[currentIndex].id : undefined;
-
-  // Track if initial focus has been completed
-  const hasInitialFocusedRef = useRef(false);
 
   // Check if we're on mobile
   const isMobile = typeof window !== 'undefined' && (
@@ -198,17 +209,29 @@ export default function WhiteboardLayout({
     initializeView();
   }, [initializeView]);
 
-  // Auto-focus on first item - ensure proper timing and only run once
+  // Auto-focus on first item - simplified for debugging
   useEffect(() => {
-    if (items.length > 0 && !hasInitialFocusedRef.current) {
+    console.log('Auto-focus effect triggered:', {
+      itemsLength: items.length,
+      hasAutoFocused: hasAutoFocusedRef.current,
+      firstCardPosition: items[0]?.position
+    });
+    
+    if (items.length > 0 && !hasAutoFocusedRef.current) {
+      hasAutoFocusedRef.current = true;
+      console.log('Starting auto-focus timer...');
+      
       const timer = setTimeout(() => {
+        console.log('Auto-focus timer fired - calling focusOnCard(0)');
         focusOnCard(0);
-        hasInitialFocusedRef.current = true; // Mark as completed
-      }, isMobile ? 500 : 1000); // Faster on mobile for better UX
-      return () => clearTimeout(timer);
+      }, isMobile ? 1000 : 1500); // Longer delay for debugging
+      
+      return () => {
+        console.log('Auto-focus timer cleared');
+        clearTimeout(timer);
+      };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.length, isMobile]); // Only re-run when items are first loaded or mobile changes
+  }, [items.length, focusOnCard, isMobile]);
 
   return (
     <ErrorBoundary>

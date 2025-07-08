@@ -25,10 +25,24 @@ export function useCardFocus(
   };
 
   const focusOnCard = useCallback((index: number) => {
-    if (items.length === 0) return;
+    console.log('focusOnCard called with index:', index, 'items.length:', items.length);
+    
+    if (items.length === 0) {
+      console.log('focusOnCard aborted - no items');
+      return;
+    }
+    
     const clampedIndex = ((index % items.length) + items.length) % items.length;
-    setCurrentIndex(clampedIndex);
     const card = items[clampedIndex];
+    
+    console.log('focusOnCard processing:', {
+      originalIndex: index,
+      clampedIndex,
+      cardId: card.id,
+      cardPosition: card.position
+    });
+
+    setCurrentIndex(clampedIndex);
 
     // Get viewport dimensions
     const viewportWidth = window.innerWidth;
@@ -61,6 +75,7 @@ export function useCardFocus(
       cardPosition: { x: cardCenterX, y: cardCenterY },
       cardDimensions: { width: card.position.width, height: card.position.height },
       targetTransform: { x: targetX, y: targetY, scale: zoomLevel },
+      currentTransform: currentTransform,
       viewport: { width: viewportWidth, height: viewportHeight },
       isMobile
     });
@@ -73,13 +88,15 @@ export function useCardFocus(
 
     // Apply the transform with smooth animation
     updateTransform(newTransform, true);
-  }, [updateTransform]);
+  }, [items, updateTransform, currentTransform]);
 
   const onFocusPrev = useCallback(() => {
+    console.log('onFocusPrev called - currentIndex:', currentIndex, 'will focus on:', currentIndex - 1);
     focusOnCard(currentIndex - 1);
   }, [currentIndex, focusOnCard]);
 
   const onFocusNext = useCallback(() => {
+    console.log('onFocusNext called - currentIndex:', currentIndex, 'will focus on:', currentIndex + 1);
     focusOnCard(currentIndex + 1);
   }, [currentIndex, focusOnCard]);
 

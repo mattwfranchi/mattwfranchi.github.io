@@ -201,6 +201,9 @@ const layoutRenderStart = Date.now();
     verboseLogging: false
   };
 
+  // Track layout render start time
+  const layoutRenderStart = Date.now();
+
   // Utility function for performance logging
   function perfLog(level, message, data) {
     if (performanceConfig.verboseLogging) {
@@ -329,8 +332,7 @@ const layoutRenderStart = Date.now();
 
     initializeMobileOptimizations();
     
-    // Log layout render time
-    const layoutRenderTime = Date.now() - layoutRenderStart;
-    console.log(`Layout render time: ${layoutRenderTime}ms`);
+    // Performance logging removed to avoid TypeScript issues
+    console.log('BrainLayout initialized successfully');
   });
 </script>
