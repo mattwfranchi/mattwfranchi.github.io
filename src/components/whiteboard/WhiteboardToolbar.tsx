@@ -1,8 +1,7 @@
 import React from 'react';
-import { Filter, ZoomIn, ZoomOut, Home, ArrowLeft, ArrowRight, MoreHorizontal } from 'lucide-react';
+import { ZoomIn, ZoomOut, Home, ArrowLeft, ArrowRight, MoreHorizontal } from 'lucide-react';
 
 interface WhiteboardToolbarProps {
-  onFilter: () => void;
   onZoomIn: (animate?: boolean) => void;
   onZoomOut: (animate?: boolean) => void;
   onCenter: () => void;
@@ -13,7 +12,6 @@ interface WhiteboardToolbarProps {
 }
 
 export const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
-  onFilter,
   onZoomIn,
   onZoomOut,
   onCenter,
@@ -97,14 +95,6 @@ export const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
       <span className="text-sm font-mono text-center text-cyan-400 font-bold sm:hidden">
         {Math.round(scale * 100)}%
       </span>
-      
-      <button 
-        onClick={onFilter}
-        className="p-2 text-cyan-400 hover:text-cyan-300 transition-colors flex items-center justify-center"
-        title="Filter Albums"
-      >
-        <Filter className="w-5 h-5" strokeWidth={1.5} />
-      </button>
     </>
   );
 
@@ -127,14 +117,6 @@ export const WhiteboardToolbar: React.FC<WhiteboardToolbarProps> = ({
         title="Zoom In"
       >
         <ZoomIn className="w-6 h-6" strokeWidth={1.5} />
-      </button>
-      
-      <button 
-        onClick={onFilter}
-        className="hidden sm:flex p-3 text-cyan-400 hover:text-cyan-300 transition-colors items-center justify-center"
-        title="Filter Albums"
-      >
-        <Filter className="w-6 h-6" strokeWidth={1.5} />
       </button>
     </>
   );

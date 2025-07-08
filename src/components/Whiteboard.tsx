@@ -7,7 +7,6 @@ import { WhiteboardGrid } from './whiteboard/WhiteboardGrid';
 import { useWhiteboardItems } from '../hooks/useWhiteboardItems';
 import { useWhiteboardView } from '../hooks/useWhiteboardView';
 import { useWhiteboardGestures } from '../hooks/useWhiteboardGestures';
-import { useWhiteboardFilter } from '../hooks/useWhiteboardFilter';
 import { useCardFocus } from '../hooks/useCardFocus';
 import { STICKY_NOTE, SCALES } from '../constants/whiteboard';
 import { calculateInitialLayout } from '../utils/itemLayoutUtils';
@@ -71,7 +70,7 @@ export default function WhiteboardLayout({
     const scaleY = viewportHeight / requiredHeight;
     
     // Use the smaller scale to ensure the card fits in both dimensions
-    const targetScale = Math.min(scaleX, scaleY, transform.scale); // Don't zoom in, only out
+    const targetScale = Math.min(scaleX, scaleY, transform.scale);
     
     // Only proceed if we need to zoom out
     if (targetScale < transform.scale) {
@@ -111,13 +110,9 @@ export default function WhiteboardLayout({
     onZoomToFit: handleZoomToFit
   });
 
-  const { filter, toggleFilter, filterItems } = useWhiteboardFilter();
-  const [showGrid, setShowGrid] = useState(true);
-
-  // Use the focus hook on visible (filtered) items
-  const filteredItems = filterItems(items);
-  const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(filteredItems, transform, updateTransform);
-  const focusedCardId = filteredItems.length ? filteredItems[currentIndex].id : undefined;
+  // Use the focus hook on all items (no filtering)
+  const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(items, transform, updateTransform);
+  const focusedCardId = items.length ? items[currentIndex].id : undefined;
 
   // Check if we're on mobile
   const isMobile = typeof window !== 'undefined' && (
@@ -213,13 +208,13 @@ export default function WhiteboardLayout({
 
   // Auto-focus on first item - ensure proper timing
   useEffect(() => {
-    if (items.length > 0 && filteredItems.length > 0) {
+    if (items.length > 0) {
       const timer = setTimeout(() => {
         focusOnCard(0);
       }, isMobile ? 500 : 1000); // Faster on mobile for better UX
       return () => clearTimeout(timer);
     }
-  }, [items.length, filteredItems.length, focusOnCard, isMobile]);
+  }, [items.length, focusOnCard, isMobile]);
 
   return (
     <ErrorBoundary>
@@ -245,7 +240,7 @@ export default function WhiteboardLayout({
           })}
         >
           <WhiteboardContent
-            items={filteredItems}
+            items={items}
             focusedCardId={focusedCardId}
             draggingId={dragging}
             onDragStart={onDragStart}
@@ -257,7 +252,6 @@ export default function WhiteboardLayout({
         </div>
         
         <WhiteboardToolbar
-          onFilter={toggleFilter}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onCenter={centerView}
@@ -269,4 +263,4 @@ export default function WhiteboardLayout({
       </div>
     </ErrorBoundary>
   );
-};
+}
