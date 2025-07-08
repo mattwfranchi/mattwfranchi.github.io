@@ -73,7 +73,7 @@ export function useCardFocus(
 
     // Apply the transform with smooth animation
     updateTransform(newTransform, true);
-  }, [items, updateTransform]);
+  }, [updateTransform]);
 
   const onFocusPrev = useCallback(() => {
     focusOnCard(currentIndex - 1);

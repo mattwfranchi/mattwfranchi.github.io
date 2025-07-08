@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { WhiteboardProps, WhiteboardItem, PhotoData, Transform } from '../types/whiteboard';
 import { WhiteboardContainer } from './whiteboard/WhiteboardContainer';
 import { WhiteboardContent } from './whiteboard/WhiteboardContent';
@@ -103,6 +103,9 @@ export default function WhiteboardLayout({
   const { currentIndex, onFocusPrev, onFocusNext, focusOnCard } = useCardFocus(items, transform, updateTransform);
   const focusedCardId = items.length ? items[currentIndex].id : undefined;
 
+  // Track if initial focus has been completed
+  const hasInitialFocusedRef = useRef(false);
+
   // Check if we're on mobile
   const isMobile = typeof window !== 'undefined' && (
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
@@ -195,15 +198,17 @@ export default function WhiteboardLayout({
     initializeView();
   }, [initializeView]);
 
-  // Auto-focus on first item - ensure proper timing
+  // Auto-focus on first item - ensure proper timing and only run once
   useEffect(() => {
-    if (items.length > 0) {
+    if (items.length > 0 && !hasInitialFocusedRef.current) {
       const timer = setTimeout(() => {
         focusOnCard(0);
+        hasInitialFocusedRef.current = true; // Mark as completed
       }, isMobile ? 500 : 1000); // Faster on mobile for better UX
       return () => clearTimeout(timer);
     }
-  }, [items.length, focusOnCard, isMobile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length, isMobile]); // Only re-run when items are first loaded or mobile changes
 
   return (
     <ErrorBoundary>
