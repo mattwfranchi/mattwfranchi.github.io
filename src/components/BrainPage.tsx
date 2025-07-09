@@ -6,60 +6,89 @@ import type { WhiteboardProps } from '../types/whiteboard';
 const BrainPage: React.FC<WhiteboardProps> = (props) => {
   const [isLoading, setIsLoading] = useState(true);
 
-  // Apply mobile-level optimizations for all devices
+  // Detect if we're actually on a mobile device
+  const isMobile = typeof window !== 'undefined' && (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+    window.innerWidth <= 768
+  );
+
+  // Apply device-appropriate optimizations
   useEffect(() => {
-    // Apply aggressive performance optimizations for all devices
     const htmlElement = document.documentElement;
-    htmlElement.classList.add('mobile-optimized', 'reduce-motion', 'perf-low');
     
-    // Set CSS custom properties for maximum performance
-    htmlElement.style.setProperty('--enable-animations', '0');
-    htmlElement.style.setProperty('--enable-3d-effects', '0');
-    htmlElement.style.setProperty('--max-items', '20'); // Limit items for all devices
-    
-    // Force simplified background for all devices
-    htmlElement.classList.add('simplified-background');
-    
-    console.log('Mobile-level performance optimizations applied for all devices');
-  }, []);
+    if (isMobile) {
+      // Apply mobile optimizations for actual mobile devices
+      htmlElement.classList.add('mobile-optimized', 'reduce-motion', 'perf-low');
+      
+      // Set CSS custom properties for mobile performance
+      htmlElement.style.setProperty('--enable-animations', '0');
+      htmlElement.style.setProperty('--enable-3d-effects', '0');
+      htmlElement.style.setProperty('--max-items', '20'); // Limit items for mobile
+      
+      // Simplified background for mobile
+      htmlElement.classList.add('simplified-background');
+      
+      console.log('Mobile device detected - mobile optimizations applied');
+    } else {
+      // Apply desktop-appropriate settings
+      htmlElement.classList.remove('mobile-optimized', 'reduce-motion', 'perf-low');
+      htmlElement.classList.remove('simplified-background');
+      
+      // Enable full functionality for desktop
+      htmlElement.style.setProperty('--enable-animations', '1');
+      htmlElement.style.setProperty('--enable-3d-effects', '1');
+      htmlElement.style.setProperty('--max-items', '50'); // More items for desktop
+      
+      console.log('Desktop device detected - full functionality enabled');
+    }
+  }, [isMobile]);
 
   // Handle component mounting and loading states
   useEffect(() => {
     // Mark that React has hydrated
     document.documentElement.classList.add('react-loaded');
     
-    // Fast loading for all devices (mobile-style)
+    // Adjust loading time based on device type
     const loadingTimer = setTimeout(() => {
-      // Hide loading indicator instantly (mobile-style)
+      // Hide loading indicator
       const loader = document.getElementById('brain-loading');
       if (loader) {
         loader.style.display = 'none';
       }
       
       setIsLoading(false);
-    }, 100); // Very fast loading
+    }, isMobile ? 100 : 300); // Faster on mobile, allow time for desktop animations
 
     return () => clearTimeout(loadingTimer);
-  }, []);
+  }, [isMobile]);
 
-  // Optimize props for mobile-level performance for all devices
+  // Optimize props based on actual device type
   const optimizedProps = useMemo(() => {
     const { albums, snips, playlists } = props;
     
-    // Limit items to mobile levels for all devices
-    const maxItems = 20;
-    
-    return {
-      ...props,
-      albums: albums.slice(0, Math.min(albums.length, Math.floor(maxItems * 0.4))),
-      snips: snips.slice(0, Math.min(snips.length, Math.floor(maxItems * 0.3))),
-      playlists: playlists.slice(0, Math.min(playlists.length, Math.floor(maxItems * 0.3))),
-      useOptimizedRendering: true,
-      performanceMode: 'mobile', // Always use mobile mode
-    };
-  }, [props]);
+    if (isMobile) {
+      // Limit items for actual mobile devices
+      const maxItems = 20;
+      
+      return {
+        ...props,
+        albums: albums.slice(0, Math.min(albums.length, Math.floor(maxItems * 0.4))),
+        snips: snips.slice(0, Math.min(snips.length, Math.floor(maxItems * 0.3))),
+        playlists: playlists.slice(0, Math.min(playlists.length, Math.floor(maxItems * 0.3))),
+        useOptimizedRendering: true,
+        performanceMode: 'mobile',
+      };
+    } else {
+      // Use all items and full functionality for desktop
+      return {
+        ...props,
+        useOptimizedRendering: false,
+        performanceMode: 'desktop',
+      };
+    }
+  }, [props, isMobile]);
 
-  // Show simplified loading screen for all devices (mobile-style)
+  // Show loading screen appropriate for device type
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-900 flex items-center justify-center">
