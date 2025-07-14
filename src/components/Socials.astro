@@ -30,6 +30,7 @@ const { centered = false } = Astro.props;
     @apply flex-wrap justify-center gap-4; 
   }
   .link-button-social {
-    @apply p-4 sm:p-4 transition hover:scale-110;
+    @apply p-4 sm:p-4 hover:scale-110;
+    transition: transform 0.2s ease, var(--theme-transition);
   }
 </style>
