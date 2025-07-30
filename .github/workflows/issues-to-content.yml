@@ -63,22 +63,55 @@ jobs:
             console.log('Raw issue body:', JSON.stringify(body));
             console.log('Body length:', body.length);
             
+            // Clean up title (remove prefixes like [SNIP], [PLAYLIST], [ALBUM])
+            title = title.replace(/^\[.*?\]\s*/, '').trim();
+            
+            // Get content type from previous step
+            const contentType = '${{ steps.check.outputs.content_type }}';
+            console.log(`Processing ${contentType} content`);
+            
+            // Parse structured content from issue body
+            let actualContent = body;
+            let extractedSource = "GitHub Issue";
+            let extractedTags = [];
+            let extractedDescription = title;
+            
+            if (contentType === 'snips') {
+              // Parse snip-specific fields from issue body
+              const sourceMatch = body.match(/### Source[\s\S]*?\n\n(.*?)(?:\n\n### |$)/s);
+              const tagsMatch = body.match(/### Tags[\s\S]*?\n\n(.*?)(?:\n\n### |$)/s);
+              
+              if (sourceMatch && sourceMatch[1].trim()) {
+                extractedSource = sourceMatch[1].trim();
+              }
+              
+              if (tagsMatch && tagsMatch[1].trim()) {
+                extractedTags = tagsMatch[1].split(/[,\s]+/).map(tag => tag.trim()).filter(tag => tag);
+              }
+              
+              // Extract the main content (everything before the first ### section)
+              const contentMatch = body.match(/^([\s\S]*?)(?:\n\n### |$)/);
+              if (contentMatch) {
+                actualContent = contentMatch[1].trim();
+              }
+            } else {
+              // For other content types, clean up body content
+              actualContent = body
+                .replace(/### Content[\s\S]*?\n\n/, '') // Remove "### Content" header if present
+                .replace(/^<!--[\s\S]*?-->\s*/, '') // Remove HTML comments at start
+                .replace(/<!--[\s\S]*?-->/g, '') // Remove all HTML comments
+                .trim();
+            }
+            
             // Clean up body content (remove form template artifacts)
-            let cleanBody = body
-              .replace(/### Content[\s\S]*?\n\n/, '') // Remove "### Content" header if present
+            actualContent = actualContent
               .replace(/^<!--[\s\S]*?-->\s*/, '') // Remove HTML comments at start
               .replace(/<!--[\s\S]*?-->/g, '') // Remove all HTML comments
               .trim();
             
-            console.log('Cleaned body:', JSON.stringify(cleanBody));
-            console.log('Cleaned body length:', cleanBody.length);
-            
-            // Clean up title (remove prefixes like [SNIP], [PLAYLIST], [ALBUM])
-            title = title.replace(/^\[.*?\]\s*/, '').trim();
-            
-                         // Get content type from previous step
-             const contentType = '${{ steps.check.outputs.content_type }}';
-             console.log(`Processing ${contentType} content`);
+            console.log('Extracted content:', JSON.stringify(actualContent));
+            console.log('Extracted source:', extractedSource);
+            console.log('Extracted tags:', extractedTags);
             
             // Create slug from title
             const slug = title.toLowerCase()
@@ -87,21 +120,24 @@ jobs:
               .replace(/-+/g, '-')
               .trim();
             
-                         // Create frontmatter
-             const now = new Date().toISOString();
-             let frontmatter = `---\ntitle: "${title}"\npubDatetime: ${now}\nfeatured: false\ndraft: false\ntags: []\n`;
+            // Create frontmatter
+            const now = new Date().toISOString();
+            let frontmatter = `---\ntitle: "${title}"\npubDatetime: ${now}\nfeatured: false\ndraft: false\n`;
 
-                         // Add content-specific fields
+            // Add content-specific fields
             if (contentType === 'snips') {
-              frontmatter += `description: "${title}"\nsource: "GitHub Issue"\nsourceUrl: "${issue.html_url}"\n`;
+              frontmatter += `description: "${extractedDescription}"\n`;
+              frontmatter += `source: "${extractedSource}"\n`;
+              frontmatter += `sourceUrl: "${issue.html_url}"\n`;
+              frontmatter += `tags: [${extractedTags.map(tag => `"${tag}"`).join(', ')}]\n`;
             } else if (contentType === 'playlists') {
-              frontmatter += `description: "${cleanBody.split('\n')[0] || title}"\nplatform: "spotify"\nplaylistUrl: ""\nplaylistId: ""\nmood: []\n`;
+              frontmatter += `description: "${actualContent.split('\n')[0] || title}"\nplatform: "spotify"\nplaylistUrl: ""\nplaylistId: ""\nmood: []\ntags: []\n`;
             } else if (contentType === 'photos') {
-              frontmatter += `description: "${cleanBody.split('\n')[0] || title}"\nalbumArt: ""\n`;
+              frontmatter += `description: "${actualContent.split('\n')[0] || title}"\nalbumArt: ""\ntags: []\n`;
             }
             
             // Close frontmatter and add body content
-            frontmatter += `---\n\n${cleanBody}`;
+            frontmatter += `---\n\n${actualContent}`;
 
              // Create file path
              const fileName = `${slug}.md`;
